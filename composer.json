@@ -1,5 +1,5 @@
 {
-    "name": "tas/taslib",
+    "name": "truearrowsoftware/taslib",
     "description": "a small framework to handle PHP projects",
     "type": "library",    
     "license": "MIT",
