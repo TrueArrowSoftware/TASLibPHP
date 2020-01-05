@@ -1,0 +1,7 @@
+/vendor/
+/src/.settings
+/src/.project
+/src/.buildpath
+composer.lock
+/test/configure.local.php
+/test/cache/*
