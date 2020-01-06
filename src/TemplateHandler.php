@@ -114,7 +114,7 @@ class TemplateHandler
                               <button type="button" id="leftsideCollapse" class="btn btn-custom primary-bg-color-dark p-0">
                                   <span class="menu-icon leftmenutrigger text-white right-side"><i class="fas fa-arrow-left"></i></span>
                               </button>
-                              <a class="navbar-brand logo text-white py-0" href="{AdminURL}">Website Name</a>
+                              <a class="navbar-brand logo text-white py-0" href="{AdminURL}">'.$GLOBALS['AppConfig']['SiteName'].'</a>
                           </div>
                           <div class="col-lg-9 col-md-8 px-0 topright-menu">
                               <div class="navbar-collapse" id="navbarText">
@@ -134,7 +134,6 @@ class TemplateHandler
             $output3 = '';
             $isActive = '';
             $ShowParent = false;
-
             if (count($v['child']) > 0) {
                 $output3 = '<ul class="list-collapse" id="'.$v['anchor'].'">';
                 foreach ($v['child'] as $v2) {
@@ -152,7 +151,7 @@ class TemplateHandler
             }
         }
         $output .= '<li class="nav-item py-1 text-sm-right">
-                        <a class="nav-link btn btn-custom-dashboard text-white" href="{AdminURL}logout.php"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+                        <a class="nav-link btn btn-custom-dashboard text-white" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
                     </li>';
         $output .= ((!$returnLiOnly) ? '</ul></nav></div>' : '');
 
@@ -185,7 +184,6 @@ class TemplateHandler
             $ShowParent = false;
 
             if (count($v['child']) > 0) {
-                //$output3 = '<ul class="submenu collapse" id="'.$v['antor'].'">';
                 $output3 = '<div class="collapse" data-parent="#accordion" id="'.$v['anchor'].'">
                                 <ul class="submenu">';
                 foreach ($v['child'] as $v2) {
@@ -214,7 +212,7 @@ class TemplateHandler
             $output .= $output3;
         }
         $output .= '';
-        $output .= '<div class="d-md-none left-menu-logout-btn card-header primary-bg-color"><a class="d-flex card-link text-white align-items-center" href="{AdminURL}logout.php"><i class="fas fa-sign-out-alt iconsize mr-2" aria-hidden="true"></i> Logout </a></div>';
+        $output .= '<div class="d-md-none left-menu-logout-btn card-header primary-bg-color"><a class="d-flex card-link text-white align-items-center" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt iconsize mr-2" aria-hidden="true"></i> Logout </a></div>';
         $output .= ((!$returnLiOnly) ? '</div>' : '');
 
         return $output;
