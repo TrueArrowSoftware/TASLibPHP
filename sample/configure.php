@@ -1,6 +1,6 @@
 <?php
 /**
- * Basic Site Configuration file.
+ * Basic Site Configuration file for any project using this library.
  */
 @session_start();
 @ob_start();

@@ -224,7 +224,8 @@ class DocumentFile extends \TAS\Core\UserFile
         if ($documentid > 0) {
             $D = $GLOBALS['documentfile']->GetDocument($documentid);
             if (count($D) > 0) {
-                list($firstid, $firstDocument) = each($D);
+                $firstid = key($D);
+                $firstDocument = current($D);
                 $D = $documentObj['caption'];
             } else {
                 $D = '';
@@ -299,9 +300,8 @@ class DocumentFile extends \TAS\Core\UserFile
         $extraIcons[0]['link'] = $parameters['getcode']; //$GLOBALS['AppConfig'] ['AdminURL'] . '/docmanager/getcode.php';
         $extraIcons[0]['iconclass'] = 'fa-external-link-alt';
         $extraIcons[0]['tooltip'] = 'Get Document URL';
-        $extraIcons[0]['tagname'] = 'documentcode';
+        $extraIcons[0]['tagname'] = 'documentcode colorboxpopup';
         $extraIcons[0]['paramname'] = 'documentid';
-        $extraIcons[0]['color'] = 'success colorboxpopup';
         $param['extraicons'] = $extraIcons;
         $listing = \TAS\Core\UI::HTMLGridFromRecordSet($SQLQuery, $pages, 'docmanager', $param);
 

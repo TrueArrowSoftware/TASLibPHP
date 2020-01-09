@@ -328,7 +328,7 @@ class UI
 
             $listing .= '</thead><tbody>';
             $alt = true;
-
+            $total = array();
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
                 $option = '';
                 if ($GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', $GLOBALS['user']->UserRoleID) && $pages['edit'] !== false) {
@@ -452,6 +452,10 @@ class UI
                             } else {
                                 $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
                             }
+                            if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
+                                $total[$field] = (isset($total[$field])?$total[$field]:0.0);
+                                $total[$field] += floatval ( $row [$field] );
+                            }
                             break;
                         case 'numeric':
                         case 'number':
@@ -503,6 +507,25 @@ class UI
                 }
                 $alt = !($alt);
             }
+            
+            if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
+                $listing .='<tr class="total">';
+                foreach ( $param ['fields'] as $field => $val ) {
+                    switch ($val ['type']) {
+                        case 'currency' :
+                            $listing .= '<td class="currency">'.$GLOBALS['AppConfig']['Currency'] . number_format($total[$field], 2 ) .'</td>';
+                            break;
+                        case 'number' :
+                            $listing .= '<td class="number">'.$GLOBALS['AppConfig']['Currency'] . number_format($total[$field], 2 ) .'</td>';
+                            break;
+                        default :
+                            $listing .= '<td>&nbsp;</td>';
+                            break;
+                    }
+                }
+                $listing.='</tr>';
+            }
+            
             if (isset($param['MultiTableSearch']) && $param['MultiTableSearch'] == true) {
                 $listing .= '</tbody>';
                 if ($param['nopaging'] == false) {

@@ -9,6 +9,14 @@ namespace TAS\Core;
  */
 class TemplateHandler
 {
+    public static $TemplateName = [
+        'single' => 'single.tpl',
+        'home' => 'home.tpl',
+        'admin' => 'admin.tpl',
+        'login' => 'login.tpl',
+        'popup' => 'popup.tpl',
+    ];
+
     /**
      * Iterate and replace keywords in given Content.
      * It also replace AppConfig common variable.
@@ -16,7 +24,7 @@ class TemplateHandler
      * @param unknown $content
      * @param unknown $keywords
      */
-    public static function PrepareContent(string $content,  array $keywords)
+    public static function PrepareContent(string $content, array $keywords)
     {
         if (is_array($keywords)) {
             reset($keywords);
@@ -45,34 +53,19 @@ class TemplateHandler
     /**
      * Select template to use based on Template ID provided.
      *
-     * @param unknown $pagetemplate
+     * @param string $pagetemplate
      */
-    public static function TemplateChooser($pagetemplate)
+    public static function TemplateChooser(string $pagetemplate)
     {
-        switch ($pagetemplate) {
-            case 1:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/single.tpl', $GLOBALS['pageParse']);
-                break;
-            case 2:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/home.tpl', $GLOBALS['pageParse']);
-                break;
-            case 3:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/admin.tpl', $GLOBALS['pageParse']);
-                break;
-            case 4:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/login.tpl', $GLOBALS['pageParse']);
-                break;
-            case 5:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/popup.tpl', $GLOBALS['pageParse']);
-                break;
-            default:
-                print TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].'/single.tpl', $GLOBALS['pageParse']);
-                break;
+        if (empty(self::$TemplateName[$pagetemplate])) {
+            throw \Exception('Template Name not available');
         }
+
+        return TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].DIRECTORY_SEPARATOR.self::$TemplateName[$pagetemplate], $GLOBALS['pageParse']);
     }
 
     /**
-     * Insert Template Content
+     * Insert Template Content.
      */
     public static function InsertTemplateContent($Templatefile, $content_keyword)
     {
@@ -80,6 +73,7 @@ class TemplateHandler
         if (file_exists($Templatefile)) {
             $filecontent = file($Templatefile);
             $filecontent = implode('', $filecontent);
+
             return TemplateHandler::PrepareContent($filecontent, $content_keyword);
         } else {
             return "Template file doesn't exists".$Templatefile;
@@ -159,62 +153,63 @@ class TemplateHandler
     }
 
     // 2nd menu
-    public static function GenerateSecondNavigationMenu($arrNavigation = array(), $class = '', $returnLiOnly = false)
+    public static function GenerateSecondNavigationMenu($arrNavigation = array(), $class = "", $returnLiOnly = false)
     {
-        if (!is_array($arrNavigation)) {
+        if (! is_array($arrNavigation))
             return null;
-        }
-
-        if (!$returnLiOnly) {
-            $output = '<div class="sticky-use primary-bg-color">';
-        } else {
-            $output = '';
-        }
-        foreach ($arrNavigation as $v) {
-            if (isset($GLOBALS['permission']->permissions[$GLOBALS['user']->UserRoleID][$v['permission_module']])) {
-                if (!$GLOBALS['permission']->CheckModulePermission(strtolower($v['permission_module']), $GLOBALS['user']->UserRoleID)) {
-                    continue;
-                }
+            
+            if (! $returnLiOnly) {
+                $output = '<div class="sticky-use primary-bg-color">';
             } else {
-                continue;
+                $output = "";
             }
-
-            $output3 = '';
-            $isActive = '';
-            $ShowParent = false;
-
-            if (count($v['child']) > 0) {
-                $output3 = '<div class="collapse" data-parent="#accordion" id="'.$v['anchor'].'">
-                                <ul class="submenu">';
-                foreach ($v['child'] as $v2) {
-                    if (isset($GLOBALS['permission']->permissions[$GLOBALS['user']->UserRoleID][$v2['permission_module']])) {
-                        if (!$GLOBALS['permission']->CheckModulePermission(strtolower($v2['permission_module']), $GLOBALS['user']->UserRoleID)) {
-                            continue;
-                        }
-                    } else {
+            foreach ($arrNavigation as $v) {
+                if( isset($GLOBALS['permission']->permissions[$GLOBALS['user']->UserRoleID][$v['permission_module']])) {
+                    if( !$GLOBALS['permission']->CheckModulePermission(strtolower($v['permission_module']), $GLOBALS['user']->UserRoleID)) {
                         continue;
                     }
-
-                    $isActive = '';
-                    if ((parse_url($v2['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI'])) {
-                        $isActive = ' active';
-                        $ShowParent = true;
-                    }
-                    $output3 .= '<li class="'.$isActive.' nav-item"><a class="d-flex text-white align-items-center" href="'.$v2['link'].'">'.((isset($v2['icon']) && !empty($v2['icon'])) ? '<i class="fas fa-'.$v2['icon'].' mr-2" aria-hidden="false"></i> ' : '')._($v2['name']).'</a></li>';
+                } else {
+                    continue;
                 }
-                $output3 .= '</ul></div>';
+                
+                $output3 = '';
+                $isActive = '';
+                $ShowParent = false;
+                
+                if (count($v['child']) > 0) {
+                    $output3 = '<div class="collapse" data-parent="#accordion" id="'.$v['anchor'].'">
+                                <ul class="submenu">';
+                    foreach ($v['child'] as $v2) {
+                        if (isset($GLOBALS['permission']->permissions[$GLOBALS['user']->UserRoleID][$v2['permission_module']])) {
+                            if (! $GLOBALS['permission']->CheckModulePermission(strtolower($v2['permission_module']), $GLOBALS['user']->UserRoleID)) {
+                                
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
+                        
+                        $isActive = '';
+                        if ((parse_url($v2['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI'])) {
+                            $isActive = ' active';
+                            $ShowParent = true;
+                        }
+                        
+                        $output3 .= '<li class="' . $isActive . ' nav-item"><a class="d-flex text-white align-items-center" '.(isset($v2['target']) && $v2['target']=='blank'?'target="blank"':'').' href="' . $v2['link'] . '">' . ((isset($v2['icon']) && ! empty($v2['icon'])) ? '<i class="fas fa-'. $v2['icon'] . ' mr-2" aria-hidden="false"></i> ' : '') . _($v2['name']) . '</a></li>';
+                    }
+                    $output3 .= '</ul></div>';
+                }
+                if ($ShowParent || (parse_url($v['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI'])) {
+                    $isActive = ' active';
+                }
+                
+                $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '</a></div>';
+                $output .= $output3;
+                
             }
-            if ($ShowParent || (parse_url($v['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI'])) {
-                $isActive = ' active';
-            }
-
-            $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">'.((isset($v['icon']) && !empty($v['icon'])) ? '<i class="fas fa-'.$v['icon'].' mr-2" aria-hidden="true"></i> ' : '')._($v['name']).'</a></div>';
-            $output .= $output3;
-        }
-        $output .= '';
-        $output .= '<div class="d-md-none left-menu-logout-btn card-header primary-bg-color"><a class="d-flex card-link text-white align-items-center" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt iconsize mr-2" aria-hidden="true"></i> Logout </a></div>';
-        $output .= ((!$returnLiOnly) ? '</div>' : '');
-
-        return $output;
+            $output .='';
+            $output .= '<div class="d-md-none left-menu-logout-btn card-header primary-bg-color"><a class="d-flex card-link text-white align-items-center" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt iconsize mr-2" aria-hidden="true"></i> Logout </a></div>';
+            $output .= ((! $returnLiOnly) ? '</div>' : '');
+            return $output;
     }
 }
