@@ -105,8 +105,6 @@ class UI
         return $list;
     }
 
-    
-
     public static function ArrayToCheckRadioList($array, $selectedvalues, $name = 'list', $type = 'checkbox', $isrequired = false, $labelformat = '{text}')
     {
         $list = '';
@@ -135,8 +133,6 @@ class UI
         return $list;
     }
 
-    
-
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
         $list = '';
@@ -161,7 +157,7 @@ class UI
 
         return $list;
     }
-    
+
     /**
      * Create HTML Grid for given tagname,.
      *
@@ -453,8 +449,8 @@ class UI
                                 $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
                             }
                             if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
-                                $total[$field] = (isset($total[$field])?$total[$field]:0.0);
-                                $total[$field] += floatval ( $row [$field] );
+                                $total[$field] = (isset($total[$field]) ? $total[$field] : 0.0);
+                                $total[$field] += floatval($row[$field]);
                             }
                             break;
                         case 'numeric':
@@ -507,25 +503,25 @@ class UI
                 }
                 $alt = !($alt);
             }
-            
+
             if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
-                $listing .='<tr class="total">';
-                foreach ( $param ['fields'] as $field => $val ) {
-                    switch ($val ['type']) {
-                        case 'currency' :
-                            $listing .= '<td class="currency">'.$GLOBALS['AppConfig']['Currency'] . number_format($total[$field], 2 ) .'</td>';
+                $listing .= '<tr class="total">';
+                foreach ($param['fields'] as $field => $val) {
+                    switch ($val['type']) {
+                        case 'currency':
+                            $listing .= '<td class="currency">'.$GLOBALS['AppConfig']['Currency'].number_format($total[$field], 2).'</td>';
                             break;
-                        case 'number' :
-                            $listing .= '<td class="number">'.$GLOBALS['AppConfig']['Currency'] . number_format($total[$field], 2 ) .'</td>';
+                        case 'number':
+                            $listing .= '<td class="number">'.$GLOBALS['AppConfig']['Currency'].number_format($total[$field], 2).'</td>';
                             break;
-                        default :
+                        default:
                             $listing .= '<td>&nbsp;</td>';
                             break;
                     }
                 }
-                $listing.='</tr>';
+                $listing .= '</tr>';
             }
-            
+
             if (isset($param['MultiTableSearch']) && $param['MultiTableSearch'] == true) {
                 $listing .= '</tbody>';
                 if ($param['nopaging'] == false) {
@@ -925,7 +921,7 @@ class UI
         return $listing;
     }
 
-     /**
+    /**
      * Create Entry Form from Given Table Name.
      *
      * @deprecated
@@ -981,13 +977,13 @@ class UI
                         $options = '';
                         switch ($param['Fields'][$field['Field']]['selecttype']) {
                             case 'query': // Run from DB;
-                                $options = RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : '', (isset($param['Fields'][$field['Field']]['dbID']) ? $param['Fields'][$field['Field']]['dbID'] : ''), (isset($param['Fields'][$field['Field']]['dbLabelField']) ? $param['Fields'][$field['Field']]['dbLabelField'] : ''), true, 'Select', '');
+                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : '', (isset($param['Fields'][$field['Field']]['dbID']) ? $param['Fields'][$field['Field']]['dbID'] : ''), (isset($param['Fields'][$field['Field']]['dbLabelField']) ? $param['Fields'][$field['Field']]['dbLabelField'] : ''), true, 'Select', '');
                                 break;
                             case 'globalarray': // run from global Array
-                                $options = ArrayToDropDown($GLOBALS[(isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : '')], (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
+                                $options = self::ArrayToDropDown($GLOBALS[(isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : '')], (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
                                 break;
                             case 'array': // array pass along.
-                                $options = ArrayToDropDown((isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : array()), (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
+                                $options = self::ArrayToDropDown((isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : array()), (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
                                 break;
                         }
                         $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id, $isrequired, (isset($param['Fields'][$field['Field']]['css']) ? $param['Fields'][$field['Field']]['css'] : 'forminput'), (isset($param['Fields'][$field['Field']]['multiple']) ? $param['Fields'][$field['Field']]['multiple'] : false), (isset($param['Fields'][$field['Field']]['multiplesize']) ? $param['Fields'][$field['Field']]['multiplesize'] : 5), (isset($param['Fields'][$field['Field']]['additionalattr']) ? $param['Fields'][$field['Field']]['additionalattr'] : ''));
@@ -1050,7 +1046,6 @@ class UI
         return $HTML;
     }
 
-    
     /**
      * Create Form HTML.
      *
@@ -1115,10 +1110,10 @@ class UI
                     try {
                         switch ($field['selecttype']) {
                             case 'query': // Run from DB;
-                                $options = RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), isset($field['value']) ? $field['value'] : '', (isset($field['dbID']) ? $field['dbID'] : ''), (isset($field['dbLabelField']) ? $field['dbLabelField'] : ''), (isset($field['showSelect']) ? $field['showSelect'] : 'true'), 'Select', '');
+                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), isset($field['value']) ? $field['value'] : '', (isset($field['dbID']) ? $field['dbID'] : ''), (isset($field['dbLabelField']) ? $field['dbLabelField'] : ''), (isset($field['showSelect']) ? $field['showSelect'] : 'true'), 'Select', '');
                                 break;
                             case 'recordset':
-                                $options = RecordSetToDropDown($field['query'], isset($field['value']) ? $field['value'] : '', (isset($field['dbID']) ? $field['dbID'] : ''), (isset($field['dbLabelField']) ? $field['dbLabelField'] : ''), (isset($field['showSelect']) ? $field['showSelect'] : 'true'), 'Select', '');
+                                $options = self::RecordSetToDropDown($field['query'], isset($field['value']) ? $field['value'] : '', (isset($field['dbID']) ? $field['dbID'] : ''), (isset($field['dbLabelField']) ? $field['dbLabelField'] : ''), (isset($field['showSelect']) ? $field['showSelect'] : 'true'), 'Select', '');
                                 break;
                             case 'globalarray': // run from global Array
                                 $array = $GLOBALS[(isset($field['arrayname']) ? $field['arrayname'] : '')];
@@ -1127,7 +1122,7 @@ class UI
                                         ' ' => 'Select',
                                     ) + $array;
                                 }
-                                $options = ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
+                                $options = self::ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
                                 break;
                             case 'array': // array pass along.
                                 $array = (isset($field['arrayname']) ? $field['arrayname'] : array());
@@ -1136,7 +1131,7 @@ class UI
                                         ' ' => 'Select',
                                     ) + $array;
                                 }
-                                $options = ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
+                                $options = self::ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
                                 break;
                         }
                     } catch (\Exception $ex) {
@@ -1274,8 +1269,7 @@ class UI
         return $HTML;
     }
 
-
-     /**
+    /**
      * Display the UI message on screen for form.
      *
      * @param unknown_type $messages
@@ -1303,6 +1297,4 @@ class UI
 
         return $returnString;
     }
-
-  
 }
