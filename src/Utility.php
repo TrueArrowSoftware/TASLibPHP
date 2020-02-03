@@ -1,7 +1,7 @@
 <?php
 
 namespace TAS\Core;
-
+use PHPMailer\PHPMailer\PHPMailer;
 class Utility
 {
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
@@ -57,7 +57,7 @@ class Utility
         }
 
         $reportContent['MetaExtra'] = '';
-        $content = InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].DIRECTORY_SEPARATOR.$template, $reportContent);
+        $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].DIRECTORY_SEPARATOR.$template, $reportContent);
         file_put_contents($htmlfilepath, $content);
         $pdfpath = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.$filename;
         $out = 1;
@@ -451,7 +451,7 @@ class Utility
             $sender = $GLOBALS['AppConfig']['SenderEmail'];
         }
 
-        $row = GetEmailContent($EmailID);
+        $row = UI::GetEmailContent($EmailID);
         $finalcontent = $row['content'];
         if (is_array($row)) {
             $sendername = ($sender == $GLOBALS['AppConfig']['SenderEmail']) ? $GLOBALS['AppConfig']['SiteName'] : $sender;
@@ -463,10 +463,10 @@ class Utility
                 $finalcontent = str_replace('{Content}', $row['content'], $finalcontent);
             }
 
-            $content = PrepareContent($finalcontent, $keywords);
-            $subject = PrepareContent($row['subject'], $keywords);
+            $content = TemplateHandler::PrepareContent($finalcontent, $keywords);
+            $subject = TemplateHandler::PrepareContent($row['subject'], $keywords);
 
-            return SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
+            return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
         } else {
             return false;
         }

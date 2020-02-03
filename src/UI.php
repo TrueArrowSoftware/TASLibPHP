@@ -429,7 +429,7 @@ class UI
                                 break;
                         case 'phone':
                             if ($row[$field] != '') {
-                                $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], 10);
+                                $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
                             } else {
                                 $fielddata = $row[$field];
                             }
@@ -800,7 +800,7 @@ class UI
                                     break;
                             case 'phone':
                                 if ($row[$field] != '') {
-                                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], 10);
+                                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
                                 } else {
                                     $fielddata = $row[$field];
                                 }
