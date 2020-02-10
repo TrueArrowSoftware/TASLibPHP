@@ -24,7 +24,7 @@ class UserFile
         } else {
             $this->BaseUrl = str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['REQUEST_URI']).'/upload/';
         }
-        $GLOBALS['db'] = isset($GLOBALS['db']) ? $GLOBALS['db'] : null;
+        $GLOBALS['db'] = $GLOBALS['db'] ?? null;
     }
 
     /**
@@ -82,7 +82,7 @@ class UserFile
     {
         $count = $GLOBALS['db']->FetchArray($GLOBALS['db']->Execute("SHOW TABLE STATUS LIKE '".$GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]."'"));
         $count = $count['Auto_increment'];
-        $count = floor($count / \TAS\Core\UserFile::$MAX_FILE_PER_FOLDER);
+        $count = floor($count / self::$MAX_FILE_PER_FOLDER);
 
         $this->FullPath = $this->Path.DIRECTORY_SEPARATOR.$this->FileType.DIRECTORY_SEPARATOR.$count;
 
@@ -109,11 +109,16 @@ class UserFile
 
     public function FindFolder($fileid, $forURL = false)
     {
-        $folder = floor($fileid / \TAS\Core\UserFile::$MAX_FILE_PER_FOLDER);
+        $folder = floor($fileid / self::$MAX_FILE_PER_FOLDER);
         if ($forURL) {
             return $this->FileType.'/'.$folder;
         } else {
             return $this->FileType.DIRECTORY_SEPARATOR.$folder;
         }
+    }
+
+    public function FindFullPath($fileid)
+    {
+        $this->FullPath = $this->Path.FindFolder($fileid, false);
     }
 }

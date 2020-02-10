@@ -452,6 +452,75 @@ class ImageFile extends \TAS\Core\UserFile
         return $returnSize;
     }
 
+    /**
+     * Create Image URL to use for different size then original.
+     *
+     * @param [type] $path
+     * @param [type] $currenturl
+     * @param [type] $desirewidth
+     * @param [type] $desireheight
+     * @param [type] $noImage
+     * @param [type] $resizeScript
+     *
+     * @return void
+     */
+    public static function GetResizedImageURL($path, $currenturl, $desirewidth, $desireheight, $noImage, $resizeScript)
+    {
+        // Get Image size info
+        if (empty($resizeScript)) {
+            $resizeScript = $GLOBALS['AppConfig']['HomeURL'].'/resize.php';
+        }
+
+        if (!file_exists($path)) {
+            return $noImage;
+        }
+        list($width_orig, $height_orig, $image_type) = @getimagesize($path);
+        $imageOk = true;
+        switch ($image_type) {
+            case 1:
+                $im = imagecreatefromgif($path);
+                break;
+            case 2:
+                $im = imagecreatefromjpeg($path);
+                break;
+            case 3:
+                $im = imagecreatefrompng($path);
+                break;
+            default:
+                $imageOk = false;
+                break;
+        }
+        /**
+         * * calculate the aspect ratio **.
+         */
+        $aspect_ratio = (float) $height_orig / $width_orig;
+        $desireRatio = (float) $desireheight / $desirewidth;
+        $secreturl = substr(md5(base64_encode($path)), 0, 8);
+        $_SESSION[$secreturl] = $path;
+        if ((float) $aspect_ratio == (float) $desireRatio) {
+            // image has perfect ratio, do we need resize?
+            if ($width_orig == $desirewidth) {
+                return $currenturl;
+            } elseif ($width_orig > $desirewidth) {
+                return $resizeScript."?width=$desirewidth&path=".$secreturl;
+            } else {
+                return $currenturl;
+            }
+        } elseif ($aspect_ratio > $desireRatio) { // Image has bigger height
+            if ($height_orig <= $desireheight) { // Height is big then width, but still in our desire length
+                return $currenturl;
+            } else {
+                return $resizeScript."?height=$desireheight&path=".$secreturl;
+            }
+        } else { // width of image is more than height
+            if ($width_orig <= $desirewidth) { // Height is big then width, but still in our desire length
+                return $currenturl;
+            } else {
+                return $resizeScript."?width=$desirewidth&path=".$secreturl;
+            }
+        }
+    }
+
     public function DoResize($img, $thumb_width = 0, $thumb_height = 0, $filename = 'newimage.jpg')
     {
         // Check if GD extension is loaded

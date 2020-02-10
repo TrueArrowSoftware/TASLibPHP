@@ -9,7 +9,7 @@ class UI
         if (is_array($imageObj['thumbnails']) && count($imageObj['thumbnails']) > 0 && isset($imageObj['thumbnails']['w'.$width.'.h'.$height])) {
             return $imageObj['baseurl'].$imageObj['thumbnails']['w'.$width.'.h'.$height];
         } else {
-            return GetResizedImage($imageObj['physicalpath'], $imageObj['url'], $width, $height, $GLOBALS['AppConfig']['NoImage_Listing']);
+            return ImageFile::GetResizedImageURL($imageObj['physicalpath'], $imageObj['url'], $width, $height, $GLOBALS['AppConfig']['NoImage_Listing']);
         }
     }
 
@@ -346,7 +346,8 @@ class UI
                         if (isset($icon['removeOnRowCondition']) && $icon['removeOnRowCondition'] == true && $IsRowCondition == true) {
                             continue;
                         }
-                        $IconHTML = '<li><a class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" data-toggle="tooltip" title="'.$icon['tooltip'].'" data-value="'.$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'" href="'.$icon['link'].(isset($icon['paramname']) ? '?'.$icon['paramname'].'=' : '?id=').$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
+                        $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
+                        $IconHTML = '<li><a '.$target.' class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" data-toggle="tooltip" title="'.$icon['tooltip'].'" data-value="'.$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'" href="'.$icon['link'].(isset($icon['paramname']) ? '?'.$icon['paramname'].'=' : '?id=').$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
                         $option .= $IconHTML;
                     }
                 }
@@ -741,7 +742,8 @@ class UI
                 if (isset($param['extraicons']) && is_array($param['extraicons'])) {
                     foreach ($param['extraicons'] as $icon) {
                         $link = \TAS\Core\Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'].'=' : 'id=').$row[$param['indexfield']]);
-                        $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
+                        $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
+                        $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" '.$target.' data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
                     }
                 }
 
@@ -782,12 +784,12 @@ class UI
                                 if ($fielddata == 'Yes' && isset($val['iconyes'])) {
                                     $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
                                 }
-                                    if ($fielddata == 'No' && isset($val['iconno'])) {
-                                        $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
-                                    }
-                                        $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                        $cssClass = 'gridtable-onoff';
-                                        break;
+                                if ($fielddata == 'No' && isset($val['iconno'])) {
+                                    $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
+                                }
+                                $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
+                                $cssClass = 'gridtable-onoff';
+                                break;
                             case 'flag':
                                 $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
                                 if ($fielddata == 'Yes') {
