@@ -87,10 +87,10 @@ class UI
         return $list;
     }
 
-    public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue, $showSelect = true)
+    public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue,$showSelect = true, $showSelectName='Select')
     {
         if ($showSelect) {
-            $list = '<option value="-1">-- Select --</option>';
+            $list = '<option value="">'.$showSelectName.'</option>';
         } else {
             $list = '';
         }
@@ -101,7 +101,7 @@ class UI
                 $list .= '<option value="'.$i.'">'.$i."</option>\n";
             }
         }
-
+        
         return $list;
     }
 

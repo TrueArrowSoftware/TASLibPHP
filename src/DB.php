@@ -802,4 +802,11 @@ class DB
 
         return $TableArray;
     }
+
+    public static function GetAutoIncrementID($tablename)
+    {
+        $query = "show table status where Name = '".$tablename."'";
+        $result = $GLOBALS['db']->ExecuteScalarRow($query);
+        return $result['Auto_increment'];
+    }
 }

@@ -464,7 +464,7 @@ class ImageFile extends \TAS\Core\UserFile
      *
      * @return void
      */
-    public static function GetResizedImageURL($path, $currenturl, $desirewidth, $desireheight, $noImage, $resizeScript)
+    public static function GetResizedImageURL($path, $currenturl, $desirewidth, $desireheight, $noImage, $resizeScript = '')
     {
         // Get Image size info
         if (empty($resizeScript)) {
