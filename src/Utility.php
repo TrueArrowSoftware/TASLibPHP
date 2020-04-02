@@ -443,10 +443,6 @@ class Utility
      */
     public static function DoEmail($EmailID, $keywords, $to, $sender = null, $attachment = null)
     {
-        if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
-            return false;
-        }
-
         if ($sender == null) {
             $sender = $GLOBALS['AppConfig']['SenderEmail'];
         }
@@ -465,8 +461,24 @@ class Utility
 
             $content = TemplateHandler::PrepareContent($finalcontent, $keywords);
             $subject = TemplateHandler::PrepareContent($row['subject'], $keywords);
-
-            return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
+            $to = strpos($to, ';') > 0 ? explode(';', $to) : explode(',', $to);
+            if (is_array($to)) {
+                $output = true;
+                foreach ($to as $emailto) {
+                    if (!\TAS\Core\DataValidate::ValidateEmail($emailto)) {
+                        return false;
+                    }
+                    if (!self::SendHTMLMail($emailto, $subject, $content, '', $sender, $sendername, $sender, $attachment)) {
+                        $output = false;
+                    }
+                }
+                return $output;
+            } else {
+                if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
+                    return false;
+                }
+                return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
+            }
         } else {
             return false;
         }

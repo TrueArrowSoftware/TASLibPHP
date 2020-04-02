@@ -5,7 +5,7 @@ namespace TAS\Core;
 class DocumentFile extends \TAS\Core\UserFile
 {
     public $LinkerType = '';
-
+    
     public function __construct($linkertype = '')
     {
         $this->init();
@@ -13,7 +13,7 @@ class DocumentFile extends \TAS\Core\UserFile
             $this->LinkerType = $linkertype;
         }
     }
-
+    
     private function init()
     {
         parent::__construct();
@@ -21,12 +21,12 @@ class DocumentFile extends \TAS\Core\UserFile
         $this->LinkerType = 'products';
         $GLOBALS['tables']['documents'] = 'document';
     }
-
+    
     public function Validate($file = '')
     {
         return true;
     }
-
+    
     /**
      * Function To Upload File from $_FILES replicated Array. Also Save files if second parameter is true.
      */
@@ -51,10 +51,13 @@ class DocumentFile extends \TAS\Core\UserFile
                     if (move_uploaded_file($filedata['tmp_name'], $this->FullPath.'/'.$filename)) {
                         if ($save) {
                             $idpart = $this->Save($filename, $filedata, $linkerid);
-                            if ($idpart > 0) {
+                            if(!is_bool($idpart) && (int)$idpart > 0)
+                            {
                                 $filedata['UploadStatus'] = true;
                                 $filedata['ID'] = $idpart;
-                            } else {
+                            }
+                            else
+                            {
                                 $this->SetError('Fail to save in database (File :'.$filedata['name'].')');
                                 $filedata['UploadStatus'] = false;
                             }
@@ -77,10 +80,10 @@ class DocumentFile extends \TAS\Core\UserFile
             }
             $returnfile[$key] = $filedata;
         }
-
+        
         return $returnfile;
     }
-
+    
     public function Save($file, $filedata, $linkerid = '')
     {
         $InsertData['documentcaption'] = $filedata['caption'];
@@ -94,20 +97,21 @@ class DocumentFile extends \TAS\Core\UserFile
         $InsertData['isdefault'] = (isset($filedata['isdefault']) ? $filedata['isdefault'] : 0);
         if (isset($filedata['recordid']) && $filedata['recordid'] > 0) {
             if ($GLOBALS['db']->Update($GLOBALS['tables']['documents'], $InsertData, $filedata['recordid'], 'documentid')) {
-                return true;
+                return (int)$filedata['recordid'];
             } else {
                 return false;
             }
         } else {
             $InsertData['adddate'] = date('Y-m-d H:i:s');
             if ($GLOBALS['db']->Insert($GLOBALS['tables']['documents'], $InsertData)) {
-                return true;
+                $documentid = $GLOBALS['db']->GeneratedID();
+                return (int)$documentid;
             } else {
                 return false;
             }
         }
     }
-
+    
     public function GetDocumentOnLinker($linkerid)
     {
         $document = array();
@@ -129,10 +133,10 @@ class DocumentFile extends \TAS\Core\UserFile
                 $document[$rowdocument['documentid']]['name'] = $rowdocument['originalname'];
             }
         }
-
+        
         return $document;
     }
-
+    
     /**
      * Return the document information.
      *
@@ -158,15 +162,15 @@ class DocumentFile extends \TAS\Core\UserFile
                 $document[$rowdocument['documentid']]['name'] = $rowdocument['originalname'];
             }
         }
-
+        
         return $document;
     }
-
+    
     public static function DownloadURL($document)
     {
         return $GLOBALS['AppConfig']['HomeURL'].'/document/'.$document['id'].'/'.$document['name'];
     }
-
+    
     //Function to delete document on Linker
     public function DeleteDocumentOnLinker($linkerid)
     {
@@ -182,7 +186,7 @@ class DocumentFile extends \TAS\Core\UserFile
         //Clean From DB
         $GLOBALS['db']->Execute('Delete from '.$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid");
     }
-
+    
     //Function to delete document on Linker
     public function DeleteDocument($documentid)
     {
@@ -200,25 +204,25 @@ class DocumentFile extends \TAS\Core\UserFile
         //Clean From DB
         return $GLOBALS['db']->Execute('Delete from '.$GLOBALS['tables']['documents']." where documentid=$documentid");
     }
-
+    
     public function SetFileCaption($documentid, $newCaption)
     {
         if (!empty($documentid) && $documentid > 0 && $newCaption != '') {
             $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['tables']['documents']." where documentid=$documentid");
             if ($GLOBALS['db']->RowCount($documentlist) > 0) {
                 $GLOBALS['db']->Execute('update '.$GLOBALS['tables']['documents']." set documentcaption='".$newCaption."' where documentid=$documentid");
-
+                
                 return true;
             } else {
                 $this->SetError('Invalid data to change File caption');
-
+                
                 return false;
             }
         } else {
             $this->SetError('Invalid data to change File caption');
         }
     }
-
+    
     public static function DocumentForm($actionURL, $formtitle, $documentid = 0)
     {
         if ($documentid > 0) {
@@ -233,7 +237,7 @@ class DocumentFile extends \TAS\Core\UserFile
         } else {
             $D = '';
         }
-
+        
         $form = '<div class="col-md-12 pt-3"> <div class="card card-body card-radius">
 <h2 class="borderbottom-set">'.$formtitle.'</h2>
 <form action="'.$actionURL.'" method="post" class="validate" enctype="multipart/form-data"  novalidate="novalidate">
@@ -258,26 +262,26 @@ class DocumentFile extends \TAS\Core\UserFile
 		</div>
 	</fieldset>
 	</form></div></div></div>';
-
+        
         return $form;
     }
-
+    
     public static function DocumentGrid($linkertype = 'cms', $filters = array(), $parameters = array())
     {
         $SQLQuery['basicquery'] = 'select * from '.$GLOBALS['Tables']['document'];
         $filter = array();
         $filter[] = " linkertype='".$linkertype."'";
-
+        
         if (is_array($filters) && count($filters) > 0) {
             $filter = array_merge($filter, $filters);
         }
-
+        
         if (count($filter) > 0) {
             $SQLQuery['where'] = ' where '.implode(' and ', $filter).' ';
         } else {
             $SQLQuery['where'] = '';
         }
-
+        
         $pages['gridpage'] = $parameters['gridpage']; //$GLOBALS['AppConfig'] ['AdminURL'] . '/docmanager/index.php';
         $pages['edit'] = false;
         $pages['delete'] = $parameters['delete'];  //$GLOBALS['AppConfig'] ['AdminURL'] . '/docmanager/index.php';
@@ -294,9 +298,9 @@ class DocumentFile extends \TAS\Core\UserFile
         $param['allowselection'] = false;
         $param['LinkFirstColumn'] = false;
         $param['MultiTableSearch'] = false;
-
+        
         $extraIcons = array();
-
+        
         $extraIcons[0]['link'] = $parameters['getcode']; //$GLOBALS['AppConfig'] ['AdminURL'] . '/docmanager/getcode.php';
         $extraIcons[0]['iconclass'] = 'fa-external-link-alt';
         $extraIcons[0]['tooltip'] = 'Get Document URL';
@@ -304,11 +308,11 @@ class DocumentFile extends \TAS\Core\UserFile
         $extraIcons[0]['paramname'] = 'documentid';
         $param['extraicons'] = $extraIcons;
         $listing = \TAS\Core\UI::HTMLGridFromRecordSet($SQLQuery, $pages, 'docmanager', $param);
-
+        
         $GLOBALS['pageParse']['MetaExtra'] .= '<script type="text/javascript">$(function(){
     		$(".documentcode").colorbox({iframe: true, width:"80%", height:"80%"});
     	});</script>';
-
+        
         return $listing;
     }
 }
