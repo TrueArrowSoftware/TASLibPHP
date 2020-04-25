@@ -107,7 +107,7 @@ class DataFormat
      *
      * @param string $DBDatedate
      */
-    public static function DBToDateFormat($DBDate, $format = 'm-d-Y')
+    public static function DBToDateFormat($DBDate, $format = 'm/d/Y')
     {
         if (trim($DBDate) != '') {
             try {
@@ -474,5 +474,10 @@ class DataFormat
         $string = preg_replace("/[\s_]/", $replace, $string);
 
         return $string;
+    }
+
+    public static function RemoveNumberFormat(string $number)
+    {
+        return floatval(preg_replace('/[^\d.]/', '', $number));
     }
 }

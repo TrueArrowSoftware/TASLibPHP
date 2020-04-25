@@ -87,7 +87,7 @@ class UI
         return $list;
     }
 
-    public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue,$showSelect = true, $showSelectName='Select')
+    public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue, $showSelect = true, $showSelectName = 'Select')
     {
         if ($showSelect) {
             $list = '<option value="">'.$showSelectName.'</option>';
@@ -101,7 +101,7 @@ class UI
                 $list .= '<option value="'.$i.'">'.$i."</option>\n";
             }
         }
-        
+
         return $list;
     }
 
@@ -436,11 +436,19 @@ class UI
                             }
                             break;
                         case 'date':
-                            $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field]);
+
+                            $format = (isset($val['DateFormat']) ?
+                                $val['DateFormat'] :
+                                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
+
+                            $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
                             break;
                         case 'datetime':
-                            $row[$field];
-                            $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field]);
+                            $format = (isset($val['DateFormat']) ?
+                                 $val['DateFormat'] :
+                                (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
+
+                            $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
                             break;
                         case 'currency':
                             $cssClass = 'gridtable-currency';
@@ -808,11 +816,19 @@ class UI
                                 }
                                 break;
                             case 'date':
-                                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], (isset($param['dateformat']) ? $param['dateformat'] : 'm-d-Y'));
+
+                                $format = (isset($val['DateFormat']) ?
+                                    $val['DateFormat'] :
+                                        (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
+
+                                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
                                 break;
                             case 'datetime':
-                                $row[$field];
-                                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], (isset($param['datetimeformat']) ? $param['datetimeformat'] : 'm/d/Y H:i a'));
+                                $format = (isset($val['DateFormat']) ?
+                                        $val['DateFormat'] :
+                                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
+
+                                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
                                 break;
                             case 'currency':
                                 $cssClass = 'gridtable-currency';

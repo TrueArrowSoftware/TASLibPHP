@@ -147,7 +147,7 @@ class TemplateHandler
         $output .= '<li class="nav-item py-1 text-sm-right">
                         <a class="nav-link btn btn-custom-dashboard text-white" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
                     </li>';
-        $output .= ((!$returnLiOnly) ? '</ul></nav></div>' : '');
+        $output .= ((!$returnLiOnly) ? '</ul></div></div></nav>' : '');
         
         return $output;
     }
@@ -257,7 +257,7 @@ class TemplateHandler
         $output .= '<li class="nav-item py-1 text-sm-right">
                         <a class="nav-link btn btn-custom-dashboard text-white" href="{AdminURL}/logout.php"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
                     </li>';
-        $output .= ((!$returnLiOnly) ? '</ul></nav></div>' : '');
+        $output .= ((!$returnLiOnly) ? '</ul></div></div></nav>' : '');
         
         return $output;
     }

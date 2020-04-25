@@ -497,6 +497,11 @@ class Utility
             $mail->Username = $GLOBALS['AppConfig']['SMTPUsername']; // GMAIL username
             $mail->Password = $GLOBALS['AppConfig']['SMTPPassword'];
         }
+        
+        if ($GLOBALS['AppConfig']['DeveloperMode']==true) {
+            $to = $GLOBALS ['AppConfig'] ['DeveloperEmail'];
+        }
+        
         if ($returnpath != '') {
             $mail->AddReplyTo($returnpath, $returnpath);
         }
