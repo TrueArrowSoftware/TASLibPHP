@@ -11,7 +11,7 @@ class Log
 {
     public static function AddEvent($message, $level)
     {
-        $obj=new \TAS\Core\DataFormat();
+        $obj = new \TAS\Core\DataFormat();
         if (defined('SKIPAUTOLOADERROR')) {
             return true;
         }
@@ -28,7 +28,11 @@ class Log
             'details' => json_encode($message),
             'debugtrace' => '', // print_r(debug_backtrace(),2)
         );
-        $GLOBALS['db']->Insert($GLOBALS['Tables']['log'], $data);
+        if (!isset($GLOBALS['db'])) {
+            \TAS\Core\Log::cLog($data);
+        } else {
+            $GLOBALS['db']->Insert($GLOBALS['Tables']['log'], $data);
+        }
     }
 
     public static function cLog($msg)

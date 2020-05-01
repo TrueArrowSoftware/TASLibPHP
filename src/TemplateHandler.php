@@ -128,7 +128,7 @@ class TemplateHandler
             $output3 = '';
             $isActive = '';
             $ShowParent = false;
-            if (count($v['child']) > 0) {
+            if (isset($v['child']) && count($v['child']) > 0) {
                 $output3 = '<ul class="list-collapse" id="'.$v['anchor'].'">';
                 foreach ($v['child'] as $v2) {
                     $isActive = '';
@@ -176,7 +176,7 @@ class TemplateHandler
                 $isActive = '';
                 $ShowParent = false;
                 
-                if (count($v['child']) > 0) {
+                if (isset($v['child']) && count($v['child']) > 0) {
                     $output3 = '<div class="collapse" data-parent="#accordion" id="'.$v['anchor'].'">
                                 <ul class="submenu">';
                     foreach ($v['child'] as $v2) {
@@ -203,7 +203,19 @@ class TemplateHandler
                     $isActive = ' active';
                 }
                 
-                $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '</a></div>';
+                if(isset($v['type']) && $v['type']=='static')
+                {
+                    $output .= '<div class="card-header primary-bg-color '.(parse_url($v['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI']?'no-dropdown active':'').'">
+                                <a class="card-link text-white static-link" href="'.$v['link'].'">
+                                    ' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '
+                                </a>
+                         </div>';
+                }
+                else
+                {
+                    $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '</a></div>';
+                }
+                
                 $output .= $output3;
                 
             }
@@ -238,7 +250,7 @@ class TemplateHandler
             $output3 = '';
             $isActive = '';
             $ShowParent = false;
-            if (count($v['child']) > 0) {
+            if (isset($v['child']) && count($v['child']) > 0) {
                 $output3 = '<ul class="list-collapse" id="'.$v['anchor'].'">';
                 foreach ($v['child'] as $v2) {
                     $isActive = '';
@@ -278,7 +290,7 @@ class TemplateHandler
                 $isActive = '';
                 $ShowParent = false;
                 
-                if (count($v['child']) > 0) {
+                if (isset($v['child']) && count($v['child']) > 0) {
                     $output3 = '<div class="collapse" data-parent="#accordion" id="'.$v['anchor'].'">
                                 <ul class="submenu">';
                     foreach ($v['child'] as $v2) {
@@ -296,7 +308,19 @@ class TemplateHandler
                     $isActive = ' active';
                 }
                 
-                $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '</a></div>';
+                if(isset($v['type']) && $v['type']=='static')
+                {
+                    $output .= '<div class="card-header primary-bg-color '.(parse_url($v['link'], PHP_URL_PATH) == $_SERVER['REQUEST_URI']?'no-dropdown active':'').'">
+                                <a class="card-link text-white static-link" href="'.$v['link'].'">
+                                    ' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '
+                                </a>
+                         </div>';
+                }
+                else
+                {
+                    $output .= '<div class="card-header primary-bg-color" id="'.$v['anchor'].'1"><a data-toggle="collapse" aria-expanded="false" class="card-link text-white" href="#'.$v['anchor'].'">' . ((isset($v['icon']) && ! empty($v['icon'])) ? '<i class="fas fa-'. $v['icon'] . ' mr-2" aria-hidden="true"></i> ' : '') . _($v['name']) . '</a></div>';
+                }
+                
                 $output .= $output3;
                 
             }

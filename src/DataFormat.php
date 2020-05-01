@@ -17,7 +17,7 @@ class DataFormat
         if (strlen($phone) > 12) {
             $phone = substr($phone, 0, 12);
         }
-
+        
         if (!\TAS\Core\DataValidate::ValidatePhoneFormat($phone, $length)) {
             throw new \Exception("Phone number $phone is not valid.");
         }
@@ -51,12 +51,12 @@ class DataFormat
                 break;
         }
     }
-
+    
     public static function FormatString($str)
     {
         return ucwords(strtolower($str));
     }
-
+    
     /**
      * Validate password security.
      */
@@ -70,7 +70,7 @@ class DataFormat
             return false;
         }
     }
-
+    
     /**
      * Convert Size in Bytes to respective Nice looking format.
      */
@@ -78,10 +78,10 @@ class DataFormat
     {
         $base = log($size) / log(1024);
         $suffixes = array('B', 'K', 'M', 'G', 'T');
-
+        
         return round(pow(1024, $base - floor($base)), $precision).$suffixes[floor($base)];
     }
-
+    
     /**
      * Convert Database based value to presentable format.
      *
@@ -92,7 +92,7 @@ class DataFormat
         if (trim($DBDate) != '') {
             try {
                 $d = new \DateTime($DBDate);
-
+                
                 return $d->format($format);
             } catch (\Exception $err) {
                 return '';
@@ -101,7 +101,7 @@ class DataFormat
             return '';
         }
     }
-
+    
     /**
      * Convert Database DateTime object to Date Only. Look for DBToDateTimeFormat if you need Time as well.
      *
@@ -112,7 +112,7 @@ class DataFormat
         if (trim($DBDate) != '') {
             try {
                 $d = new \DateTime($DBDate);
-
+                
                 return $d->format($format);
             } catch (\Exception $err) {
                 return '';
@@ -121,7 +121,7 @@ class DataFormat
             return '';
         }
     }
-
+    
     /**
      * Return DB Formated Date from user input.
      *
@@ -134,28 +134,28 @@ class DataFormat
         }
         try {
             $d = new \DateTime($date);
-
+            
             return $d !== false ? $d->format('Y-m-d H:i:s') : '';
         } catch (\Exception $err) {
             try {
                 $d = \DateTime::createFromFormat($format, $date);
-
+                
                 return ($d !== false) ? $d->format('Y-m-d H:i:s') : '';
             } catch (\Exception $e2) {
                 return false;
             }
         }
     }
-
+    
     public static function RemoveWhiteSpace($value)
     {
         $value = str_replace("\r", '', $value);
         $value = str_replace("\n", '', $value);
         $value = trim($value, " \t");
-
+        
         return $value;
     }
-
+    
     // Function to Clearup the string
     public static function DoSecure($a_value)
     {
@@ -168,27 +168,27 @@ class DataFormat
             $output = str_replace('<!--', '', $output);
             // Replace JS Tag, HTML tags, etc...
             $search = array(
-            '@<script[^>]*?>.*?</script>@si',
-            '@<[\/\!]*?[^<>]*?>@si',
-            '@([\r\n])[\s]+@',
-        );
+                '@<script[^>]*?>.*?</script>@si',
+                '@<[\/\!]*?[^<>]*?>@si',
+                '@([\r\n])[\s]+@',
+            );
             $replace = array(
-            '',
-            '',
-            '\1',
-        );
+                '',
+                '',
+                '\1',
+            );
             $output = preg_replace($search, $replace, $output);
             $output = htmlspecialchars($output);
         }
-
+        
         return $output;
     }
-
+    
     public static function DBString($a_value)
     {
         return @$GLOBALS['db']->Escape(DataFormat::DoSecure($a_value));
     }
-
+    
     public static function RemoveSlashes($a_value)
     {
         if (is_array($a_value)) {
@@ -203,10 +203,10 @@ class DataFormat
         } else {
             $output = stripslashes($a_value);
         }
-
+        
         return $output;
     }
-
+    
     /**
      * Process an array to be secure.
      *
@@ -225,10 +225,10 @@ class DataFormat
                 }
             }
         }
-
+        
         return $a_value;
     }
-
+    
     /**
      * Humanize the output time.
      *
@@ -242,7 +242,7 @@ class DataFormat
             throw new \InvalidArgumentException('Invalid argument, timestamp must be positive integer');
         }
         $diff = time() - (int) $timestamp;
-
+        
         if ($diff == 0) {
             return 'just now';
         }
@@ -277,10 +277,10 @@ class DataFormat
             ),
         );
         $value = floor($diff / $intervals[1][1]);
-
+        
         return $value.' '.$intervals[1][0].($value > 1 ? 's' : '').' ago';
     }
-
+    
     /**
      * returns the randomly generated string.
      * Default it return 12 char long string, but can be change using Length parameter.
@@ -298,10 +298,10 @@ class DataFormat
                 $string .= $characters[$x];
             }
         } while (!\TAS\Core\DataFormat::ValidatePassword($string));
-
+        
         return $string;
     }
-
+    
     /**
      * Generates the Verification Code from Username.
      *
@@ -314,10 +314,10 @@ class DataFormat
     {
         $verificationCode = $username;
         $verificationCode = md5($username << 2);
-
+        
         return $verificationCode;
     }
-
+    
     /**
      * Clean the given string $v from junk characters.
      *
@@ -339,13 +339,13 @@ class DataFormat
         array_walk($search, function (&$v, $k) {
             $v = '/'.$v.'/i';
         });
-        $replace = '';
-        // echo $output;
-        $output = preg_replace($search, $replace, $output);
-
-        return $output;
+            $replace = '';
+            // echo $output;
+            $output = preg_replace($search, $replace, $output);
+            
+            return $output;
     }
-
+    
     /**
      * Returns a Numeric Get value after checking for security.
      * If $return is bool false, then it do nothing in case of failure but return false
@@ -367,7 +367,7 @@ class DataFormat
             return (int) $_GET[$var];
         }
     }
-
+    
     /**
      * Return the Age in year and month from given timstamp date.
      *
@@ -390,7 +390,7 @@ class DataFormat
             return $diff->y.' yrs';
         }
     }
-
+    
     /**
      * Inverses a provided hex color.
      * If you pass a hex string with a
@@ -409,12 +409,12 @@ class DataFormat
     {
         $color = trim($color);
         $prependHash = false;
-
+        
         if (strpos($color, '#') !== false) {
             $prependHash = true;
             $color = str_replace('#', null, $color);
         }
-
+        
         switch ($len = strlen($color)) {
             case 3:
                 $color = preg_replace('/(.)(.)(.)/', '\\1\\1\\2\\2\\3\\3', $color);
@@ -425,22 +425,22 @@ class DataFormat
                 // trigger_error("Invalid hex length ($len). Must be a minimum length of (3) or maxium of (6) characters", E_USER_ERROR);
                 return '';
         }
-
+        
         if (!preg_match('/^[a-f0-9]{6}$/i', $color)) {
             $color = htmlentities($color);
             trigger_error("Invalid hex string #$color", E_USER_ERROR);
         }
-
+        
         $r = dechex(255 - hexdec(substr($color, 0, 2)));
         $r = (strlen($r) > 1) ? $r : '0'.$r;
         $g = dechex(255 - hexdec(substr($color, 2, 2)));
         $g = (strlen($g) > 1) ? $g : '0'.$g;
         $b = dechex(255 - hexdec(substr($color, 4, 2)));
         $b = (strlen($b) > 1) ? $b : '0'.$b;
-
+        
         return ($prependHash ? '#' : null).$r.$g.$b;
     }
-
+    
     /**
      * RGB to HTML Hex.
      *
@@ -454,7 +454,7 @@ class DataFormat
     {
         return '#'.str_pad(dechex($red), '2', dechex($red)).str_pad(dechex($green), '2', dechex($green)).str_pad(dechex($blue), '2', dechex($blue));
     }
-
+    
     /**
      * Return create slug.
      *
@@ -472,10 +472,10 @@ class DataFormat
         $string = preg_replace("/[\s-]+/", ' ', $string);
         // convert whitespaces and underscore to $replace
         $string = preg_replace("/[\s_]/", $replace, $string);
-
+        
         return $string;
     }
-
+    
     public static function RemoveNumberFormat(string $number)
     {
         return floatval(preg_replace('/[^\d.]/', '', $number));
