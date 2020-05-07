@@ -263,16 +263,16 @@ class DB
     // Function to fetch the array value
     public function FetchArray($result)
     {
-        $row = '';
-        $val = '';
         $this->CleanError();
-        $row = @$result->fetch_array() or $this->SetError($this->MySqlObject->error);
-        if (is_array($row)) {
-            foreach ($row as $key => $val) {
-                $row[$key] = $val;
+        try {
+            $row = @$result->fetch_array();
+            if (!is_array($row)) {
+                $row = false;
             }
-        } else {
-            $row = false;
+        } catch (\Exception $ex) {
+            $this->SetError($this->MySqlObject->error." \r\n".$ex->getMessage());
+
+            return false;
         }
 
         return (is_array($row)) ? $row : false;
@@ -281,16 +281,16 @@ class DB
     // Function to fetch the array value
     public function Fetch($result)
     {
-        $row = '';
-        $val = '';
         $this->CleanError();
-        $row = @$result->fetch_assoc() or $this->SetError($this->MySqlObject->error);
-        if (is_array($row)) {
-            foreach ($row as $key => $val) {
-                $row[$key] = $val;
+        try {
+            $row = $result->fetch_assoc();
+            if (!is_array($row)) {
+                $row = false;
             }
-        } else {
-            $row = false;
+        } catch (\Exception $ex) {
+            $this->SetError($this->MySqlObject->error." \r\n".$ex->getMessage());
+
+            return false;
         }
 
         return (is_array($row)) ? $row : false;
@@ -298,9 +298,17 @@ class DB
 
     public function FetchRow($result)
     {
-        $row = '';
         $this->CleanError();
-        $row = $result->fetch_row() or $this->SetError($this->MySqlObject->error);
+        try {
+            $row = $result->fetch_row();
+            if (!is_array($row)) {
+                $row = false;
+            }
+        } catch (\Exception $ex) {
+            $this->SetError($this->MySqlObject->error." \r\n".$ex->getMessage());
+
+            return false;
+        }
 
         return (is_array($row)) ? $row : false;
     }
@@ -611,7 +619,7 @@ class DB
                 $cName = array_keys($rowdata);
                 $rows[] = "('".implode("','", $rowdata)."')";
             } else {
-                $this->SetError('InsertBulk:: Some data is not valid; '.print_r($rowdata));
+                $this->SetError('InsertBulk:: Some data is not valid; '.print_r($rowdata, true));
                 if ($failonError) {
                     return false;
                 }
@@ -807,6 +815,7 @@ class DB
     {
         $query = "show table status where Name = '".$tablename."'";
         $result = $GLOBALS['db']->ExecuteScalarRow($query);
+
         return $result['Auto_increment'];
     }
 }

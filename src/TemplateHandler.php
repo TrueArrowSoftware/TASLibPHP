@@ -105,10 +105,10 @@ class TemplateHandler
         if (!$returnLiOnly) {
             $output = '<nav class="navbar navbar-expand-lg bg-custom p-0">
                           <div class="col-lg-3 col-md-4 px-0 logo-trigger-btn">
-                              <button type="button" id="leftsideCollapse" class="btn btn-custom primary-bg-color-dark p-0">
-                                  <span class="menu-icon leftmenutrigger text-white right-side"><i class="fas fa-arrow-left"></i></span>
-                              </button>
-                              <a class="navbar-brand logo text-white py-0" href="{AdminURL}">'.$GLOBALS['AppConfig']['SiteName'].'</a>
+                            <button type="button" id="leftsideCollapse" class="btn btn-custom primary-bg-color-dark p-0">
+                              <span class="menu-icon leftmenutrigger text-white right-side"><i class="fas fa-angle-double-left"></i></span>
+                            </button>
+                              <a class="navbar-brand logo text-white py-0" href="{AdminURL}">'.(isset($GLOBALS['AppConfig']['LogoURL']) && $GLOBALS['AppConfig']['LogoURL']!=''?'<img src="'.$GLOBALS['AppConfig']['LogoURL'].'" class="img-responsive logo-size">':$GLOBALS['AppConfig']['SiteName']).'</a>
                           </div>
                           <div class="col-lg-9 col-md-8 px-0 topright-menu">
                               <div class="navbar-collapse" id="navbarText">
@@ -236,7 +236,7 @@ class TemplateHandler
             $output = '<nav class="navbar navbar-expand-lg bg-custom p-0">
                           <div class="col-lg-3 col-md-4 px-0 logo-trigger-btn">
                               <button type="button" id="leftsideCollapse" class="btn btn-custom primary-bg-color-dark p-0">
-                                  <span class="menu-icon leftmenutrigger text-white right-side"><i class="fas fa-arrow-left"></i></span>
+                                  <span class="menu-icon leftmenutrigger text-white right-side"><i class="fas fa-angle-double-left"></i></span>
                               </button>
                               <a class="navbar-brand logo text-white py-0" href="{AdminURL}">'.$GLOBALS['AppConfig']['SiteName'].'</a>
                           </div>

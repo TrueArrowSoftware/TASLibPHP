@@ -159,784 +159,131 @@ class UI
     }
 
     /**
-     * Create HTML Grid for given tagname,.
+     * @deprecated 2.0.0
+     * 
+     * To create a grid based on permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
-     * @param array  $SQLQuery
-     *                         SQLQuery is an array of three part mainly basicquery/where/orderby, orderby will again be an array
-     * @param array  $pages
-     *                         is list of various pages in grid, edit/delete/add etc
-     * @param string $tagname
-     *                         is for storing this grid related data in this tag
-     * @param array  $param
-     *                         contain other various value, must be an array
+     * @param [type] $SQLQuery
+     * @param [type] $pages
+     * @param [type] $tagname
+     * @param array $param
+     * @return void
      */
     public static function HTMLGridFromRecordSet($SQLQuery, $pages, $tagname, $param = array())
     {
-        $listing = '';
-        $startpage = ((isset($_GET['page']) && is_numeric($_GET['page'])) ? $_GET['page'] : 1);
-        $pagesize = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
-        $start = ($startpage - 1) * $pagesize;
+        $options = \TAS\Core\Grid::DefaultOptions();
+        $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
 
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
-        $_SESSION[$tagname.'_direction'] = $orderdirection;
-        $_SESSION[$tagname.'_orderby'] = $orderby;
+        $queryoptions['basicquery'] = $SQLQuery['basicquery'];
+        $queryoptions['defaultorderby'] = (isset($param['defaultorder']) ? $param['defaultorder'] : '');
+        $queryoptions['defaultsortdirection'] = (isset($param['defaultsort']) ? $param['defaultsort'] : '');
+        $queryoptions['whereconditions'] = $SQLQuery['where'];
+        $queryoptions['pagingquery'] = (isset($SQLQuery['pagingQuery']) ? $SQLQuery['pagingQuery'] : '');
+        $queryoptions['pagingqueryend'] = (isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : '');
+        $queryoptions['indexfield'] = $param['indexfield'];
+        $queryoptions['orderby'] = (isset($SQLQuery['orderby']) ? $SQLQuery['orderby'] : '');
+        $queryoptions['noorderby'] = (isset($SQLQuery['noorder']) ? $SQLQuery['noorder'] : '');
+        $queryoptions['recordshowlimit'] = (isset($SQLQuery['showonly']) ? $SQLQuery['showonly'] : 0);
+        $queryoptions['tablename'] = (isset($SQLQuery['tablename']) ? $SQLQuery['tablename'] : '');
 
-        $sortstring = '';
-        if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
-            foreach ($SQLQuery['orderby'] as $key => $val) {
-                $tmpsplit = explode(' ', $val);
-                if (strtolower($val) != strtolower($orderby.' '.$orderdirection)) {
-                    $sortstring .= ', '.$val;
+        $options['gridurl'] = $pages['gridpage'];
+        $options['gridid'] = $param['tablename'];
+        $options['tagname'] = $tagname;
+        $options['pagesize'] = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
+        $options['allowsorting'] = (isset($param['allowsort']) ? $param['allowsort'] : true);
+        $options['allowpaging'] = (isset($param['nopaging']) ? !$param['nopaging'] : true);
+        $options['showtotalrecord'] = true;
+        $options['totalrecordtext'] = '{totalrecord} Records';
+        $options['allowselection'] = $param['allowselection'];
+        $options['roworder'] = (isset($param['AllowRowSort']) ? $param['AllowRowSort'] : false);
+        $options['fields'] = $param['fields'];
+
+        $options['rowconditioncallback'] = (isset($param['rowconditioncb']) ? $param['rowconditioncb'] : null);
+        $options['dateformat'] = 'm/d/Y';
+        $options['datetimeformat'] = 'm/d/Y H:i a';
+        $options['norecordtext'] = 'No Record Found';
+
+        $grid = new \TAS\Core\Grid($options, $queryoptions);
+
+        $defaulticons = $grid->DefaultIcon();
+        foreach ($defaulticons as $index => $icon) {
+            if ($index == 'edit') {
+                if ($pages['edit'] == false || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', $GLOBALS['user']->UserRoleID)) {
+                    unset($defaulticons[$index]);
+                }
+            } elseif ($index == 'delete') {
+                if ($pages['delete'] == false || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', $GLOBALS['user']->UserRoleID)) {
+                    unset($defaulticons[$index]);
                 }
             }
         }
-        $sortstring = trim($sortstring, ',');
 
-        if (isset($param['nopaging']) && $param['nopaging'] === true) {
-            $param['nopaging'] = true;
-            $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring ";
-        } else {
-            if (isset($param['showonly']) && is_numeric($param['showonly'])) {
-                $param['nopaging'] = false;
-                $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring limit ".(int) $param['showonly'];
-            } else {
-                $param['nopaging'] = false;
-                $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring limit $start, ".$pagesize;
-            }
-        }
+        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : array()));
 
-        $filter = '';
-        $defaultpage = (!isset($pages['gridpage']) || $pages['gridpage'] == '') ? 'index.php' : $pages['gridpage'];
-        $pagingPage = $defaultpage;
-        $newdirection = (strtolower($orderdirection) == 'asc') ? 'desc' : 'asc';
-
-        $page = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage.'&direction='.$newdirection);
-        $corepage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
-
-        if (isset($_GET['direction'])) {
-            $filter .= '&direction='.$orderdirection;
-        }
-        if (isset($_GET['orderby'])) {
-            $filter .= '&orderby='.$orderby;
-        }
-        $rs = $GLOBALS['db']->Execute($query);
-        if ($GLOBALS['AppConfig']['DebugMode']) {
-            echo $query;
-        }
-        if ($GLOBALS['db']->RowCount($rs) > 0) {
-            $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$SQLQuery['basicquery'].$SQLQuery['where'].') t');
-
-            $listing .= '<section class="content-section">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="content-area col-md-12 px-0">
-            <div class="col-lg-12 col-md-12 px-0">
-              <div class="card">
-                <div class="card-body"><h6>'.$TotalRecordCount.' Records </h6>';
-
-            if (isset($param['allowselection']) && $param['allowselection']) {
-                $ShowSelection = true;
-            } else {
-                $ShowSelection = false;
-            }
-            $totalfield = 1;
-            $allowRowSorting = ((isset($param['AllowRowSort']) && $param['AllowRowSort'] == true) ? 'tablesort' : '');
-            $listing .= '<div class="table-responsive">
-                            <table class="table table-striped '.$allowRowSorting.'"  data-url="'.$defaultpage.'" id="'.((isset($param['tablename'])) ? $param['tablename'] : 'usergrid').'">';
-            $listing .= '
-			<thead>
-				<tr>';
-            if ($ShowSelection) {
-                $listing .= '<th><input type="checkbox" name="select_'.$tagname.'" id="select_'.$tagname.'" class="checkall"></th>';
-                ++$totalfield;
-            }
-
-            $RemoveFieldOption = false;
-
-            if ($pages['edit'] == false && $pages['delete'] == false) {
-                $RemoveFieldOption = true;
-            }
-            if (isset($param['extraicons']) && is_array($param['extraicons']) && count($param['extraicons']) > 0) {
-                $RemoveFieldOption = false;
-            }
-            if ($RemoveFieldOption) {
-                --$totalfield;
-            }
-            foreach ($param['fields'] as $field => $val) {
-                $sorticon = '';
-                if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                    if (strtolower($orderdirection) == 'asc') {
-                        $sorticon = '<a class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&orderby='.$field.'">
-						<i class="fas fa-sort-alpha-up"></i></a>';
-                    } else {
-                        $sorticon = '<a  class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&orderby='.$field.'">
-						<i class="fas fa-sort-alpha-down"></i></a>';
-                    }
-                }
-                $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
-                $Label = isset($val['label']) ? $val['label'] : $val['name'];
-                switch ($val['type']) {
-                    case 'longstring':
-                        $count = count($param['fields']);
-                        ++$count;
-                        $count = (int) ((2 / $count) * 100);
-                        $listing .= '<th class="longstring" style="min-width: '.$count.'%;">';
-                        break;
-                    case 'flag':
-                        $listing .= '<th class="flag" style="width: 20px;">';
-                        break;
-                    case 'currency':
-                        $listing .= '<th class="currency">';
-                        break;
-                    case 'number':
-                        $listing .= '<th class="number">';
-                        break;
-                    default:
-                        $listing .= '<th>';
-                        break;
-                }
-                if (isset($param['allowsort']) && $param['allowsort'] === false) {
-                    $listing .= $Text;
-                } else {
-                    $listing .= '<a href="'.$page.'&orderby='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
-                }
-                ++$totalfield;
-            }
-            if (!$RemoveFieldOption) {
-                $listing .= '	<th><a href="#">Options</a></th>';
-            }
-            $listing .= '	</tr>';
-
-            if (isset($param['MultiTableSearch']) && $param['MultiTableSearch'] == true) {
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tr><td class="pager" colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['pagingQuery'].$SQLQuery['where'].(isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : ''), $filter, true, array(
-                        'pagesize' => $pagesize,
-                    )).'</td></tr>';
-                }
-            } else {
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tr><td class="pager"  colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['where'], $filter, false, array(
-                        'pagesize' => $pagesize,
-                    )).'</td></tr>';
-                }
-            }
-
-            $listing .= '</thead><tbody>';
-            $alt = true;
-            $total = array();
-            while ($row = $GLOBALS['db']->FetchArray($rs)) {
-                $option = '';
-                if ($GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', $GLOBALS['user']->UserRoleID) && $pages['edit'] !== false) {
-                    $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-primary edit" data-toggle="tooltip" title="Edit" href="'.$pages['edit'].'?'.(isset($param['editparamname']) ? $param['editparamname'] : 'id').'='.$row[$param['indexfield']].'"><i class="fas fa-edit"></i></a></li>';
-                }
-                if ($GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', $GLOBALS['user']->UserRoleID) && $pages['delete'] !== false) {
-                    if (is_bool(strstr($pages['delete'], '?')) && strstr($pages['delete'], '?') == false) {
-                        $deletelink = $pages['delete'].'?'.(isset($param['deleteparamname']) ? $param['deleteparamname'] : 'delete').'='.$row[$param['indexfield']];
-                    } else {
-                        $deletelink = $pages['delete'].'&'.(isset($param['deleteparamname']) ? $param['deleteparamname'] : 'delete').'='.$row[$param['indexfield']];
-                    }
-                    $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-danger delete" data-toggle="tooltip" title="Delete" href="'.$deletelink.'" '.(isset($param['deletecustommessage']) ? 'data-custommessage="'.\TAS\Core\TemplateHandler::PrepareContent($param['deletecustommessage'], array(
-                        'id' => $row[$param['indexfield']],
-                    )) : '').'" '.'><i class="fas fa-trash-alt"></i></a></li>';
-                }
-
-                if (isset($param['extraicons']) && is_array($param['extraicons'])) {
-                    foreach ($param['extraicons'] as $icon) {
-                        if (isset($icon['removeOnRowCondition']) && $icon['removeOnRowCondition'] == true && $IsRowCondition == true) {
-                            continue;
-                        }
-                        $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
-                        $IconHTML = '<li><a '.$target.' class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" data-toggle="tooltip" title="'.$icon['tooltip'].'" data-value="'.$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'" href="'.$icon['link'].(isset($icon['paramname']) ? '?'.$icon['paramname'].'=' : '?id=').$row[(isset($icon['indexfield']) ? $icon['indexfield'] : $param['indexfield'])].'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
-                        $option .= $IconHTML;
-                    }
-                }
-
-                $additionalClass = '';
-                if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
-                    if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
-                        $additionalClass = $param['rowcondition']['cssclass'];
-                    } else {
-                        $additionalClass = '';
-                    }
-                } else {
-                    $additionalClass = '';
-                }
-
-                if (isset($param['rowconditioncb']) && $param['rowconditioncb'] != '' && function_exists($param['rowconditioncb'])) {
-                    /**
-                     * Call Back function Definiation is function xyz ($row, $additionalClass) { }.
-                     */
-                    $additionalClass = call_user_func($param['rowconditioncb'], $row, $additionalClass);
-                }
-
-                $listing .= "\n".'<tr data-id="'.$row[$param['indexfield']].'" id="row_'.$row[$param['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';
-
-                if ($ShowSelection) {
-                    $listing .= '<td><input type="checkbox" name="select_'.$tagname.'_'.$row[$param['indexfield']].'" id="select_'.$tagname.'_'.$row[$param['indexfield']].'" class="checkall_child"></td>';
-                }
-                $fieldCounter = 0;
-                foreach ($param['fields'] as $field => $val) {
-                    $fielddata = '';
-                    $cssClass = '';
-                    switch ($val['type']) {
-                        case 'globalarray':
-                            if (isset($val['arrayname'])) {
-                                $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
-                            } else {
-                                $fielddata = $GLOBALS[$field][$row[$field]];
-                            }
-                            break;
-                        case 'string':
-
-                            if (isset($val['length']) && is_numeric($val['length']) && (int) $val['length'] > 0) {
-                                $fielddata = '<span title="'.htmlentities($row[$field]).'">'.substr($row[$field], 0, $val['length']).'</span>';
-                            } else {
-                                $fielddata = $row[$field];
-                            }
-                            break;
-                        case 'longstring':
-                            $fielddata = $row[$field];
-                            break;
-                        case 'onoff':
-                            $fielddata = (((int) $row[$field] === 1 || strtolower($row[$field]) === 'active' || $row[$field] === true || strtolower($row[$field]) === 'yes') ? 'Yes' : 'No');
-
-                            if (isset($val['mode']) && $val['mode'] == 'fa') {
-                                if ($fielddata == 'Yes') {
-                                    $fielddata = ' <i class="fas '.(isset($val['iconyes']) ? $val['iconyes'] : 'fa-heart').' green" aria-hidden="true"></i>';
-                                } else {
-                                    $fielddata = ' <i class="fas '.(isset($val['iconno']) ? $val['iconno'] : 'fa-heart').' red" aria-hidden="true"></i>';
-                                }
-                            } else {
-                                if ($fielddata == 'Yes' && isset($val['iconyes'])) {
-                                    $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
-                                }
-                                if ($fielddata == 'No' && isset($val['iconno'])) {
-                                    $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
-                                }
-                            }
-                            $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                            $cssClass = 'gridtable-onoff';
-                            break;
-                        case 'flag':
-                            $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
-                            if ($fielddata == 'Yes') {
-                                $fielddata = '<img src="'.(isset($val['icon']) ? $val['icon'] : '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
-                            } else {
-                                $fielddata = '';
-                            }
-                                $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                $cssClass = 'gridtable-flag';
-                                break;
-                        case 'phone':
-                            if ($row[$field] != '') {
-                                $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
-                            } else {
-                                $fielddata = $row[$field];
-                            }
-                            break;
-                        case 'date':
-
-                            $format = (isset($val['DateFormat']) ?
-                                $val['DateFormat'] :
-                                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
-
-                            $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
-                            break;
-                        case 'datetime':
-                            $format = (isset($val['DateFormat']) ?
-                                 $val['DateFormat'] :
-                                (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
-
-                            $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
-                            break;
-                        case 'currency':
-                            $cssClass = 'gridtable-currency';
-                            if (isset($val['postsymbol']) && $val['postsymbol']) {
-                                $fielddata = number_format(floatval($row[$field]), 2).$val['postsymbol'];
-                            } else {
-                                $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
-                            }
-                            if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
-                                $total[$field] = (isset($total[$field]) ? $total[$field] : 0.0);
-                                $total[$field] += floatval($row[$field]);
-                            }
-                            break;
-                        case 'numeric':
-                        case 'number':
-                            $cssClass = 'gridtable-currency';
-                            if (isset($val['number-decimal']) && $val['number-decimal']) {
-                                $fielddata = number_format(floatval($row[$field]), 2);
-                            } else {
-                                $fielddata = (int) round(floatval($row[$field]), 4);
-                            }
-
-                            break;
-                        case 'cb':
-                        case 'callback':
-                            $fielddata = call_user_func($val['function'], $row, $field); // @remark, $field data array is only parameter.
-                            break;
-                        case 'image':
-                            $fielddata = '<img src="'.$row[$field].'" class="thumbnailsize">';
-                            break;
-                        case 'color':
-                            $fielddata = '<div class="colordiv" style="background:'.$row[$field].';"></div>';
-                            break;
-                            // case 'json' :
-                            // $fielddata = json_decode($row[$field]) ;
-                            // break;
-                        default:
-                            $fielddata = $row[$field];
-                            break;
-                    }
-
-                    $listing .= "\r\n \t";
-                    if ((isset($param['LinkFirstColumn']) && $param['LinkFirstColumn'] == true && $fieldCounter == 0) && isset($pages['view']) && $pages['view'] !== false) {
-                        $indexID = isset($param['LinkIndexField']) ? 'LinkIndexField' : 'indexfield';
-                        $listing .= '<td class="'.$cssClass.'"><a class="viewlink" href="'.$pages['view'].'?'.(isset($param['viewparamname']) ? $param['viewparamname'] : 'id').'='.$row[$param[$indexID]].'">'.$fielddata.'</a></td>';
-                    } elseif (isset($param['LinkAllColumn']) && $param['LinkAllColumn'] == true && isset($pages['view']) && $pages['view'] !== false) {
-                        $indexID = isset($param['LinkIndexField']) ? 'LinkIndexField' : 'indexfield';
-                        $listing .= '<td class="'.$cssClass.'"><a class="viewlink" href="'.$pages['view'].'?'.(isset($param['viewparamname']) ? $param['viewparamname'] : 'id').'='.$row[$param[$indexID]].'">'.$fielddata.'</a></td>';
-                    } else {
-                        if (isset($val['link'])) {
-                            $linkColumn = str_replace('{1}', $row[$val['linkfield']], $val['link']);
-                            $listing .= '<td class="'.$cssClass.'"><a href="'.$linkColumn.'">'.$fielddata.'</a></td>';
-                        } else {
-                            $listing .= '<td class="'.$cssClass.'">'.$fielddata.'</td>';
-                        }
-                    }
-                    ++$fieldCounter;
-                }
-                if (!$RemoveFieldOption) {
-                    $listing .= '<td class="gridtable-optionrow"><ul class="table-ul">'.$option.'</ul></td></tr>';
-                }
-                $alt = !($alt);
-            }
-
-            if (isset($param['TotalDisplay']) && $param['TotalDisplay'] == true) {
-                $listing .= '<tr class="total">';
-                foreach ($param['fields'] as $field => $val) {
-                    switch ($val['type']) {
-                        case 'currency':
-                            $listing .= '<td class="currency">'.$GLOBALS['AppConfig']['Currency'].number_format($total[$field], 2).'</td>';
-                            break;
-                        case 'number':
-                            $listing .= '<td class="number">'.$GLOBALS['AppConfig']['Currency'].number_format($total[$field], 2).'</td>';
-                            break;
-                        default:
-                            $listing .= '<td>&nbsp;</td>';
-                            break;
-                    }
-                }
-                $listing .= '</tr>';
-            }
-
-            if (isset($param['MultiTableSearch']) && $param['MultiTableSearch'] == true) {
-                $listing .= '</tbody>';
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tfoot><tr><td class="pager" colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['pagingQuery'].$SQLQuery['where'].(isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : ''), $filter, true, array(
-                        'pagesize' => $pagesize,
-                    )).'</td></tr></tfoot>';
-                }
-                $listing .= '</table>
-                                </div>
-                                </div>
-                                </div>
-                            </div>
-                          </div>
-                         </div>
-                         </section>';
-            } else {
-                $listing .= '</tbody>';
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tfoot><tr><td class="pager" colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['where'], $filter, false, array(
-                        'pagesize' => $pagesize,
-                    )).'</td></tr></tfoot>';
-                }
-                $listing .= '</table></div>
-                  </div>
-                </div>
-            </div>
-          </div>
-         </div>
-         </section>';
-            }
-        } else {
-            $listing = '<section class="content-section">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="content-area col-md-12 px-0">
-                                <div class="col-lg-12 col-md-12 px-0">
-                                  <div class="card">
-                                    <div class="card-body"><h6>No '.ucwords($tagname).' information is available ... </h6>
-                                    </div>
-                                  </div>
-                                </div>
-                            </div>
-                          </div>
-                         </div>
-                         </section>';
-        }
-
-        return $listing;
+        return $grid->Render();
     }
 
-    /**
-     * Display the Grid of Given Query.
-     * This do not validate any action button, and do not show Options by default,.
+     /**
+     * @deprecated 2.0.0
+     * 
+     * To create a grid without permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
-     * @param unknown_type $SQLQuery
-     * @param unknown_type $pages
-     * @param unknown_type $tagname
-     * @param unknown_type $param
+     * @param [type] $SQLQuery
+     * @param [type] $pages
+     * @param [type] $tagname
+     * @param array $param
+     * @return void
      */
     public static function HTMLGridForPublic($SQLQuery, $pages, $tagname, $param = array())
     {
-        $listing = '';
-        $startpage = ((isset($_GET['page']) && is_numeric($_GET['page'])) ? $_GET['page'] : 1);
-        $pagesize = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
+        $options = \TAS\Core\Grid::DefaultOptions();
+        $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
 
-        $start = ($startpage - 1) * $pagesize;
+        $queryoptions['basicquery'] = $SQLQuery['basicquery'];
+        $queryoptions['defaultorderby'] = (isset($param['defaultorder']) ? $param['defaultorder'] : '');
+        $queryoptions['defaultsortdirection'] = (isset($param['defaultsort']) ? $param['defaultsort'] : '');
+        $queryoptions['whereconditions'] = $SQLQuery['where'];
+        $queryoptions['pagingquery'] = (isset($SQLQuery['pagingQuery']) ? $SQLQuery['pagingQuery'] : '');
+        $queryoptions['pagingqueryend'] = (isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : '');
+        $queryoptions['indexfield'] = $param['indexfield'];
+        $queryoptions['orderby'] = (isset($SQLQuery['orderby']) ? $SQLQuery['orderby'] : '');
+        $queryoptions['noorderby'] = (isset($SQLQuery['noorder']) ? $SQLQuery['noorder'] : '');
+        $queryoptions['recordshowlimit'] = (isset($SQLQuery['showonly']) ? $SQLQuery['showonly'] : 0);
+        $queryoptions['tablename'] = (isset($SQLQuery['tablename']) ? $SQLQuery['tablename'] : '');
 
-        $param['defaultorder'] = isset($param['defaultorder']) ? $param['defaultorder'] : '';
-        $param['defaultsort'] = isset($param['defaultsort']) ? $param['defaultsort'] : '';
+        $options['gridurl'] = $pages['gridpage'];
+        $options['gridid'] = $param['tablename'];
+        $options['tagname'] = $tagname;
+        $options['pagesize'] = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
+        $options['allowsorting'] = (isset($param['allowsort']) ? $param['allowsort'] : true);
+        $options['allowpaging'] = (isset($param['nopaging']) ? !$param['nopaging'] : true);
+        $options['showtotalrecord'] = true;
+        $options['totalrecordtext'] = '{totalrecord} Records';
+        $options['allowselection'] = $param['allowselection'];
+        $options['roworder'] = (isset($param['AllowRowSort']) ? $param['AllowRowSort'] : false);
+        $options['fields'] = $param['fields'];
 
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
-        $_SESSION[$tagname.'_direction'] = $orderdirection;
-        $_SESSION[$tagname.'_orderby'] = $orderby;
+        $options['rowconditioncallback'] = (isset($param['rowconditioncb']) ? $param['rowconditioncb'] : null);
+        $options['dateformat'] = 'm/d/Y';
+        $options['datetimeformat'] = 'm/d/Y H:i a';
+        $options['norecordtext'] = 'No Record Found';
 
-        $sortstring = '';
-        if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
-            foreach ($SQLQuery['orderby'] as $key => $val) {
-                $tmpsplit = explode(' ', $val);
-                if (strtolower($val) != strtolower($orderby.' '.$orderdirection)) {
-                    $sortstring .= ', '.$val;
+        $grid = new \TAS\Core\Grid($options, $queryoptions);
+        $defaulticons = $grid->DefaultIcon();
+        foreach ($defaulticons as $index => $icon) {
+            if ($index == 'edit') {
+                if ($pages['edit'] == false ) {
+                    unset($defaulticons[$index]);
+                }
+            } elseif ($index == 'delete') {
+                if ($pages['delete'] == false) {
+                    unset($defaulticons[$index]);
                 }
             }
         }
-        $sortstring = trim($sortstring, ',');
+        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : array()));
 
-        $orderLine = '';
-        if (isset($param['noorder']) && $param['noorder'] == true) {
-            $orderLine = ' ';
-        } else {
-            $orderLine = " order by $orderby $orderdirection $sortstring ";
-        }
-
-        if (isset($param['nopaging']) && $param['nopaging'] === true) {
-            $param['nopaging'] = true;
-            $query = $SQLQuery['basicquery'].$SQLQuery['where'].$orderLine;
-        } else {
-            $param['nopaging'] = false;
-            $query = $SQLQuery['basicquery'].$SQLQuery['where'].$orderLine." limit $start, ".$pagesize;
-        }
-
-        $filter = '';
-
-        $defaultpage = (!isset($pages['gridpage']) || $pages['gridpage'] == '') ? 'index.php' : $pages['gridpage'];
-        $pagingPage = $defaultpage;
-        $newdirection = (strtolower($orderdirection) == 'asc') ? 'desc' : 'asc';
-
-        $page = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage.'&direction='.$newdirection);
-        $corepage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
-
-        if (isset($_GET['direction'])) {
-            $filter .= '&direction='.$orderdirection;
-        }
-        if (isset($_GET['orderby'])) {
-            $filter .= '&orderby='.$orderby;
-        }
-        $rs = $GLOBALS['db']->Execute($query);
-        if ($GLOBALS['AppConfig']['DebugMode']) {
-            echo $query;
-        }
-        if ($GLOBALS['db']->RowCount($rs) > 0) {
-            $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$SQLQuery['basicquery'].$SQLQuery['where'].') t');
-
-            $recordText = isset($param['totalRecordText']) ? $param['totalRecordText'] : ' Records';
-            $listing .= '<section class="content-section">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="content-area col-md-12 px-0">
-            <div class="col-lg-12 col-md-12 px-0">
-              <div class="card">
-                <div class="card-body"><h6>'.$TotalRecordCount.' '.$recordText.' </h6>';
-
-            if (isset($param['allowselection']) && $param['allowselection']) {
-                $ShowSelection = true;
-            } else {
-                $ShowSelection = false;
-            }
-            $totalfield = 1;
-
-            $allowRowSorting = ((isset($param['AllowRowSort']) && $param['AllowRowSort'] == true) ? 'tablesort' : '');
-            $listing .= '<div class="table-responsive">
-                            <table class="table table-striped '.$allowRowSorting.'" data-url="'.$defaultpage.'" id="'.((isset($param['tablename'])) ? $param['tablename'] : 'usergrid').'">';
-
-            $listing .= '<thead>
-				<tr>';
-            if ($ShowSelection) {
-                $listing .= '<th style="width: 20px"><input type="checkbox" name="select_'.$tagname.'" id="select_'.$tagname.'" class="checkall"></th>';
-                ++$totalfield;
-            }
-            reset($param['fields']);
-            foreach ($param['fields'] as $field => $val) {
-                $sorticon = '';
-                if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                    if (strtolower($orderdirection) == 'asc') {
-                        $sorticon = '<a style="float:left" class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&orderby='.$field.'">
-						<span class="ui-icon ui-icon-circle-triangle-n"></span></a>';
-                    } else {
-                        $sorticon = '<a style="float:left" class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&orderby='.$field.'">
-						<span class="ui-icon ui-icon-circle-triangle-s"></span></a>';
-                    }
-                }
-                $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
-                $Label = isset($val['label']) ? $val['label'] : $val['name'];
-
-                switch ($val['type']) {
-                    case 'longstring':
-                        $count = count($param['fields']);
-                        ++$count;
-                        $count = (int) ((2 / $count) * 100);
-                        $listing .= '<th style="width:'.$count.'%;">';
-                        break;
-                    case 'flag':
-                        $listing .= '<th style="width: 20px;">';
-                        break;
-                    case 'currency':
-                        $listing .= '<th class="currency">';
-                        break;
-                    case 'number':
-                        $listing .= '<th class="number">';
-                        break;
-                    default:
-                        $listing .= '<th>';
-                        break;
-                }
-                if (isset($param['allowsort']) && $param['allowsort'] === false) {
-                    $listing .= $Text;
-                } else {
-                    $listing .= '<a href="'.$page.'&orderby='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
-                }
-                ++$totalfield;
-            }
-
-            $DoOption = ($pages['edit'] !== false || $pages['delete'] !== false || (isset($param['extraicons']) && count($param['extraicons']) > 0)) ? true : false;
-
-            if ($DoOption) {
-                $listing .= '	<th><a href="#">Options</a></th>';
-            }
-
-            $listing .= '</tr></thead><tbody>';
-            $alt = true;
-
-            while ($row = $GLOBALS['db']->FetchArray($rs)) {
-                $option = '';
-                if ($pages['edit'] !== false) {
-                    $option .= '<li><a class="edit btn btn-icons btn-rounded btn-outline-primary" data-toggle="tooltip" title="Edit" href="'.$pages['edit'].'?'.(isset($param['editparamname']) ? $param['editparamname'] : 'id').'='.$row[$param['indexfield']].'"><span class="ui-icon ui-icon-pencil" ></span><i class="fas fa-edit"></i></a></li>';
-                }
-                if ($pages['delete'] !== false) {
-                    if (is_bool(strstr($pages['delete'], '?')) && strstr($pages['delete'], '?') == false) {
-                        $deletelink = $pages['delete'].'?'.(isset($param['deleteparamname']) ? $param['deleteparamname'] : 'delete').'='.$row[$param['indexfield']];
-                    } else {
-                        $deletelink = $pages['delete'].'&'.(isset($param['deleteparamname']) ? $param['deleteparamname'] : 'delete').'='.$row[$param['indexfield']];
-                    }
-                    $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-danger delete" data-toggle="tooltip" title="Delete" href="'.$deletelink.'" '.(isset($param['deletecustommessage']) ? 'data-custommessage="'.PrepareContent($param['deletecustommessage'], array(
-                            'id' => $row[$param['indexfield']],
-                        )) : '').'" '.'><i class="fas fa-trash"></i></a></li>';
-                }
-                if (isset($param['extraicons']) && is_array($param['extraicons'])) {
-                    foreach ($param['extraicons'] as $icon) {
-                        $link = \TAS\Core\Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'].'=' : 'id=').$row[$param['indexfield']]);
-                        $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
-                        $option .= '<li><a class="btn btn-icons btn-rounded btn-outline-fa-color '.$icon['tagname'].'" '.$target.' data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
-                    }
-                }
-
-                if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
-                    if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
-                        $listing .= "\n".'<tr class="'.(($alt) ? 'gridrow' : 'altgridrow').' '.$param['rowcondition']['cssclass'].'">';
-                    } else {
-                        $listing .= "\n".'<tr class="'.(($alt) ? 'gridrow' : 'altgridrow').'">';
-                    }
-                } else {
-                    $listing .= "\n".'<tr data-id="'.$row[$param['indexfield']].'" id="row_'.$row[$param['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').'">';
-                }
-
-                if ($ShowSelection) {
-                    $listing .= '<td><input type="checkbox" name="select_'.$tagname.'['.$row[$param['indexfield']].']" id="select_'.$tagname.'_'.$row[$param['indexfield']].'" class="checkall_child"></td>';
-                }
-                $fieldCounter = 0;
-                reset($param['fields']);
-                foreach ($param['fields'] as $field => $val) {
-                    $fielddata = '';
-                    $cssClass = '';
-                    switch ($val['type']) {
-                            case 'globalarray':
-                                if (isset($val['arrayname'])) {
-                                    $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
-                                } else {
-                                    $fielddata = $GLOBALS[$field][$row[$field]];
-                                }
-                                break;
-                            case 'string':
-                                $fielddata = $row[$field];
-                                break;
-                            case 'longstring':
-                                $fielddata = $row[$field];
-                                break;
-                            case 'onoff':
-                                $fielddata = (((int) $row[$field] === 1 || strtolower($row[$field]) === 'active' || $row[$field] === true || strtolower($row[$field]) === 'yes') ? 'Yes' : 'No');
-                                if ($fielddata == 'Yes' && isset($val['iconyes'])) {
-                                    $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
-                                }
-                                if ($fielddata == 'No' && isset($val['iconno'])) {
-                                    $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
-                                }
-                                $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                $cssClass = 'gridtable-onoff';
-                                break;
-                            case 'flag':
-                                $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
-                                if ($fielddata == 'Yes') {
-                                    $fielddata = '<img src="'.(isset($val['icon']) ? $val['icon'] : '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
-                                } else {
-                                    $fielddata = '';
-                                }
-                                    $fielddata = '<a href="'.$corepage.'&id='.$row[$param['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                    $cssClass = 'gridtable-flag';
-                                    break;
-                            case 'phone':
-                                if ($row[$field] != '') {
-                                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
-                                } else {
-                                    $fielddata = $row[$field];
-                                }
-                                break;
-                            case 'date':
-
-                                $format = (isset($val['DateFormat']) ?
-                                    $val['DateFormat'] :
-                                        (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
-
-                                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
-                                break;
-                            case 'datetime':
-                                $format = (isset($val['DateFormat']) ?
-                                        $val['DateFormat'] :
-                                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
-
-                                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
-                                break;
-                            case 'currency':
-                                $cssClass = 'gridtable-currency';
-                                if (isset($val['postsymbol']) && $val['postsymbol']) {
-                                    $fielddata = number_format(floatval($row[$field]), 2).$val['postsymbol'];
-                                } else {
-                                    $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
-                                }
-                                break;
-                            case 'numeric':
-                            case 'number':
-                                $cssClass = 'gridtable-currency';
-                                if (isset($val['number-decimal']) && $val['number-decimal']) {
-                                    $fielddata = number_format(floatval($row[$field]), 2);
-                                } else {
-                                    $fielddata = (int) round(floatval($row[$field]), 4);
-                                }
-
-                                break;
-                            case 'cb':
-                            case 'callback':
-                                $fielddata = call_user_func($val['function'], $row, $field); // @remark, $field data array is only parameter.
-                                break;
-                            case 'image':
-                                $fielddata = '<img src="'.(isset($val['prefixUrl']) ? $val['prefixUrl'] : '').$row[$field].'" class="thumbnailsize">';
-                                break;
-                            case 'color':
-                                $fielddata = '<div class="colordiv" style="background:'.$row[$field].';"></div>';
-                                break;
-                            default:
-                                $fielddata = $row[$field];
-                                break;
-                        }
-
-                    $listing .= "\r\n \t";
-                    if ((isset($param['LinkFirstColumn']) && $param['LinkFirstColumn'] == true && $fieldCounter == 0) && isset($pages['view']) && $pages['view'] !== false) {
-                        $indexID = isset($param['LinkIndexField']) ? 'LinkIndexField' : 'indexfield';
-                        $listing .= '<td class="'.$cssClass.'"><a class="viewlink" href="'.$pages['view'].'?'.(isset($param['viewparamname']) ? $param['viewparamname'] : 'id').'='.$row[$param[$indexID]].'">'.$fielddata.'</a></td>';
-                    } elseif (isset($param['LinkAllColumn']) && $param['LinkAllColumn'] == true && isset($pages['view']) && $pages['view'] !== false) {
-                        $indexID = isset($param['LinkIndexField']) ? 'LinkIndexField' : 'indexfield';
-                        $listing .= '<td class="'.$cssClass.'"><a class="viewlink" href="'.$pages['view'].'?'.(isset($param['viewparamname']) ? $param['viewparamname'] : 'id').'='.$row[$param[$indexID]].'">'.$fielddata.'</a></td>';
-                    } else {
-                        if (isset($val['link'])) {
-                            $linkColumn = str_replace('{1}', $row[$val['linkfield']], $val['link']);
-                            $listing .= '<td class="'.$cssClass.'"><a href="'.$linkColumn.'">'.$fielddata.'</a></td>';
-                        } else {
-                            $listing .= '<td class="'.$cssClass.'">'.$fielddata.'</td>';
-                        }
-                    }
-                    ++$fieldCounter;
-                }
-
-                if ($DoOption) {
-                    $listing .= '<td class="gridtable-optionrow"><ul class="table-ul">'.$option.'</ul></td></tr>';
-                }
-                $alt = !($alt);
-            }
-            if (!$DoOption) {
-                --$totalfield;
-            } // Reduce counter as option is not shown
-
-            if (isset($param['MultiTableSearch']) && $param['MultiTableSearch'] == true) {
-                $listing .= '</tbody>';
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tfoot><tr><td class="pager" colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['pagingQuery'].$SQLQuery['where'], $filter, true, array(
-                                'pagesize' => $pagesize,
-                            )).'</td></tr></tfoot>';
-                }
-                $listing .= '</table></div>
-                  </div>
-                </div>
-            </div>
-          </div>
-         </div>
-         </section>';
-            } else {
-                $listing .= '</tbody>';
-                if ($param['nopaging'] == false) {
-                    $listing .= '<tfoot><tr><td class="pager" colspan="'.$totalfield.'">'.\TAS\Core\Utility::Paging($param['tablename'], $pagingPage, $startpage, $SQLQuery['where'], $filter, false, array(
-                                'pagesize' => $pagesize,
-                            )).'</td></tr></tfoot>';
-                }
-                $listing .= '</table></div>
-                  </div>
-                </div>
-            </div>
-          </div>
-         </div>
-         </section>';
-            }
-        } else {
-            $listing = '<section class="content-section">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="content-area col-md-12 px-0">
-                                <div class="col-lg-12 col-md-12 px-0">
-                                  <div class="card">
-                                    <div class="card-body"><h6>No '.ucwords($tagname).' information is available ... </h6>
-                                    </div>
-                                  </div>
-                                </div>
-                            </div>
-                          </div>
-                         </div>
-                      </section>';
-        }
-
-        return $listing;
+        return $grid->Render();
     }
 
     /**
