@@ -37,7 +37,7 @@ class Grid
             'option' => array(), //extraicons
             'rowconditioncallback' => array(),
             'dateformat' => 'm/d/Y',
-            'datetimeformat' => 'm/d/y H:i:a',
+            'datetimeformat' => 'm/d/Y H:i:a',
             'norecordtext' => 'No record found',
             'currentpage' => 1,
         ];
@@ -63,15 +63,14 @@ class Grid
     public function DefaultIcon(): array
     {
         return [
-            'edit'=>[
+            'edit' => [
                 'link' => $this->Options['gridurl'],
                 'iconclass' => 'fa-edit',
                 'tooltip' => 'edit this record',
                 'tagname' => 'edit',
                 'paramname' => 'id',
-                
             ],
-            'delete'=>[                
+            'delete' => [
                 'link' => $this->Options['gridurl'],
                 'iconclass' => 'fa-trash',
                 'tooltip' => 'delete this record',
@@ -92,7 +91,7 @@ class Grid
         $this->QueryOptions['defaultorderby'] = isset($this->QueryOptions['defaultorderby']) ? $this->QueryOptions['defaultorderby'] : '';
         $this->QueryOptions['defaultsortdirection'] = isset($this->QueryOptions['defaultsortdirection']) ? $this->QueryOptions['defaultsortdirection'] : '';
 
-        $orderby = (isset($_GET['ob']) ? $_GET['ob'] : (isset($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob']) ? $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] : $this->QueryOptions['defaultorderby']) );
+        $orderby = (isset($_GET['ob']) ? $_GET['ob'] : (isset($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob']) ? $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] : $this->QueryOptions['defaultorderby']));
         $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : ((isset($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d']) ? $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] : $this->QueryOptions['defaultsortdirection'])));
 
         $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] = $orderdirection;
@@ -114,18 +113,14 @@ class Grid
             $orderLine = ' ';
         } else {
             $orderLine = " order by $orderby $orderdirection $sortstring ";
-            
         }
 
         if (isset($this->Options['allowpaging']) && $this->Options['allowpaging'] === false) {
-            $this->Options['allowpaging'] = true;
             $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine;
-
             if (isset($this->QueryOptions['recordshowlimit']) && is_numeric($this->QueryOptions['recordshowlimit']) && (int) $this->QueryOptions['recordshowlimit'] > 0) {
                 $query = ' limit '.(int) $this->QueryOptions['recordshowlimit'];
             }
         } else {
-            $this->Options['allowpaging'] = false;
             $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine." limit $start, ".$pagesize;
         }
 
@@ -224,7 +219,7 @@ class Grid
                         $listing .= '<th>';
                         break;
                 }
-                if (isset($this->Options['allowsort']) && $this->Options['allowsort'] === false) {
+                if (isset($this->Options['allowsorting']) && $this->Options['allowsorting'] === false) {
                     $listing .= $Text;
                 } else {
                     $listing .= '<a href="'.$page.'&ob='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
@@ -240,7 +235,7 @@ class Grid
             if ($this->Options['allowpaging']) {
                 $pquery = isset($this->QueryOptions['pagingquery']) ? $this->QueryOptions['pagingquery'] : $this->QueryOptions['basicquery'];
                 $pageingrow = '<tr><td class="pager" colspan="'.$totalfield.'">'.
-                    \TAS\Core\Utility::Paging($this->QueryOptions['tablename'], $pagingPage, $startpage, $pquery.$this->this->QueryOptions['whereconditions'].(isset($this->QueryOptions['pagingqueryend']) ? $this->QueryOptions['pagingqueryend'] : ''), $filter, true,
+                    \TAS\Core\Utility::Paging($this->QueryOptions['tablename'], $pagingPage, $startpage, $pquery.$this->QueryOptions['whereconditions'].(isset($this->QueryOptions['pagingqueryend']) ? $this->QueryOptions['pagingqueryend'] : ''), $filter, true,
                             array(
                     'pagesize' => $pagesize,
                 )).'</td></tr>';
@@ -258,7 +253,7 @@ class Grid
                     foreach ($this->Options['option'] as $icon) {
                         $link = \TAS\Core\Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'].'=' : 'id=').$row[$this->QueryOptions['indexfield']]);
                         $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
-                        $option .= '<li><a class="'. $icon['tagname']. ' btn btn-icons btn-rounded btn-outline-fa-color" '.$target.' data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
+                        $option .= '<li><a class="'.$icon['tagname'].' btn btn-icons btn-rounded btn-outline-fa-color" '.$target.' data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
                     }
                 }
 

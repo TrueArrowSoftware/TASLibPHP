@@ -1,7 +1,9 @@
 <?php
 
 namespace TAS\Core;
+
 use PHPMailer\PHPMailer\PHPMailer;
+
 class Utility
 {
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
@@ -248,8 +250,12 @@ class Utility
 
         $nLinks = 10;
         if (!isset($tables[$tablename])) {
-            $tablename = array_keys($GLOBALS['Tables'], $tablename);
-            $tablename = $tablename[0];
+            $_tablename = array_keys($GLOBALS['Tables'], $tablename);
+            if (count($_tablename) > 0) {
+                $tablename = $_tablename[0];
+            } else {
+                throw new \Exception("Invalid table name: $tablename");
+            }
         }
         if ($isMultiTable) {
             $query = $condition;
@@ -472,11 +478,13 @@ class Utility
                         $output = false;
                     }
                 }
+
                 return $output;
             } else {
                 if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
                     return false;
                 }
+
                 return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
             }
         } else {
@@ -497,11 +505,11 @@ class Utility
             $mail->Username = $GLOBALS['AppConfig']['SMTPUsername']; // GMAIL username
             $mail->Password = $GLOBALS['AppConfig']['SMTPPassword'];
         }
-        
-        if ($GLOBALS['AppConfig']['DeveloperMode']==true) {
-            $to = $GLOBALS ['AppConfig'] ['DeveloperEmail'];
+
+        if ($GLOBALS['AppConfig']['DeveloperMode'] == true) {
+            $to = $GLOBALS['AppConfig']['DeveloperEmail'];
         }
-        
+
         if ($returnpath != '') {
             $mail->AddReplyTo($returnpath, $returnpath);
         }

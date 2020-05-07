@@ -160,13 +160,14 @@ class UI
 
     /**
      * @deprecated 2.0.0
-     * 
+     *
      * To create a grid based on permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
      * @param [type] $SQLQuery
      * @param [type] $pages
      * @param [type] $tagname
-     * @param array $param
+     * @param array  $param
+     *
      * @return void
      */
     public static function HTMLGridFromRecordSet($SQLQuery, $pages, $tagname, $param = array())
@@ -184,7 +185,7 @@ class UI
         $queryoptions['orderby'] = (isset($SQLQuery['orderby']) ? $SQLQuery['orderby'] : '');
         $queryoptions['noorderby'] = (isset($SQLQuery['noorder']) ? $SQLQuery['noorder'] : '');
         $queryoptions['recordshowlimit'] = (isset($SQLQuery['showonly']) ? $SQLQuery['showonly'] : 0);
-        $queryoptions['tablename'] = (isset($SQLQuery['tablename']) ? $SQLQuery['tablename'] : '');
+        $queryoptions['tablename'] = (isset($param['tablename']) ? $param['tablename'] : '');
 
         $options['gridurl'] = $pages['gridpage'];
         $options['gridid'] = $param['tablename'];
@@ -210,10 +211,14 @@ class UI
             if ($index == 'edit') {
                 if ($pages['edit'] == false || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', $GLOBALS['user']->UserRoleID)) {
                     unset($defaulticons[$index]);
+                } else {
+                    $defaulticons[$index]['link'] = $pages['edit'];
                 }
             } elseif ($index == 'delete') {
                 if ($pages['delete'] == false || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', $GLOBALS['user']->UserRoleID)) {
                     unset($defaulticons[$index]);
+                } else {
+                    $defaulticons[$index]['link'] = $pages['delete'];
                 }
             }
         }
@@ -223,15 +228,16 @@ class UI
         return $grid->Render();
     }
 
-     /**
+    /**
      * @deprecated 2.0.0
-     * 
+     *
      * To create a grid without permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
      * @param [type] $SQLQuery
      * @param [type] $pages
      * @param [type] $tagname
-     * @param array $param
+     * @param array  $param
+     *
      * @return void
      */
     public static function HTMLGridForPublic($SQLQuery, $pages, $tagname, $param = array())
@@ -272,7 +278,7 @@ class UI
         $defaulticons = $grid->DefaultIcon();
         foreach ($defaulticons as $index => $icon) {
             if ($index == 'edit') {
-                if ($pages['edit'] == false ) {
+                if ($pages['edit'] == false) {
                     unset($defaulticons[$index]);
                 }
             } elseif ($index == 'delete') {
@@ -421,7 +427,6 @@ class UI
         $fieldHTML = array();
         foreach ($param['Fields'] as $i => $field) {
             $fieldtype = $field['type'];
-
             $id = (isset($field['id']) ? $field['id'] : $i);
             $fieldname = (isset($field['field']) ? $field['field'] : $field['Field']);
             $isrequired = (isset($field['required']) ? $field['required'] : false);
