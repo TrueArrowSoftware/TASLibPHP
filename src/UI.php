@@ -182,9 +182,9 @@ class UI
         $queryoptions['pagingquery'] = (isset($SQLQuery['pagingQuery']) ? $SQLQuery['pagingQuery'] : '');
         $queryoptions['pagingqueryend'] = (isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : '');
         $queryoptions['indexfield'] = $param['indexfield'];
-        $queryoptions['orderby'] = (isset($SQLQuery['orderby']) ? $SQLQuery['orderby'] : '');
-        $queryoptions['noorderby'] = (isset($SQLQuery['noorder']) ? $SQLQuery['noorder'] : '');
-        $queryoptions['recordshowlimit'] = (isset($SQLQuery['showonly']) ? $SQLQuery['showonly'] : 0);
+        $queryoptions['orderby'] = (isset($param['orderby']) ? $param['orderby'] : '');
+        $queryoptions['noorderby'] = (isset($param['noorder']) ? $param['noorder'] : '');
+        $queryoptions['recordshowlimit'] = (isset($param['showonly']) ? $param['showonly'] : 0);
         $queryoptions['tablename'] = (isset($param['tablename']) ? $param['tablename'] : '');
 
         $options['gridurl'] = $pages['gridpage'];
@@ -252,10 +252,10 @@ class UI
         $queryoptions['pagingquery'] = (isset($SQLQuery['pagingQuery']) ? $SQLQuery['pagingQuery'] : '');
         $queryoptions['pagingqueryend'] = (isset($SQLQuery['pagingQueryEnd']) ? $SQLQuery['pagingQueryEnd'] : '');
         $queryoptions['indexfield'] = $param['indexfield'];
-        $queryoptions['orderby'] = (isset($SQLQuery['orderby']) ? $SQLQuery['orderby'] : '');
-        $queryoptions['noorderby'] = (isset($SQLQuery['noorder']) ? $SQLQuery['noorder'] : '');
-        $queryoptions['recordshowlimit'] = (isset($SQLQuery['showonly']) ? $SQLQuery['showonly'] : 0);
-        $queryoptions['tablename'] = (isset($SQLQuery['tablename']) ? $SQLQuery['tablename'] : '');
+        $queryoptions['orderby'] = (isset($param['orderby']) ? $param['orderby'] : '');
+        $queryoptions['noorderby'] = (isset($param['noorder']) ? $param['noorder'] : '');
+        $queryoptions['recordshowlimit'] = (isset($param['showonly']) ? $param['showonly'] : 0);
+        $queryoptions['tablename'] = (isset($param['tablename']) ? $param['tablename'] : '');
 
         $options['gridurl'] = $pages['gridpage'];
         $options['gridid'] = $param['tablename'];
