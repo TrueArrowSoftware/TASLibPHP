@@ -229,7 +229,7 @@ class Utility
             } elseif (file_exists($defaultpath.DIRECTORY_SEPARATOR.$classname.'.php')) {
                 $included = true;
                 require_once $defaultpath.DIRECTORY_SEPARATOR.$classname.'.php';
-            } else {
+            } elseif (file_exists($defaultpath.DIRECTORY_SEPARATOR.'class.'.$classname.'.php')) {
                 $included = true;
                 require_once $defaultpath.DIRECTORY_SEPARATOR.'class.'.$classname.'.php';
             }
