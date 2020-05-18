@@ -6,6 +6,8 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 class Utility
 {
+    public static $IncludePath;
+
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
@@ -203,31 +205,38 @@ class Utility
     /**
      * Auto Load implementation to enable Loading of classes from /include/classes folder.
      *
-     * @param unknown_type $classname
+     * @param string $classname
      */
     public static function AutoLoad($classname)
     {
         $defaultpaths[] = $GLOBALS['AppConfig']['PhysicalPath'].'/includes';
         $defaultpaths[] = $GLOBALS['AppConfig']['PhysicalPath'].'/includes/lib';
+        if (is_array(Utility::$IncludePath)) {
+            foreach (Utility::$IncludePath as $path) {
+                $defaultpaths[] = $path;
+            }
+        }
+
         $included = false;
         if (strpos($classname, '\\') > 0) {
             $t = explode('\\', $classname);
             $classname = $t[count($t) - 1];
         }
         foreach ($defaultpaths as $defaultpath) {
-            if (!file_exists($defaultpath.'/class.'.$classname.'.php')) {
-                if (file_exists($defaultpath.'/class.'.strtolower($classname).'.php')) {
-                    $included = true;
-                    require_once $defaultpath.'/class.'.strtolower($classname).'.php';
-                }
+            if (file_exists($defaultpath.DIRECTORY_SEPARATOR.'class.'.strtolower($classname).'.php')) {
+                $included = true;
+                require_once $defaultpath.DIRECTORY_SEPARATOR.'class.'.strtolower($classname).'.php';
+            } elseif (file_exists($defaultpath.DIRECTORY_SEPARATOR.$classname.'.php')) {
+                $included = true;
+                require_once $defaultpath.DIRECTORY_SEPARATOR.$classname.'.php';
             } else {
                 $included = true;
-                require_once $defaultpath.'/class.'.$classname.'.php';
+                require_once $defaultpath.DIRECTORY_SEPARATOR.'class.'.$classname.'.php';
             }
         }
         if (!$included) {
             \TAS\Core\Log::AddEvent(array(
-                'message' => $classname.' is not found fail to load application',
+                'message' => $classname.' is not found. Fail to load required code.',
             ), 'high');
         }
     }

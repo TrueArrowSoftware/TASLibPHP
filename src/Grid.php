@@ -118,7 +118,7 @@ class Grid
         if (isset($this->Options['allowpaging']) && $this->Options['allowpaging'] === false) {
             $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine;
             if (isset($this->QueryOptions['recordshowlimit']) && is_numeric($this->QueryOptions['recordshowlimit']) && (int) $this->QueryOptions['recordshowlimit'] > 0) {
-                $query = ' limit '.(int) $this->QueryOptions['recordshowlimit'];
+                $query .= ' limit '.(int) $this->QueryOptions['recordshowlimit'];
             }
         } else {
             $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine." limit $start, ".$pagesize;
@@ -146,7 +146,7 @@ class Grid
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].') t');
 
-            $recordText = isset($this->Options['totalRecordText']) ? $this->Options['totalRecordText'] : '{totalrecord} records';
+            $recordText = isset($this->Options['totalrecordtext']) ? $this->Options['totalrecordtext'] : '{totalrecord} records';
             $recordText = str_replace('{totalrecord}', $TotalRecordCount, $recordText);
 
             $listing .= '<section class="content-section">
