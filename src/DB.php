@@ -184,7 +184,13 @@ class DB
         }
     }
 
-    // Function to execute Query and return first rows, first column if success else it returns false
+    /**
+     * Execute Query and return first row, first column if success else it returns false.
+     *
+     * @param string $query
+     *
+     * @return void
+     */
     public function ExecuteScalar($query)
     {
         $result = $this->Execute($query);
@@ -206,6 +212,13 @@ class DB
         }
     }
 
+    /**
+     * Returns first row from given query.
+     *
+     * @param [type] $query
+     *
+     * @return void
+     */
     public function ExecuteScalarRow($query)
     {
         $result = $this->Execute($query);
@@ -227,7 +240,15 @@ class DB
         }
     }
 
-    // Function to count the number of rows.
+    /**
+     * @deprecated 2.0.0
+     *
+     *  Return number of rows in give recordset. Use Static function DB::Count instead for shorter syntax.
+     *
+     * @param [type] $result
+     *
+     * @return void
+     */
     public function RowCount($result)
     {
         $this->CleanError();
@@ -240,8 +261,7 @@ class DB
      * Static Function as replacement of RowCount.
      * Returns false if error.
      *
-     * @param
-     *            $result
+     * @param $result
      */
     public static function Count($result)
     {
@@ -250,6 +270,11 @@ class DB
         return (is_numeric($output)) ? $output : -1;
     }
 
+    /**
+     * Return last Generated ID (autoincrement) from last insert.
+     *
+     * @return void
+     */
     public function GeneratedID()
     {
         return $this->MySqlObject->insert_id;
