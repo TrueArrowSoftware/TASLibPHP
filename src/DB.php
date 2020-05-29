@@ -45,6 +45,20 @@ class DB
     private $DBName = 'demo';
 
     /**
+     * Character set.
+     *
+     * @var string
+     */
+    public $Charset = 'utf8';
+
+    /**
+     * Collation.
+     *
+     * @var string
+     */
+    public $Collation = 'utf8mb4_bin';
+
+    /**
      * Returns if database is connected or not.
      *
      * @var bool
@@ -95,6 +109,9 @@ class DB
             throw new \Exception('Unable to connect to database');
         } else {
             $this->_isconnected = true;
+
+            $this->MySqlObject->set_charset($this->Charset);
+            $this->MySqlObject->query('SET collation_connection = '.$this->Collation);
 
             return true;
         }

@@ -37,7 +37,7 @@ class Log
 
     public static function cLog($msg)
     {
-        $logfile = $GLOBALS['AppConfig']['PhysicalPath'].'/cache/log.log';
+        $logfile = $GLOBALS['AppConfig']['PhysicalPath'].'/cache/log'.date('Ymd').'.log';
         if (!file_exists($logfile)) {
             if (!file_exists(dirname($logfile))) {
                 mkdir(dirname($logfile), 0777, true);

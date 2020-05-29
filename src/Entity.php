@@ -215,7 +215,7 @@ class Entity
         $row = $GLOBALS['db']->Fetch($rs);
         foreach ($this as $key => $value) {
             if (isset($row[strtolower($key)])) {
-                $this->{$key} = mb_convert_encoding($row[strtolower($key)], 'utf-8');
+                $this->{$key} = \mb_convert_encoding($row[strtolower($key)], 'utf-8');
             }
         }
         $this->_isloaded = true;
