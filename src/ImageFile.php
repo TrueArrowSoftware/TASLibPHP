@@ -621,31 +621,26 @@ class ImageFile extends \TAS\Core\UserFile
     {
         $imageFile = new ImageFile();
         $imageFile->ThumbnailSize = $GLOBALS['ThumbnailSize'];
-
-        $SQLQuery['basicquery'] = 'select * from '.$GLOBALS['Tables']['images'];
-        $filter = array();
-        $filter[] = " linkertype='".$linkertype."'";
-
-        if (is_array($filters) && count($filters) > 0) {
-            $filter = array_merge($filter, $filters);
-        }
-
-        if (count($filter) > 0) {
-            $SQLQuery['where'] = ' where '.implode(' and ', $filter).' ';
-        } else {
-            $SQLQuery['where'] = '';
-        }
-
-        $pages['gridpage'] = $parameters['gridpage'];
-        $pages['edit'] = false;
-        $pages['delete'] = $parameters['delete'];
-        $param['defaultorder'] = 'imagecaption';
-        $param['defaultsort'] = 'asc';
-        $param['indexfield'] = 'imageid';
-        $param['tablename'] = $GLOBALS['Tables']['images'];
-        $param['fields'] = array(
+        
+        $options = \TAS\Core\Grid::DefaultOptions();
+        $options['gridurl'] = $parameters['gridpage'];
+        $options['gridid'] = $parameters['gridid'] ?? 'mygrid';
+        $options['tagname'] = $parameters['tagname'] ?? 'grid';
+        $options['pagesize'] = $parameters['pagesize'] ?? '50';
+        $options['allowsorting'] = $parameters['allowsorting'] ?? true;
+        $options['allowpaging'] = $parameters['allowpaging'] ?? true;
+        $options['showtotalrecord'] = $parameters['showtotalrecord'] ?? true;
+        $options['totalrecordtext'] = $parameters['totalrecordtext'] ?? '{totalrecord} Images';
+        $options['allowselection'] = $parameters['allowselection'] ?? false;
+        $options['roworder'] = $parameters['roworder'] ?? false;
+        $options['norecordtext'] = $parameters['norecordtext'] ?? 'No image found.';
+        $options['rowconditioncallback'] = $parameters['rowconditioncallback'] ?? array();
+        $options['dateformat'] = $parameters['dateformat'] ?? 'm/d/Y';
+        $options['datetimeformat'] = $parameters['datetimeformat'] ?? 'm/d/Y H:i:a';
+        
+        $options['fields'] = $parameters['fields'] ?? array(
+            'name' => 'ID #',
             'imageid' => array(
-                'name' => 'ID #',
                 'type' => 'numeric',
             ),
             'imagefile' => array(
@@ -661,18 +656,43 @@ class ImageFile extends \TAS\Core\UserFile
                 'type' => 'string',
             ),
         );
-        $param['allowselection'] = false;
-        $param['LinkFirstColumn'] = true;
-        $param['MultiTableSearch'] = false;
-
-        $param['isEditableColumn'] = true;
-        $extraIcons = array();
-
-        $param['extraicons'] = $extraIcons;
-
-        $listing = \TAS\Core\UI::HTMLGridForPublic($SQLQuery, $pages, 'images', $param);
-
-        return $listing;
+        
+        if(isset($parameters['delete']))
+        {
+            $options['option']['delete'] = array(
+                'link' => $parameters['delete'],
+                'iconclass' => 'fa-trash',
+                'tooltip' => 'delete this image',
+                'tagname' => 'delete btn-outline-danger',
+                'paramname' => 'delete',
+            );
+        }
+        
+        $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
+        $queryoptions['basicquery'] = 'select * from '.$GLOBALS['Tables']['images'];
+        $queryoptions['pagingquery'] = "select count(*) from " . $GLOBALS['Tables']['images'];
+        
+        $filter = array();
+        $filter[] = " linkertype='".$linkertype."'";
+        
+        if (is_array($filters) && count($filters) > 0) {
+            $filter = array_merge($filter, $filters);
+        }
+        
+        if(count($filter) > 0) {
+            $queryoptions['whereconditions'] = ' where ' . implode(' and ', $filter) . ' ';
+        } else {
+            $queryoptions['whereconditions'] = ' ';
+        }
+        
+        $queryoptions['defaultorderby'] = $parameters['defaultorderby'] ?? 'imageid';
+        $queryoptions['defaultsortdirection'] = $parameters['defaultsortdirection'] ?? 'asc';
+        $queryoptions['indexfield'] = 'imageid';
+        $queryoptions['recordshowlimit'] = $parameters['recordshowlimit'] ?? 0;
+        $queryoptions['tablename'] = $GLOBALS['Tables']['images'];
+        
+        $grid = new \TAS\Core\Grid($options, $queryoptions);
+        return $grid->Render();
     }
 
     /**
