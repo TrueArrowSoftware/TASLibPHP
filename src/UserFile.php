@@ -119,6 +119,6 @@ class UserFile
 
     public function FindFullPath($fileid)
     {
-        $this->FullPath = $this->Path.FindFolder($fileid, false);
+        $this->FullPath = realpath($this->Path).DIRECTORY_SEPARATOR.$this->FindFolder($fileid, false);
     }
 }

@@ -404,6 +404,41 @@ class ImageFile extends \TAS\Core\UserFile
         }
     }
 
+    public function ResetThumbnails(int $imageid)
+    {
+        ImageFile::DeleteThumbnails($imageid);
+
+        $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from '.$GLOBALS['Tables']['images']." where imageid=$imageid limit 1");
+
+        $folder = $this->FindFolder($imageid);
+
+        $fileparts = explode('.', $rowImage['imagefile']);
+        $fileext = $fileparts[count($fileparts) - 1];
+        $this->FindFullPath($rowImage['imageid']);
+        unset($fileparts[count($fileparts) - 1]);
+        $filenamewithoutExt = implode('.', $fileparts);
+        $this->GenerateThumbnails($this->Path."/$folder/".$rowImage['imagefile'], $filenamewithoutExt, $fileext);
+        $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set thumbnailfile='".json_encode($this->ThumbnailCollection)."' where imageid=".$rowImage['imageid']);
+    }
+
+    public static function DeleteThumbnails(int $imageid)
+    {
+        $imagelist = $GLOBALS['db']->ExecuteScalarRow('Select * from '.$GLOBALS['Tables']['images']." where imageid=$imageid limit 1");
+        $i = new ImageFile();
+        $folder = $i->FindFolder($imageid);
+        if ($imagelist['thumbnailfile'] != '') {
+            $thumbnail = json_decode($imagelist['thumbnailfile'], true);
+            if (is_array($thumbnail)) {
+                foreach ($thumbnail as $key => $size) {
+                    $image = $i->Path."/$folder/".$size;
+                    if (file_exists($image)) {
+                        @unlink($image);
+                    }
+                }
+            }
+        }
+    }
+
     /*
      * @desc : Get the Size to be used for resize function.
      */
