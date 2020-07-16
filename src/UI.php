@@ -125,14 +125,16 @@ class UI
                     'index' => $i,
                     'text' => $v,
                 ));
-                $list .= '<li><input type="'.$type.'" '.(($isrequired) ? ' class="required" ' : '').(($type == 'radio') ? ' value="'.$i.'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$i.']"').' '.(in_array($i, $selectedvalues) ? 'checked="checked"' : '').'>'.$text."</li>\n";
+                $list .= '<li><label class="'.($type=='radio'?'custom-radio':($type=='checkbox'?'custom-checkbox':'customlist')).'">
+                          <input type="'.$type.'" class="form-control '.(($isrequired) ? 'required' : '').'" '.(($type == 'radio') ? ' value="'.$i.'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$i.']"').' '.(in_array($i, $selectedvalues) ? 'checked="checked"' : '').'>
+                          <span class="'.($type=='radio'?'checkmark':($type=='checkbox'?'checkmark-box':'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
             }
             $list .= '</ul>';
         }
-
+        
         return $list;
     }
-
+    
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
         $list = '';
@@ -150,11 +152,13 @@ class UI
             $list .= '<ul class="rslist">';
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
-                $list .= '<li><input type="'.$type.'" '.(($isrequired) ? ' class="required" ' : '').(($type == 'radio') ? ' value="'.$row[$indexCol].'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$row[$indexCol].']"').' '.(in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '').'>'.$text."</li>\n";
+                $list .= '<li><label class="'.($type=='radio'?'custom-radio':($type=='checkbox'?'custom-checkbox':'customlist')).'">
+                          <input type="'.$type.'" class="form-control '.(($isrequired) ? 'required' : '').'" '.(($type == 'radio') ? ' value="'.$row[$indexCol].'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$row[$indexCol].']"').' '.(in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '').'>
+                          <span class="'.($type=='radio'?'checkmark':($type=='checkbox'?'checkmark-box':'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
             }
             $list .= '</ul>';
         }
-
+        
         return $list;
     }
 
@@ -526,7 +530,7 @@ class UI
                 case 'checklist':
                     switch ($field['selecttype']) {
                         case 'array':
-                            $HTML = \TAS\Core\UI::ArrayToCheckRadioList($field['arrayname'], $field['value'], $id);
+                            $HTML = \TAS\Core\UI::ArrayToCheckRadioList($field['arrayname'], $field['value'], $id,'checkbox');
                             break;
                         default:
                             $HTML = \TAS\Core\UI::RecordSetToCheckRadioList($field['recordset'], $field['value'], $field['dbID'], $field['dbLabelField'], $id, $isrequired, 'checkbox');
@@ -539,7 +543,7 @@ class UI
                             $HTML = \TAS\Core\UI::ArrayToCheckRadioList($field['arrayname'], $field['value'], $id, 'radio');
                             break;
                         default:
-                            $HTML = \TAS\Core\UI::RecordSetToCheckRadioList($field['recordset'], $field['value'], $field['dbID'], $field['dbLabelField'], $id, $isrequired, 'radiobutton');
+                            $HTML = \TAS\Core\UI::RecordSetToCheckRadioList($field['recordset'], $field['value'], $field['dbID'], $field['dbLabelField'], $id, $isrequired, 'radio');
                             break;
                     }
                     break;
