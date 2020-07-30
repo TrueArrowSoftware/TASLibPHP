@@ -706,4 +706,10 @@ class Utility
             substr($hash, 20, 12);
             return $guid;
     }
+    
+    public static function CreateGUIDString($length=10) {
+        $GUID = self::CreateGUID();
+        $removeDashGUID = str_replace('-','',$GUID);
+        return substr($removeDashGUID,0,$length);
+    }
 }
