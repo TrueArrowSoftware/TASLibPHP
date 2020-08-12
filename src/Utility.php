@@ -712,4 +712,26 @@ class Utility
         $removeDashGUID = str_replace('-','',$GUID);
         return substr($removeDashGUID,0,$length);
     }
+    
+    function PasswordValidation($password)
+    {
+        $uppercase = preg_match('@[A-Z]@', $password);
+        $lowercase = preg_match('@[a-z]@', $password);
+        $number    = preg_match('@[0-9]@', $password);
+        $specialChars = preg_match('@[^\w]@', $password);
+        
+        if (strlen($password) < 8) {
+            return  "Password should be at least 8 characters in length.";
+        }elseif(!$uppercase){
+            return  "Password must include at least upper case letter.";
+        }elseif(!$lowercase){
+            return  "Password must include at least lower case letter.";
+        }elseif(!$number){
+            return  "Password must include at least one number.";
+        }elseif(!$specialChars){
+            return  "Password must include at least one special character.";
+        }else{
+            return true;
+        }
+    }
 }

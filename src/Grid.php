@@ -31,6 +31,7 @@ class Grid
             'allowpaging' => true,
             'showtotalrecord' => true,
             'totalrecordtext' => '{totalrecord} Records',
+            'optionstext' => 'Options',
             'allowselection' => false,
             'roworder' => false,
             'fields' => array(),
@@ -228,7 +229,7 @@ class Grid
             }
 
             if (!$RemoveFieldOption) {
-                $listing .= '	<th><a href="#">Options</a></th>';
+                $listing .= '	<th><a href="#">'.$this->Options['optionstext'].'</a></th>';
             }
             $listing .= '</tr>';
 
