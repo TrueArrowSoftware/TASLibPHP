@@ -713,7 +713,7 @@ class Utility
         return substr($removeDashGUID,0,$length);
     }
     
-    function PasswordValidation($password)
+    public static function PasswordValidation($password)
     {
         $uppercase = preg_match('@[A-Z]@', $password);
         $lowercase = preg_match('@[a-z]@', $password);

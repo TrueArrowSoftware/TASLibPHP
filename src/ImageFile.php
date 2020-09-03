@@ -6,27 +6,27 @@ class ImageFile extends \TAS\Core\UserFile
 {
     public $LinkerType = '';
 
-    public $ThumbnailSize = array(
-        0 => array(
+    public $ThumbnailSize = [
+        0 => [
             'width' => 400,
             'height' => 300,
-        ),
-        1 => array(
+        ],
+        1 => [
             'width' => 100,
             'height' => 100,
-        ),
-        2 => array(
+        ],
+        2 => [
             'width' => 240,
             'height' => 180,
-        ),
-        3 => array(
+        ],
+        3 => [
             'width' => 300,
             'height' => 300,
-        ),
-    );
+        ],
+    ];
 
     // Should be in form of [0][width]=450, [0][height]=330 etc . works only in case of save function.
-    private $ThumbnailCollection = array();
+    private $ThumbnailCollection = [];
 
     public function __construct()
     {
@@ -54,7 +54,7 @@ class ImageFile extends \TAS\Core\UserFile
     // Also Save files if second parameter is true
     public function Upload($file, $save = true, $linkerid = 0)
     {
-        $returnfile = array();
+        $returnfile = [];
         if (!is_array($file)) {
             return false;
         }
@@ -116,6 +116,13 @@ class ImageFile extends \TAS\Core\UserFile
         $InsertData['updatedate'] = date('Y-m-d H:i:s');
         $InsertData['isdefault'] = (isset($filedata['isdefault']) ? $filedata['isdefault'] : 0);
         $InsertData['tag'] = isset($filedata['tag']) ? $filedata['tag'] : '';
+        $InsertData['settings'] = (isset($filedata['settings']) ? json_encode($filedata['settings']) : '');
+        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from '.$GLOBALS['Tables']['images'].' where linkertype="'.$this->LinkerType.'" and linkerid="'.$linkerid.'"');
+        if ($displayOrder == '') {
+            $displayOrder = 1;
+        }
+        $InsertData['displayorder'] = $displayOrder;
+
         if (isset($filedata['recordid']) && $filedata['recordid'] > 0) {
             if ($GLOBALS['db']->UpdateArray($GLOBALS['Tables']['images'], $InsertData, $filedata['recordid'], 'imageid')) {
                 return true;
@@ -133,16 +140,21 @@ class ImageFile extends \TAS\Core\UserFile
     }
 
     /**
-     * Return images on given LinkerID, however it does use object's linkertype to determine the image, which should be set seperately.
-     * Setting TopOnly to true will return the first image or other an array of images will be returned.
+     * Return images on given LinkerID, however it does use object's linkertype to determine the image, which should be set in LinkerType.
+     *
+     * @param int    $linkerid ID to which this record is associated
+     * @param bool   $toponly  If we find only the first record in order
+     * @param string $orderby  default ordering.
+     *
+     * @return void
      */
-    public function GetImageOnLinker($linkerid, $toponly = false)
+    public function GetImageOnLinker(int $linkerid, bool $toponly = false, string $orderby = 'isdefault desc')
     {
-        $images = array();
+        $images = [];
         if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid order by isdefault desc, imageid asc limit 1");
+            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid order by $orderby limit 1");
         } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid order by isdefault desc, imageid asc");
+            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid order by $orderby");
         }
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
@@ -157,6 +169,8 @@ class ImageFile extends \TAS\Core\UserFile
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
                 $images[$rowImage['imageid']]['status'] = $rowImage['status'];
                 $images[$rowImage['imageid']]['tag'] = $rowImage['tag'];
+                $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
+                $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
                 $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/';
 
@@ -180,27 +194,30 @@ class ImageFile extends \TAS\Core\UserFile
         }
     }
 
-    public static function GetLinkerImage($linkerID, $linkerType, $topOnly = false)
+    /**
+     * Overloaded function for GetImageOnLinker but with LinkerType as option.
+     *
+     * @return void
+     */
+    public static function GetLinkerImage(int $linkerID, string $linkerType, bool $topOnly = false, string $orderby = 'isdefault desc')
     {
         $files = new ImageFile();
         $files->LinkerType = $linkerType;
 
-        return $files->GetImageOnLinker($linkerID, $topOnly);
+        return $files->GetImageOnLinker($linkerID, $topOnly, $orderby);
     }
 
     /**
      * Return all image of object's linker type.
      * Setting TopOnly to true will return first image.
-     *
-     * @param unknown_type $toponly
      */
-    public function GetImageLinkerType($toponly = false)
+    public function GetImageLinkerType(bool $toponly = false, string $orderby = 'isdefault desc')
     {
-        $images = array();
+        $images = [];
         if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by isdefault desc, imageid asc limit 1");
+            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by $orderby limit 1");
         } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by isdefault desc, imageid asc");
+            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by $orderby");
         }
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
@@ -216,6 +233,8 @@ class ImageFile extends \TAS\Core\UserFile
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
                 $images[$rowImage['imageid']]['status'] = $rowImage['status'];
                 $images[$rowImage['imageid']]['tag'] = $rowImage['tag'];
+                $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
+                $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
                 $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/';
 
@@ -238,10 +257,18 @@ class ImageFile extends \TAS\Core\UserFile
         }
     }
 
-    public function GetImage($imageid)
+    /**
+     * Find image on given ImageID.
+     *
+     * @param [type] $imageid
+     * @param string $orderby
+     *
+     * @return array
+     */
+    public function GetImage($imageid, $orderby = 'isdefault desc')
     {
-        $images = array();
-        $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid=$imageid order by isdefault desc, imageid asc");
+        $images = [];
+        $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid=$imageid order by $orderby");
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
@@ -256,6 +283,8 @@ class ImageFile extends \TAS\Core\UserFile
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
                 $images[$rowImage['imageid']]['status'] = $rowImage['status'];
                 $images[$rowImage['imageid']]['tag'] = $rowImage['tag'];
+                $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
+                $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
@@ -279,7 +308,7 @@ class ImageFile extends \TAS\Core\UserFile
     // Function to delete Image on Linker
     public function DeleteImageOnLinker($linkerid)
     {
-        $images = array();
+        $images = [];
         $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid");
         // Remove Physical File
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
@@ -310,7 +339,7 @@ class ImageFile extends \TAS\Core\UserFile
     // Function to delete Image on Linker
     public function DeleteImage($imageid)
     {
-        $images = array();
+        $images = [];
         $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid=$imageid");
         // Remove Physical File
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
@@ -444,7 +473,7 @@ class ImageFile extends \TAS\Core\UserFile
      */
     public function GetResizedImage($path, $desirewidth, $desireheight)
     {
-        $returnSize = array();
+        $returnSize = [];
         $returnSize['width'] = $desirewidth;
         $returnSize['height'] = $desireheight;
         // Get Image size info
@@ -652,7 +681,7 @@ class ImageFile extends \TAS\Core\UserFile
      *
      * @return string
      */
-    public static function ImageGrid($linkertype = 'cms', $filters = array(), $parameters = array())
+    public static function ImageGrid($linkertype = 'cms', $filters = [], $parameters = [])
     {
         $imageFile = new ImageFile();
         $imageFile->ThumbnailSize = $GLOBALS['ThumbnailSize'];
@@ -669,44 +698,44 @@ class ImageFile extends \TAS\Core\UserFile
         $options['allowselection'] = $parameters['allowselection'] ?? false;
         $options['roworder'] = $parameters['roworder'] ?? false;
         $options['norecordtext'] = $parameters['norecordtext'] ?? 'No image found.';
-        $options['rowconditioncallback'] = $parameters['rowconditioncallback'] ?? array();
+        $options['rowconditioncallback'] = $parameters['rowconditioncallback'] ?? [];
         $options['dateformat'] = $parameters['dateformat'] ?? 'm/d/Y';
         $options['datetimeformat'] = $parameters['datetimeformat'] ?? 'm/d/Y H:i:a';
 
-        $options['fields'] = $parameters['fields'] ?? array(
+        $options['fields'] = $parameters['fields'] ?? [
             'name' => 'ID #',
-            'imageid' => array(
+            'imageid' => [
                 'type' => 'numeric',
-            ),
-            'imagefile' => array(
+            ],
+            'imagefile' => [
                 'name' => 'Image',
                 'type' => 'callback',
-                'function' => array(
+                'function' => [
                     '\TAS\Core\ImageFile',
                     'CallBackImageUrl',
-                ),
-            ),
-            'tag' => array(
+                ],
+            ],
+            'tag' => [
                 'name' => 'Tag',
                 'type' => 'string',
-            ),
-        );
+            ],
+        ];
 
         if (isset($parameters['delete'])) {
-            $options['option']['delete'] = array(
+            $options['option']['delete'] = [
                 'link' => $parameters['delete'],
                 'iconclass' => 'fa-trash',
                 'tooltip' => 'delete this image',
                 'tagname' => 'delete btn-outline-danger',
                 'paramname' => 'delete',
-            );
+            ];
         }
 
         $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
         $queryoptions['basicquery'] = 'select * from '.$GLOBALS['Tables']['images'];
         $queryoptions['pagingquery'] = 'select count(*) from '.$GLOBALS['Tables']['images'];
 
-        $filter = array();
+        $filter = [];
         $filter[] = " linkertype='".$linkertype."'";
 
         if (is_array($filters) && count($filters) > 0) {
