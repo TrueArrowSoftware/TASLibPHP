@@ -20,7 +20,7 @@
         }
     },
     "require": {
-        "php": ">=7.0",
+        "php": ">=7.2",
         "ext-curl": "*",
         "ext-json" : "*",
         "phpmailer/phpmailer" : "~6.1",

@@ -1,29 +1,3 @@
--- phpMyAdmin SQL Dump
--- version 4.8.4
--- https://www.phpmyadmin.net/
---
--- Host: localhost
--- Generation Time: Dec 23, 2019 at 03:36 PM
--- Server version: 5.7.28-0ubuntu0.18.04.4
--- PHP Version: 7.2.24-0ubuntu0.18.04.1
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
-START TRANSACTION;
-SET time_zone = "+00:00";
-
-
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-
---
--- Database: `taslibsql`
---
-
--- --------------------------------------------------------
-
 --
 -- Table structure for table `document`
 --
@@ -40,7 +14,7 @@ CREATE TABLE `document` (
   `updatedate` datetime DEFAULT NULL,
   `size` bigint(20) NOT NULL DEFAULT '0',
   `originalname` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -56,7 +30,7 @@ CREATE TABLE `emailcms` (
   `status` int(1) DEFAULT '0',
   `allowedvariable` text CHARACTER SET utf8 COLLATE utf8_bin,
   `usetemplate` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -72,11 +46,13 @@ CREATE TABLE `images` (
   `linkerid` bigint(20) NOT NULL,
   `linkertype` varchar(75) NOT NULL,
   `isdefault` int(11) DEFAULT '0',
+  `displayorder` int(11) NOT NULL DEFAULT '0',
+  `tag` text,
+  `settings` text,
   `status` int(11) DEFAULT '0',
   `adddate` datetime DEFAULT NULL,
-  `updatedate` datetime DEFAULT NULL,
-  `tag` text
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+  `updatedate` datetime DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -91,7 +67,7 @@ CREATE TABLE `log` (
   `message` varchar(100) NOT NULL,
   `details` text,
   `debugtrace` text
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --
 -- Indexes for dumped tables
@@ -114,6 +90,7 @@ ALTER TABLE `emailcms`
 --
 ALTER TABLE `images`
   ADD PRIMARY KEY (`imageid`);
+
 
 --
 -- Indexes for table `log`
@@ -142,7 +119,7 @@ ALTER TABLE `emailcms`
 --
 ALTER TABLE `images`
   MODIFY `imageid` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
-
+COMMIT;
 --
 -- AUTO_INCREMENT for table `log`
 --
@@ -150,6 +127,3 @@ ALTER TABLE `log`
   MODIFY `logid` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 COMMIT;
 
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
