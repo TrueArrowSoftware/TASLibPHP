@@ -16,8 +16,6 @@ class Grid
 
     /**
      * Return the default options.
-     *
-     * @return array
      */
     public static function DefaultOptions(): array
     {
@@ -34,13 +32,14 @@ class Grid
             'optionstext' => 'Options',
             'allowselection' => false,
             'roworder' => false,
-            'fields' => array(),
-            'option' => array(), //extraicons
-            'rowconditioncallback' => array(),
+            'fields' => [],
+            'option' => [], //extraicons
+            'rowconditioncallback' => [],
             'dateformat' => 'm/d/Y',
             'datetimeformat' => 'm/d/Y H:i:a',
             'norecordtext' => 'No record found',
             'currentpage' => 1,
+            'showheaderfilter' => true,
         ];
     }
 
@@ -54,7 +53,7 @@ class Grid
             'pagingquery' => '',
             'pagingqueryend' => '',
             'indexfield' => '',
-            'orderby' => array(),
+            'orderby' => [],
             'noorderby' => false, //in case your query has it.
             'recordshowlimit' => 0,
             'tablename' => '',
@@ -144,108 +143,108 @@ class Grid
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
         }
-        if ($GLOBALS['db']->RowCount($rs) > 0) {
-            $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].') t');
 
-            $recordText = isset($this->Options['totalrecordtext']) ? $this->Options['totalrecordtext'] : '{totalrecord} records';
-            $recordText = str_replace('{totalrecord}', $TotalRecordCount, $recordText);
+        $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].') t');
 
-            $listing .= '<section class="content-section">
-    <div class="container-fluid">
-        <div class="row">
-            <div class="content-area col-md-12 px-0">
-            <div class="col-lg-12 col-md-12 px-0">
-              <div class="card">
-                <div class="card-body">';
-            if ($this->Options['showtotalrecord']) {
-                $listing .= '<h6>'.$recordText.' </h6>';
-            }
+        $recordText = isset($this->Options['totalrecordtext']) ? $this->Options['totalrecordtext'] : '{totalrecord} records';
+        $recordText = str_replace('{totalrecord}', $TotalRecordCount, $recordText);
 
-            if (isset($this->Options['allowselection']) && $this->Options['allowselection']) {
-                $ShowSelection = true;
-            } else {
-                $ShowSelection = false;
-            }
-            $totalfield = 1;
+        $listing .= '<section class="content-section">
+<div class="container-fluid">
+    <div class="row">
+        <div class="content-area col-md-12 px-0">
+        <div class="col-lg-12 col-md-12 px-0">
+          <div class="card">
+            <div class="card-body">';
+        if ($this->Options['showtotalrecord']) {
+            $listing .= '<h6>'.$recordText.' </h6>';
+        }
 
-            $allowRowSorting = ((isset($this->Options['roworder']) && $this->Options['roworder'] == true) ? 'tablesort' : '');
-            $listing .= '<div class="table-responsive">
-                            <table class="table table-striped '.$allowRowSorting.'" data-url="'.$defaultpage.'" id="'.((isset($this->Options['tablename'])) ? $this->Options['tablename'] : 'usergrid').'">';
-            $listing .= '<thead>
-				<tr>';
-            if ($ShowSelection) {
-                $listing .= '<th style="width: 20px"><input type="checkbox" name="select_'.$this->Options['tagname'].'" id="select_'.$this->Options['tagname'].'" class="checkall"></th>';
-                ++$totalfield;
-            }
+        $totalfield = 1;
 
-            $RemoveFieldOption = false;
-            if (isset($this->Options['option']) && is_array($this->Options['option']) && count($this->Options['option']) == 0) {
-                $RemoveFieldOption = true;
-                --$totalfield;
-            }
+        $allowRowSorting = ((isset($this->Options['roworder']) && $this->Options['roworder'] == true) ? 'tablesort' : '');
+        $listing .= '<div class="table-responsive">
+                        <table class="table table-striped '.$allowRowSorting.'" data-url="'.$defaultpage.'" id="'.((isset($this->Options['tablename'])) ? $this->Options['tablename'] : 'usergrid').'">';
+        $listing .= '<thead>
+            <tr>';
+        if ($this->Options['allowselection']) {
+            $listing .= '<th style="width: 20px"><input type="checkbox" name="select_'.$this->Options['tagname'].'" id="select_'.$this->Options['tagname'].'" class="checkall"></th>';
+            ++$totalfield;
+        }
 
-            reset($this->Options['fields']);
+        $RemoveFieldOption = false;
+        if (isset($this->Options['option']) && is_array($this->Options['option']) && count($this->Options['option']) == 0) {
+            $RemoveFieldOption = true;
+            --$totalfield;
+        }
 
-            foreach ($this->Options['fields'] as $field => $val) {
-                $sorticon = '';
-                if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                    if (strtolower($orderdirection) == 'asc') {
-                        $sorticon = '<a class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
-						<i class="fas fa-sort-alpha-up"></i></a>';
-                    } else {
-                        $sorticon = '<a  class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
-						<i class="fas fa-sort-alpha-down"></i></a>';
-                    }
-                }
-                $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
-                $Label = isset($val['label']) ? $val['label'] : $val['name'];
+        reset($this->Options['fields']);
 
-                switch ($val['type']) {
-                    case 'longstring':
-                        $count = count($this->Options['fields']);
-                        ++$count;
-                        $count = (int) ((2 / $count) * 100);
-                        $listing .= '<th style="width:'.$count.'%;">';
-                        break;
-                    case 'flag':
-                        $listing .= '<th style="width: 20px;">';
-                        break;
-                    case 'currency':
-                        $listing .= '<th class="currency">';
-                        break;
-                    case 'number':
-                        $listing .= '<th class="number">';
-                        break;
-                    default:
-                        $listing .= '<th>';
-                        break;
-                }
-                if (isset($this->Options['allowsorting']) && $this->Options['allowsorting'] === false) {
-                    $listing .= $Text;
+        foreach ($this->Options['fields'] as $field => $val) {
+            $sorticon = '';
+            if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
+                if (strtolower($orderdirection) == 'asc') {
+                    $sorticon = '<a class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
+                    <i class="fas fa-sort-alpha-up"></i></a>';
                 } else {
-                    $listing .= '<a href="'.$page.'&ob='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
+                    $sorticon = '<a  class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
+                    <i class="fas fa-sort-alpha-down"></i></a>';
                 }
-                ++$totalfield;
             }
+            $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
+            $Label = isset($val['label']) ? $val['label'] : $val['name'];
 
-            if (!$RemoveFieldOption) {
-                $listing .= '	<th><a href="#">'.$this->Options['optionstext'].'</a></th>';
+            switch ($val['type']) {
+                case 'longstring':
+                    $count = count($this->Options['fields']);
+                    ++$count;
+                    $count = (int) ((2 / $count) * 100);
+                    $listing .= '<th style="width:'.$count.'%;">';
+                    break;
+                case 'flag':
+                    $listing .= '<th style="width: 20px;">';
+                    break;
+                case 'currency':
+                    $listing .= '<th class="currency">';
+                    break;
+                case 'number':
+                    $listing .= '<th class="number">';
+                    break;
+                default:
+                    $listing .= '<th>';
+                    break;
             }
-            $listing .= '</tr>';
-
-            if ($this->Options['allowpaging']) {
-                $pquery = isset($this->QueryOptions['pagingquery']) ? $this->QueryOptions['pagingquery'] : $this->QueryOptions['basicquery'];
-                $pageingrow = '<tr><td class="pager" colspan="'.$totalfield.'">'.
-                    \TAS\Core\Utility::Paging($this->QueryOptions['tablename'], $pagingPage, $startpage, $pquery.$this->QueryOptions['whereconditions'].(isset($this->QueryOptions['pagingqueryend']) ? $this->QueryOptions['pagingqueryend'] : ''), $filter, true,
-                            array(
-                    'pagesize' => $pagesize,
-                )).'</td></tr>';
-
-                $listing .= $pageingrow;
+            if (isset($this->Options['allowsorting']) && $this->Options['allowsorting'] === false) {
+                $listing .= $Text;
+            } else {
+                $listing .= '<a href="'.$page.'&ob='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
             }
+            ++$totalfield;
+        }
 
-            $listing .= '</thead><tbody>';
+        if (!$RemoveFieldOption) {
+            $listing .= '	<th><a href="#">'.$this->Options['optionstext'].'</a></th>';
+        }
+        $listing .= '</tr>';
 
+        if ($this->Options['showheaderfilter']) {
+            $listing .= $this->ShowFilter();
+        }
+
+        if ($this->Options['allowpaging']) {
+            $pquery = isset($this->QueryOptions['pagingquery']) ? $this->QueryOptions['pagingquery'] : $this->QueryOptions['basicquery'];
+            $pageingrow = '<tr><td class="pager" colspan="'.$totalfield.'">'.
+                \TAS\Core\Utility::Paging($this->QueryOptions['tablename'], $pagingPage, $startpage, $pquery.$this->QueryOptions['whereconditions'].(isset($this->QueryOptions['pagingqueryend']) ? $this->QueryOptions['pagingqueryend'] : ''), $filter, true,
+                        [
+                'pagesize' => $pagesize,
+            ]).'</td></tr>';
+
+            $listing .= $pageingrow;
+        }
+
+        $listing .= '</thead><tbody>';
+
+        if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
 
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
@@ -264,7 +263,7 @@ class Grid
                 }
                 $listing .= "\n".'<tr data-id="'.$row[$this->QueryOptions['indexfield']].'" id="row_'.$row[$this->QueryOptions['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';
 
-                if ($ShowSelection) {
+                if ($this->Options['allowselection']) {
                     $listing .= '<td><input type="checkbox" name="select_'.$this->Options['tagname'].'['.$row[$this->QueryOptions['indexfield']].']" id="select_'.$this->Options['tagname'].'_'.$row[$this->QueryOptions['indexfield']].'" class="checkall_child"></td>';
                 }
 
@@ -401,7 +400,16 @@ class Grid
             </div>
             </section>';
         } else {
-            $listing = '<section class="content-section">
+            if ($this->Options['showheaderfilter']) {
+                $listing .= '<tbody><tr><td colspan="'.$totalfield.'"><h6> '.$this->Options['norecordtext'].'</td></tr></tbody></table></div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    </section>';
+            } else {
+                $listing = '<section class="content-section">
                         <div class="container-fluid">
                             <div class="row">
                                 <div class="content-area col-md-12 px-0">
@@ -415,7 +423,56 @@ class Grid
                           </div>
                          </div>
                       </section>';
+            }
         }
+
+        return $listing;
+    }
+
+    private function ShowFilter()
+    {
+        $listing = '<tr>';
+        if ($this->Options['allowselection']) {
+            $listing .= '<th style="width: 20px">&nbsp;</th>';
+        }
+
+        $RemoveFieldOption = false;
+        if (isset($this->Options['option']) && is_array($this->Options['option']) && count($this->Options['option']) == 0) {
+            $RemoveFieldOption = true;
+        }
+
+        reset($this->Options['fields']);
+
+        foreach ($this->Options['fields'] as $field => $val) {
+            switch ($val['type']) {
+                case 'longstring':
+                    $count = count($this->Options['fields']);
+                    ++$count;
+                    $count = (int) ((2 / $count) * 100);
+                    $listing .= '<th style="width:'.$count.'%;">';
+                    break;
+                case 'flag':
+                    $listing .= '<th style="width: 20px;">';
+                    break;
+                case 'currency':
+                    $listing .= '<th class="currency">';
+                    break;
+                case 'number':
+                    $listing .= '<th class="number">';
+                    break;
+                default:
+                    $listing .= '<th>';
+                    break;
+            }
+
+            $v = (isset($_REQUEST[$this->Options['gridid'].'-filter-'.$field])) ? DataFormat::DoSecure($_REQUEST[$this->Options['gridid'].'-filter-'.$field]) : '';
+            $listing .= '<input type="text" class="filter-textbox" id="'.$this->Options['gridid'].'-filter-'.$field.'" name="'.$this->Options['gridid'].'-filter-'.$field.'" value="'.$v.'"></th>';
+        }
+
+        if (!$RemoveFieldOption) {
+            $listing .= '	<th>&nbsp;</th>';
+        }
+        $listing .= '</tr>';
 
         return $listing;
     }
