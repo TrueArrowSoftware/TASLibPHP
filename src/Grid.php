@@ -24,7 +24,7 @@ class Grid
             'gridid' => 'mygrid',
             'tagname' => 'grid',
             'useget' => true, //Not used as of now, might be used in future to disable Values from GET.
-            'pagesize' => 50,
+            'pagesize' => $GLOBALS['AppConfig']['PageSize'] ?? 50,
             'allowsorting' => true,
             'allowpaging' => true,
             'showtotalrecord' => true,
@@ -39,7 +39,8 @@ class Grid
             'datetimeformat' => 'm/d/Y H:i:a',
             'norecordtext' => 'No record found',
             'currentpage' => 1,
-            'showheaderfilter' => true,
+            'showheaderfilter' => false,
+            'filterdata' => [],
         ];
     }
 
@@ -464,8 +465,7 @@ class Grid
                     $listing .= '<th>';
                     break;
             }
-
-            $v = (isset($_REQUEST[$this->Options['gridid'].'-filter-'.$field])) ? DataFormat::DoSecure($_REQUEST[$this->Options['gridid'].'-filter-'.$field]) : '';
+            $v = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'].'-filter-'.$field] ?? '')) : '';
             $listing .= '<input type="text" class="filter-textbox" id="'.$this->Options['gridid'].'-filter-'.$field.'" name="'.$this->Options['gridid'].'-filter-'.$field.'" value="'.$v.'"></th>';
         }
 
