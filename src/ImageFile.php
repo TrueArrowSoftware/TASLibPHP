@@ -144,7 +144,7 @@ class ImageFile extends \TAS\Core\UserFile
      *
      * @param int    $linkerid ID to which this record is associated
      * @param bool   $toponly  If we find only the first record in order
-     * @param string $orderby  default ordering.
+     * @param string $orderby  default ordering
      *
      * @return void
      */
@@ -428,7 +428,7 @@ class ImageFile extends \TAS\Core\UserFile
                 $this->DoResize($path, $newSize['width'], $newSize['height'], $filename.'w'.$Size['width'].'.h'.$Size['height'].'.'.$ext);
                 $this->ThumbnailCollection['w'.$Size['width'].'.h'.$Size['height']] = $filename.'w'.$Size['width'].'.h'.$Size['height'].'.'.$ext;
             } catch (\Exception $e) {
-                $this->SetError('Unable to generate thumbnail. Caught Exception :' + $e->getMessage());
+                $this->SetError('Unable to generate thumbnail. Caught Exception :'.$e->getMessage());
             }
         }
     }
@@ -477,6 +477,9 @@ class ImageFile extends \TAS\Core\UserFile
         $returnSize['width'] = $desirewidth;
         $returnSize['height'] = $desireheight;
         // Get Image size info
+        if (!\file_exists($path)) {
+            throw new \Exception('Image path not found');
+        }
         list($width_orig, $height_orig, $image_type) = getimagesize($path);
         $imageOk = true;
         switch ($image_type) {

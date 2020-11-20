@@ -70,7 +70,7 @@ class DB
      *
      * @var array
      */
-    public $lastError = array();
+    public $lastError = [];
 
     /**
      * Database object after connection.
@@ -78,6 +78,11 @@ class DB
      * @var object
      */
     public $MySqlObject;
+
+    /**
+     * Mysql Version.
+     */
+    public $MysqlVersion;
 
     /**
      * defines is Queries needs to be printed as out for debugging.
@@ -94,6 +99,7 @@ class DB
         $this->Password = $password;
         $this->DBName = $DBname;
         $this->MySqlObject = null;
+        $this->MysqlVersion = 5;
     }
 
     /**
@@ -112,6 +118,9 @@ class DB
 
             $this->MySqlObject->set_charset($this->Charset);
             $this->MySqlObject->query('SET collation_connection = '.$this->Collation);
+            $_v = mysql_get_server_info();
+            $_vs = explode('.');
+            $this->MysqlVersion = $_vs[0];
 
             return true;
         }
@@ -150,10 +159,10 @@ class DB
     private function SetError($error)
     {
         if ($this->Debug) {
-            \TAS\Core\Log::AddEvent(array(
+            \TAS\Core\Log::AddEvent([
                 'message' => 'Database Query Fail in '.debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'],
                 'error' => $error,
-            ), 'normal');
+            ], 'normal');
         }
 
         $this->CleanError();
@@ -402,22 +411,22 @@ class DB
                 }
                 $stmt = $this->MySqlObject->prepare($query);
                 array_unshift($refs, $datatype);
-                $params = array_merge(array(
+                $params = array_merge([
                     $datatype,
-                ), $values);
-                call_user_func_array(array(
+                ], $values);
+                call_user_func_array([
                     &$stmt,
                     'bind_param',
-                ), $refs);
+                ], $refs);
                 $stmt->execute();
                 if ($this->MySqlObject->error == '') {
                     return true;
                 } else {
-                    \TAS\Core\Log::AddEvent(array(
+                    \TAS\Core\Log::AddEvent([
                         'message' => 'Database Insert Failed !!!',
                         'query' => $query,
                         'error' => $this->MySqlObject->error,
-                    ), 'normal');
+                    ], 'normal');
 
                     $this->SetError($this->MySqlObject->error);
                     $this->CleanError();
@@ -438,12 +447,12 @@ class DB
     public function Update($tablename, $values, $editid, $editfield, $datatype = '')
     {
         $query = '';
-        $refs = array();
+        $refs = [];
         if ($tablename != '') {
             if (is_array($values)) {
                 $keys = array_keys($values);
 
-                $columnlist = array();
+                $columnlist = [];
                 foreach (array_keys($values) as $k) {
                     $refs[] = &$values[$k];
                     $columnlist[] = $k.'=?';
@@ -484,22 +493,22 @@ class DB
                 $stmt = $this->MySqlObject->prepare($query);
                 array_unshift($refs, $datatype);
 
-                $params = array_merge(array(
+                $params = array_merge([
                     $datatype,
-                ), $values);
-                call_user_func_array(array(
+                ], $values);
+                call_user_func_array([
                     &$stmt,
                     'bind_param',
-                ), $refs);
+                ], $refs);
                 $stmt->execute();
                 if ($this->MySqlObject->error == '') {
                     return true;
                 } else {
-                    \TAS\Core\Log::AddEvent(array(
+                    \TAS\Core\Log::AddEvent([
                         'message' => 'Database Update Failed !!!',
                         'query' => $query,
                         'error' => $this->MySqlObject->error,
-                    ), 'normal');
+                    ], 'normal');
 
                     $this->SetError($this->MySqlObject->error);
                     $this->CleanError();
@@ -554,9 +563,9 @@ class DB
                 $query = "INSERT INTO $table (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)
 				ON DUPLICATE KEY UPDATE ';
 
-                $refs = array();
-                $ref2 = array();
-                $queryAddon = array();
+                $refs = [];
+                $ref2 = [];
+                $queryAddon = [];
                 $datatype .= $datatype;
                 $refs[] = &$datatype;
                 foreach ($values as $key => $value) {
@@ -569,14 +578,14 @@ class DB
                 $query .= implode(',', $queryAddon);
 
                 $stmt = $this->MySqlObject->prepare($query);
-                $params = array_merge(array(
+                $params = array_merge([
                     $datatype,
-                ), $values);
+                ], $values);
 
-                call_user_func_array(array(
+                call_user_func_array([
                     &$stmt,
                     'bind_param',
-                ), $refs);
+                ], $refs);
 
                 $stmt->execute();
                 if ($this->MySqlObject->error == '') {
@@ -654,7 +663,7 @@ class DB
         // @todo: We can fetch column from DB To compare here.
         // $cName = DB::GetColumnsName($tablename);
 
-        $rows = array();
+        $rows = [];
 
         foreach ($values as $rowid => $rowdata) {
             if (true) { // @todo: how to validate the data here and column counts.
@@ -676,12 +685,12 @@ class DB
     /**
      * Insert multiple array.
      */
-    public function InsertMultiArray($tablename, $values = array())
+    public function InsertMultiArray($tablename, $values = [])
     {
         $this->CleanError();
         if (is_array($values)) {
-            $columnsList = array();
-            $QueryParts = array();
+            $columnsList = [];
+            $QueryParts = [];
             $Columns = '';
 
             if (isset($values['data']) && is_array($values['data'])) {
@@ -711,12 +720,12 @@ class DB
     /**
      * Replace multiple array.
      */
-    public function ReplaceMultiArrayByID($tablename, $values = array())
+    public function ReplaceMultiArrayByID($tablename, $values = [])
     {
         $this->CleanError();
         if (is_array($values)) {
-            $columnsList = array();
-            $QueryParts = array();
+            $columnsList = [];
+            $QueryParts = [];
             $Columns = '';
 
             if (isset($values['data']) && is_array($values['data'])) {
@@ -777,7 +786,7 @@ class DB
 
     public static function Columns($result)
     {
-        $fields = array();
+        $fields = [];
         if ($result && \TAS\Core\DB::Count($result) >= 0) {
             $fields = @$result->fetch_fields();
         }
@@ -797,7 +806,7 @@ class DB
             $table = $GLOBALS['Tables'][$table];
         }
         $f = $GLOBALS['db']->Execute('show Columns from '.$table);
-        $fields = array();
+        $fields = [];
         while ($row = $GLOBALS['db']->Fetch($f)) {
             $fields[] = $row;
         }
@@ -809,7 +818,7 @@ class DB
     {
         $rs = $this->Execute($query);
         if ($this->RowCount($rs) > 0) {
-            $output = array();
+            $output = [];
             while ($row = $this->FetchRow($rs)) {
                 $output[] = $row['0'];
             }
@@ -818,7 +827,7 @@ class DB
         } else {
             $this->SetError('No record found for FirstColumnArray Creation');
 
-            return array();
+            return [];
         }
     }
 
@@ -826,9 +835,9 @@ class DB
     {
         $x = \TAS\Core\DB::GetColumns($tablename);
 
-        $TableArray = array();
+        $TableArray = [];
         foreach ($x as $i => $k) {
-            $TableArray[$k['Field']] = array();
+            $TableArray[$k['Field']] = [];
             $TableArray[$k['Field']]['name'] = $k['Field'];
             if (substr($k['Type'], 0, 6) == 'bigint' || substr($k['Type'], 0, 3) == 'int') {
                 $TableArray[$k['Field']]['type'] = 'int';
@@ -855,7 +864,12 @@ class DB
 
     public static function GetAutoIncrementID($tablename)
     {
-        $query = "show table status where Name = '".$tablename."'";
+        if ($GLOBALS['db']->MysqlVersion >= 8) {
+            $query = "SET information_schema_stats_expiry = 0;
+        show table status where Name = '".$tablename."'";
+        } else {
+            $query = "show table status where Name = '".$tablename."'";
+        }
         $result = $GLOBALS['db']->ExecuteScalarRow($query);
 
         return $result['Auto_increment'];
