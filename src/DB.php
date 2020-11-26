@@ -118,8 +118,8 @@ class DB
 
             $this->MySqlObject->set_charset($this->Charset);
             $this->MySqlObject->query('SET collation_connection = '.$this->Collation);
-            $_v = mysql_get_server_info();
-            $_vs = explode('.');
+            $_v = $this->MySqlObject->server_info;
+            $_vs = explode('.', $_v);
             $this->MysqlVersion = $_vs[0];
 
             return true;
@@ -865,12 +865,9 @@ class DB
     public static function GetAutoIncrementID($tablename)
     {
         if ($GLOBALS['db']->MysqlVersion >= 8) {
-            $query = "SET information_schema_stats_expiry = 0;
-        show table status where Name = '".$tablename."'";
-        } else {
-            $query = "show table status where Name = '".$tablename."'";
+            $GLOBALS['db']->Execute('SET information_schema_stats_expiry = 0; ');
         }
-        $result = $GLOBALS['db']->ExecuteScalarRow($query);
+        $result = $GLOBALS['db']->ExecuteScalarRow("show table status where Name = '".$tablename."'");
 
         return $result['Auto_increment'];
     }

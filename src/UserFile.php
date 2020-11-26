@@ -9,7 +9,7 @@ class UserFile
     public $FullPath = '';
     public $BaseUrl = '';
     public $Error = '';
-    public $Errors = array();
+    public $Errors = [];
     public $FileType = 'file';
 
     public function __construct()
@@ -49,7 +49,7 @@ class UserFile
 
     public function CleanError()
     {
-        $this->Errors = array();
+        $this->Errors = [];
         $this->Error = '';
     }
 
@@ -68,7 +68,9 @@ class UserFile
         return true;
     }
 
-    //Connect Database is not already
+    /**
+     * @deprecated deprecated since version 1.0.24
+     */
     public function Connect()
     {
         if (function_exists($GLOBALS['db']->Connect())) {
@@ -78,11 +80,16 @@ class UserFile
         }
     }
 
+    /**
+     * Find Path for new record to come.
+     */
     public function FindPathForNew($Table = '')
     {
-        $count = $GLOBALS['db']->FetchArray($GLOBALS['db']->Execute("SHOW TABLE STATUS LIKE '".$GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]."'"));
-        $count = $count['Auto_increment'];
-        $count = floor($count / self::$MAX_FILE_PER_FOLDER);
+        // $count = $GLOBALS['db']->FetchArray($GLOBALS['db']->Execute("SHOW TABLE STATUS LIKE '".$GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]."'"));
+        // $count = $count['Auto_increment'];
+
+        $NextID = \TAS\Core\DB::GetAutoIncrementID($GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]);
+        $count = floor((int) $NextID / self::$MAX_FILE_PER_FOLDER);
 
         $this->FullPath = $this->Path.DIRECTORY_SEPARATOR.$this->FileType.DIRECTORY_SEPARATOR.$count;
 
@@ -107,6 +114,9 @@ class UserFile
         }
     }
 
+    /**
+     * Calculate the folder for assets folder.
+     */
     public function FindFolder($fileid, $forURL = false)
     {
         $folder = floor($fileid / self::$MAX_FILE_PER_FOLDER);
