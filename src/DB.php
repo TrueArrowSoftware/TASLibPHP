@@ -485,10 +485,10 @@ class DB
 
                 $query = "Update `$tablename` set ".implode(',', $columnlist)." where `$editfield`=?";
                 $refs[] = &$editid;
-                $datatype .= 'i';
+                $datatype .= is_numeric($editid) ? 'i' : 's';
 
                 if ($this->Debug) {
-                    echo "\n<br>Update Query is : ".$query;
+                    echo "\n<br>Update Query is : ".$query."\r\n<br \>".print_r($refs, true);
                 }
                 $stmt = $this->MySqlObject->prepare($query);
                 array_unshift($refs, $datatype);
