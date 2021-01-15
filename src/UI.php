@@ -111,9 +111,9 @@ class UI
         $SelectionDone = false;
         if (!is_array($selectedvalues)) {
             if (is_numeric($selectedvalues)) {
-                $selectedvalues = array(
+                $selectedvalues = [
                     $selectedvalues,
-                );
+                ];
             } else {
                 $selectedvalues = explode(',', $selectedvalues);
             }
@@ -121,29 +121,29 @@ class UI
         if (is_array($array) && count($array) > 0) {
             $list .= '<ul class="rslist">';
             foreach ($array as $i => $v) {
-                $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, array(
+                $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, [
                     'index' => $i,
                     'text' => $v,
-                ));
-                $list .= '<li><label class="'.($type=='radio'?'custom-radio':($type=='checkbox'?'custom-checkbox':'customlist')).'">
+                ]);
+                $list .= '<li><label class="'.($type == 'radio' ? 'custom-radio' : ($type == 'checkbox' ? 'custom-checkbox' : 'customlist')).'">
                           <input type="'.$type.'" class="form-control '.(($isrequired) ? 'required' : '').'" '.(($type == 'radio') ? ' value="'.$i.'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$i.']"').' '.(in_array($i, $selectedvalues) ? 'checked="checked"' : '').'>
-                          <span class="'.($type=='radio'?'checkmark':($type=='checkbox'?'checkmark-box':'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
+                          <span class="'.($type == 'radio' ? 'checkmark' : ($type == 'checkbox' ? 'checkmark-box' : 'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
             }
             $list .= '</ul>';
         }
-        
+
         return $list;
     }
-    
+
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
         $list = '';
         $SelectionDone = false;
         if (!is_array($selectedvalues)) {
             if (is_numeric($selectedvalues)) {
-                $selectedvalues = array(
+                $selectedvalues = [
                     $selectedvalues,
-                );
+                ];
             } else {
                 $selectedvalues = explode(',', $selectedvalues);
             }
@@ -152,13 +152,13 @@ class UI
             $list .= '<ul class="rslist">';
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
-                $list .= '<li><label class="'.($type=='radio'?'custom-radio':($type=='checkbox'?'custom-checkbox':'customlist')).'">
+                $list .= '<li><label class="'.($type == 'radio' ? 'custom-radio' : ($type == 'checkbox' ? 'custom-checkbox' : 'customlist')).'">
                           <input type="'.$type.'" class="form-control '.(($isrequired) ? 'required' : '').'" '.(($type == 'radio') ? ' value="'.$row[$indexCol].'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$row[$indexCol].']"').' '.(in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '').'>
-                          <span class="'.($type=='radio'?'checkmark':($type=='checkbox'?'checkmark-box':'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
+                          <span class="'.($type == 'radio' ? 'checkmark' : ($type == 'checkbox' ? 'checkmark-box' : 'customlist')).'"></span><span class="text-label">'.$text.'</span></label></li>';
             }
             $list .= '</ul>';
         }
-        
+
         return $list;
     }
 
@@ -174,7 +174,7 @@ class UI
      *
      * @return void
      */
-    public static function HTMLGridFromRecordSet($SQLQuery, $pages, $tagname, $param = array())
+    public static function HTMLGridFromRecordSet($SQLQuery, $pages, $tagname, $param = [])
     {
         $options = \TAS\Core\Grid::DefaultOptions();
         $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
@@ -227,7 +227,7 @@ class UI
             }
         }
 
-        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : array()));
+        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : []));
 
         return $grid->Render();
     }
@@ -244,7 +244,7 @@ class UI
      *
      * @return void
      */
-    public static function HTMLGridForPublic($SQLQuery, $pages, $tagname, $param = array())
+    public static function HTMLGridForPublic($SQLQuery, $pages, $tagname, $param = [])
     {
         $options = \TAS\Core\Grid::DefaultOptions();
         $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
@@ -291,7 +291,7 @@ class UI
                 }
             }
         }
-        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : array()));
+        $grid->Options['option'] = array_merge($defaulticons, (isset($param['extraicons']) ? $param['extraicons'] : []));
 
         return $grid->Render();
     }
@@ -303,7 +303,7 @@ class UI
      *
      * @todo 1. Add Grouping Option, 2. Allow Two field to same label.
      */
-    public static function FormFromTable($table, $param = array())
+    public static function FormFromTable($table, $param = [])
     {
         if ($table == '') {
             return '';
@@ -312,7 +312,7 @@ class UI
             $table = $GLOBALS['Tables'][$table];
         }
         $fields = \TAS\Core\DB::GetColumns($table);
-        $fieldHTML = array();
+        $fieldHTML = [];
 
         foreach ($fields as $i => $field) {
             $fieldtype = $field['Type'];
@@ -358,7 +358,7 @@ class UI
                                 $options = self::ArrayToDropDown($GLOBALS[(isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : '')], (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
                                 break;
                             case 'array': // array pass along.
-                                $options = self::ArrayToDropDown((isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : array()), (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
+                                $options = self::ArrayToDropDown((isset($param['Fields'][$field['Field']]['arrayname']) ? $param['Fields'][$field['Field']]['arrayname'] : []), (isset($param['Fields'][$field['Field']]['value']) ? $param['Fields'][$field['Field']]['value'] : ''));
                                 break;
                         }
                         $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id, $isrequired, (isset($param['Fields'][$field['Field']]['css']) ? $param['Fields'][$field['Field']]['css'] : 'forminput'), (isset($param['Fields'][$field['Field']]['multiple']) ? $param['Fields'][$field['Field']]['multiple'] : false), (isset($param['Fields'][$field['Field']]['multiplesize']) ? $param['Fields'][$field['Field']]['multiplesize'] : 5), (isset($param['Fields'][$field['Field']]['additionalattr']) ? $param['Fields'][$field['Field']]['additionalattr'] : ''));
@@ -393,7 +393,7 @@ class UI
         }
 
         // Iterate to $fieldHTML To put fields in order if provided
-        $sortfield = array();
+        $sortfield = [];
         if (isset($param['Fields'])) {
             foreach ($param['Fields'] as $tfield) {
                 $sortfield[$tfield['displayorder']] = $tfield['field'];
@@ -426,9 +426,9 @@ class UI
      *
      * @todo 1. Add Grouping Option,
      */
-    public static function GetFormHTML($param = array())
+    public static function GetFormHTML($param = [])
     {
-        $fieldHTML = array();
+        $fieldHTML = [];
         foreach ($param['Fields'] as $i => $field) {
             $fieldtype = $field['type'];
             $id = (isset($field['id']) ? $field['id'] : $i);
@@ -444,7 +444,7 @@ class UI
 
             switch (strtolower($fieldtype)) {
                 case 'file':
-                    $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.(isset($field['css']) ? form - control : 'form-control'), (isset($field['additionalattr']) ? $field['additionalattr'] : ''));
+                    $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
                     if ($field['value'] > 0) {
                         $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" data-imageid="'.$field['value'].'">Image</a> /
 									<a href="#" class="deleteimage" data-imageid="'.$field['value'].'">Delete</a></span>';
@@ -492,18 +492,18 @@ class UI
                             case 'globalarray': // run from global Array
                                 $array = $GLOBALS[(isset($field['arrayname']) ? $field['arrayname'] : '')];
                                 if (isset($field['showSelect']) && $field['showSelect'] == true) {
-                                    $array = array(
+                                    $array = [
                                         ' ' => 'Select',
-                                    ) + $array;
+                                    ] + $array;
                                 }
                                 $options = self::ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
                                 break;
                             case 'array': // array pass along.
-                                $array = (isset($field['arrayname']) ? $field['arrayname'] : array());
+                                $array = (isset($field['arrayname']) ? $field['arrayname'] : []);
                                 if (isset($field['showSelect']) && $field['showSelect'] == true) {
-                                    $array = array(
+                                    $array = [
                                         ' ' => 'Select',
-                                    ) + $array;
+                                    ] + $array;
                                 }
                                 $options = self::ArrayToDropDown($array, (isset($field['value']) ? $field['value'] : ''));
                                 break;
@@ -530,7 +530,7 @@ class UI
                 case 'checklist':
                     switch ($field['selecttype']) {
                         case 'array':
-                            $HTML = \TAS\Core\UI::ArrayToCheckRadioList($field['arrayname'], $field['value'], $id,'checkbox');
+                            $HTML = \TAS\Core\UI::ArrayToCheckRadioList($field['arrayname'], $field['value'], $id, 'checkbox');
                             break;
                         default:
                             $HTML = \TAS\Core\UI::RecordSetToCheckRadioList($field['recordset'], $field['value'], $field['dbID'], $field['dbLabelField'], $id, $isrequired, 'checkbox');
@@ -603,7 +603,7 @@ class UI
             unset($tmp);
             unset($tmp2);
             foreach ($fieldHTML as $group => $fieldinfo) {
-                $sortfield = array();
+                $sortfield = [];
                 foreach ($fieldinfo as $fieldname => $tfield) {
                     $sortfield[$tfield['displayorder']] = $fieldname;
                 }
@@ -622,7 +622,7 @@ class UI
             }
         } else {
             foreach ($fieldHTML as $group => $fieldinfo) {
-                $sortfield = array();
+                $sortfield = [];
                 foreach ($fieldinfo as $fieldname => $tfield) {
                     $sortfield[$tfield['displayorder']] = $fieldname;
                 }

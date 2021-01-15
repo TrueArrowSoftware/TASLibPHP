@@ -26,6 +26,12 @@ class HTML
         '" size="'.$size.'" maxlength="'.$maxlength.'" value="'.$value.'" '.$additionaattr.' />';
     }
 
+    public static function InputColour($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $additionaattr = '')
+    {
+        return '<input type="text" id="'.$id.'" name="'.($name == '' ? $id : $name).'" class="'.$css.($isrequired ? ' required' : '').
+        '" value="'.$value.'" '.$additionaattr.' />';
+    }
+
     public static function InputDate($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
     {
         return '<input type="text" id="'.$id.'" name="'.($name == '' ? $id : $name).'" class="'.$css.($isrequired ? ' required' : '').
