@@ -429,10 +429,10 @@ class DataFormattest extends TestCase
 
     public function testDoSecureArray_WithValue()
     {
-        $output = \TAS\Core\DataFormat::DoSecureArray(array('<script><script>', '<table></table>', "@14\/\//.,.l"));
+        $output = \TAS\Core\DataFormat::DoSecureArray(['<script><script>', '<table></table>', "@14\/\//.,.l"]);
         $output = $output['2'];
         $this->assertEquals('@14\/\//.,.l', $output, 'Error');
-        $output = \TAS\Core\DataFormat::DoSecureArray(array('@<script[^>]*?>.*?</script>@si', "@<[\/\!]*?[^<>]*?>@si", "@14\/\//.,.l"));
+        $output = \TAS\Core\DataFormat::DoSecureArray(['@<script[^>]*?>.*?</script>@si', "@<[\/\!]*?[^<>]*?>@si", "@14\/\//.,.l"]);
         $output = $output[0];
         $this->assertEquals('@@si', $output, 'Error');
     }
@@ -485,23 +485,24 @@ class DataFormattest extends TestCase
     public function testHumanizeTime()
     {
         $date = new \DateTime(date('Y-m-d H:i:s'));
+        $startdate = new \DateTime(date('2020-01-01 00:00:01'));
         $output = DataFormat::HumanizeTime($date->getTimestamp());
         $this->assertEquals('just now', $output, 'Error');
 
         $date = new \DateTime('2018-01-02 16:17:26');
-        $output = DataFormat::HumanizeTime($date->getTimestamp());
-        $this->assertEquals('2 years ago', $output, 'Error');
-
-        $date = new \DateTime('2016/12/01');
-        $output = DataFormat::HumanizeTime($date->getTimestamp());
+        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
         $this->assertEquals('3 years ago', $output, 'Error');
 
-        $date = new \DateTime('1997-01-02');
-        $output = DataFormat::HumanizeTime($date->getTimestamp());
-        $this->assertEquals('23 years ago', $output, 'Error');
+        $date = new \DateTime('2016/12/01');
+        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
+        $this->assertEquals('4 years ago', $output, 'Error');
 
-        $output = DataFormat::HumanizeTime('1');
-        $this->assertEquals('50 years ago', $output, 'Error');
+        $date = new \DateTime('1997-01-02');
+        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
+        $this->assertEquals('24 years ago', $output, 'Error');
+
+        $output = DataFormat::HumanizeTime('1', $startdate->getTimestamp());
+        $this->assertEquals('51 years ago', $output, 'Error');
     }
 
     public function testGetAge_WithValue()

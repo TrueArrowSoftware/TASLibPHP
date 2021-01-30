@@ -247,7 +247,7 @@ class Grid
 
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
-
+            $RowValueTotal = [];
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
                 $option = '';
                 if (isset($this->Options['option']) && is_array($this->Options['option'])) {
@@ -269,6 +269,7 @@ class Grid
                 }
 
                 $fieldCounter = 0;
+
                 reset($this->Options['fields']);
                 foreach ($this->Options['fields'] as $field => $val) {
                     $fielddata = '';
@@ -340,25 +341,41 @@ class Grid
                                 break;
                             case 'currency':
                                 $cssClass = 'gridtable-currency';
+                                if ($val['showtotal'] ?? false == true) {
+                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                                    $RowValueTotal[$field] += (float) $row[$field];
+                                }
                                 if (isset($val['postsymbol']) && $val['postsymbol']) {
-                                    $fielddata = number_format(floatval($row[$field]), 2).$val['postsymbol'];
+                                    $fielddata = number_format((float) $row[$field], 2).$val['postsymbol'];
                                 } else {
                                     $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
                                 }
                                 break;
                             case 'numeric':
                             case 'number':
-                                $cssClass = 'gridtable-currency';
+                                $cssClass = 'gridtable-numeric';
+                                if ($val['showtotal'] ?? false == true) {
+                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                                    $RowValueTotal[$field] += (float) $row[$field];
+                                }
+
                                 if (isset($val['number-decimal']) && $val['number-decimal']) {
-                                    $fielddata = number_format(floatval($row[$field]), 2);
+                                    $fielddata = number_format((float) $row[$field], 2);
                                 } else {
-                                    $fielddata = (int) round(floatval($row[$field]), 4);
+                                    $fielddata = (int) round((float) $row[$field], 4);
                                 }
 
                                 break;
                             case 'cb':
                             case 'callback':
-                                $fielddata = call_user_func($val['function'], $row, $field); // @remark, $field data array is only parameter.
+                                if ($val['showtotal'] ?? false == true) {
+                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                                    $t = $RowValueTotal[$field];
+                                    $fielddata = call_user_func_array($val['function'], [$row, $field, &$t]);
+                                    $RowValueTotal[$field] = $t;
+                                } else {
+                                    $fielddata = call_user_func_array($val['function'], [$row, $field]);
+                                }
                                 break;
                             case 'image':
                                 $fielddata = '<img src="'.(isset($val['prefixUrl']) ? $val['prefixUrl'] : '').$row[$field].'" class="thumbnailsize">';
@@ -390,10 +407,45 @@ class Grid
             }
 
             $listing .= '</tbody>';
-            if ($this->Options['allowpaging']) {
-                $listing .= '<tfoot>'.$pageingrow.'</tfoot>';
+            $listing .= '<tfoot>';
+            if (count($RowValueTotal) > 0) {
+                $listing .= '<tr class="rowvaluetotal">';
+                foreach ($this->Options['fields'] as $field => $val) {
+                    if (isset($RowValueTotal[$field])) {
+                        switch ($val['type']) {
+                            case 'numeric':
+                            case 'number':
+                                if (isset($val['number-decimal']) && $val['number-decimal']) {
+                                    $_v = number_format((float) $RowValueTotal[$field], 2);
+                                } else {
+                                    $_v = (int) round((float) $RowValueTotal[$field], 4);
+                                }
+                                $listing .= '<td>'.$_v.'</td>';
+                                break;
+                            case 'currency':
+                                if (isset($val['postsymbol']) && $val['postsymbol']) {
+                                    $_v = number_format((float) $RowValueTotal[$field], 2).$val['postsymbol'];
+                                } else {
+                                    $_v = $GLOBALS['AppConfig']['Currency'].number_format((float) $RowValueTotal[$field], 2);
+                                }
+
+                                $listing .= '<td>'.$_v.'</td>';
+                                break;
+                            case 'callback':
+                            case 'cb':
+                                $listing .= '<td>'.(int) round((float) $RowValueTotal[$field], 4).'</td>';
+                                break;
+                        }
+                    } else {
+                        $listing .= '<td></td>';
+                    }
+                }
+                $listing .= '</tr>';
             }
-            $listing .= '</table></div>
+            if ($this->Options['allowpaging']) {
+                $listing .= $pageingrow;
+            }
+            $listing .= '</tfoot></table></div>
                         </div>
                     </div>
                 </div>

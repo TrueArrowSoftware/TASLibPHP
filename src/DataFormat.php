@@ -13,7 +13,7 @@ class DataFormat
             return '';
         }
         $phone = trim($phone);
-        $phone = str_replace(array(' ', '-', '(', ')', '.'), '', $phone);
+        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
         if (strlen($phone) > 12) {
             $phone = substr($phone, 0, 12);
         }
@@ -77,7 +77,7 @@ class DataFormat
     public static function FormatBytes($size, $precision = 2)
     {
         $base = log($size) / log(1024);
-        $suffixes = array('B', 'K', 'M', 'G', 'T');
+        $suffixes = ['B', 'K', 'M', 'G', 'T'];
 
         return round(pow(1024, $base - floor($base)), $precision).$suffixes[floor($base)];
     }
@@ -105,8 +105,7 @@ class DataFormat
     /**
      * Convert Database DateTime object to Date Only. Look for DBToDateTimeFormat if you need Time as well.
      *
-     * @param string $DBDatedate
-     * @param string $format     = 'm/d/Y' Default return format
+     * @param string $format = 'm/d/Y' Default return format
      */
     public static function DBToDateFormat($DBDate, $format = 'm/d/Y')
     {
@@ -175,16 +174,16 @@ class DataFormat
             $output = trim($a_value);
             $output = str_replace('<!--', '', $output);
             // Replace JS Tag, HTML tags, etc...
-            $search = array(
+            $search = [
                 '@<script[^>]*?>.*?</script>@si',
                 '@<[\/\!]*?[^<>]*?>@si',
                 '@([\r\n])[\s]+@',
-            );
-            $replace = array(
+            ];
+            $replace = [
                 '',
                 '',
                 '\1',
-            );
+            ];
             $output = preg_replace($search, $replace, $output);
             $output = htmlspecialchars($output);
         }
@@ -214,7 +213,7 @@ class DataFormat
     public static function RemoveSlashes($a_value)
     {
         if (is_array($a_value)) {
-            $output = array();
+            $output = [];
             foreach ($a_value as $key => $value) {
                 if (is_array($value)) {
                     $output[$key] = $value;
@@ -231,10 +230,6 @@ class DataFormat
 
     /**
      * Process an array to be secure.
-     *
-     * @param array $a_value
-     *
-     * @return array
      */
     public static function DoSecureArray(array $a_value): array
     {
@@ -254,50 +249,49 @@ class DataFormat
     /**
      * Humanize the output time.
      *
-     * @param int $timestamp
-     *
      * @return string humanized time
      */
-    public static function HumanizeTime(int $timestamp)
+    public static function HumanizeTime(int $timestamp, int $starttime = null)
     {
         if ($timestamp < 0 || empty($timestamp)) {
             throw new \InvalidArgumentException('Invalid argument, timestamp must be positive integer');
         }
+        $starttime = $starttime ?? time();
         $diff = time() - (int) $timestamp;
 
         if ($diff == 0) {
             return 'just now';
         }
-        $intervals = array(
-            1 => array(
+        $intervals = [
+            1 => [
                 'year',
                 31556926,
-            ),
-            $diff < 31556926 => array(
+            ],
+            $diff < 31556926 => [
                 'month',
                 2628000,
-            ),
-            $diff < 2629744 => array(
+            ],
+            $diff < 2629744 => [
                 'week',
                 604800,
-            ),
-            $diff < 604800 => array(
+            ],
+            $diff < 604800 => [
                 'day',
                 86400,
-            ),
-            $diff < 86400 => array(
+            ],
+            $diff < 86400 => [
                 'hour',
                 3600,
-            ),
-            $diff < 3600 => array(
+            ],
+            $diff < 3600 => [
                 'minute',
                 60,
-            ),
-            $diff < 60 => array(
+            ],
+            $diff < 60 => [
                 'second',
                 1,
-            ),
-        );
+            ],
+        ];
         $value = floor($diff / $intervals[1][1]);
 
         return $value.' '.$intervals[1][0].($value > 1 ? 's' : '').' ago';
@@ -349,14 +343,14 @@ class DataFormat
     {
         $output = trim($v);
         $search = str_split('ÃÂ¿½ï¿ï');
-        $search2 = array(
+        $search2 = [
             '&Atilde;',
             '&macr;',
             '&frac12;',
             '&Acirc;',
             '&iquest;',
             '&iuml;',
-        );
+        ];
         $search = array_merge($search, $search2);
         array_walk($search, function (&$v, $k) {
             $v = '/'.$v.'/i';
@@ -374,8 +368,6 @@ class DataFormat
      * else will redirect to give string url.
      *
      * @param string $var
-     * @param mixed  $return.
-     *                        either bool false or string url.
      */
     public static function ReturnNumericGet($var = 'id', $return = 'index.php')
     {
@@ -481,7 +473,6 @@ class DataFormat
      * Return create slug.
      *
      * @param unknown $string
-     * @param string  $ext
      */
     public static function CreateSlug($string)
     {

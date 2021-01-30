@@ -12,7 +12,7 @@ class DataValidate
      */
     public static function ValidatePhoneFormat($phone, $length = 10)
     {
-        $phone = str_replace(array(' ', '-', '(', ')', '.'), '', $phone);
+        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
         if ($length < 5 || $length > 12) {
             throw new \Exception('Phone length should be 5 to 12 at this moment');
         }
@@ -70,9 +70,10 @@ class DataValidate
      */
     public static function IsDate(string $date)
     {
-        if (empty($date) || $date == null) {
-            throw new \InvalidArgumentException('Invalid argument, date must be any parsable date.');
+        if (empty($date) || $date == null || !self::ContainDigits($date)) {
+            throw new \InvalidArgumentException('Invalid argument, date must be any parsable date. preferrably in system time format.');
         }
+
         try {
             $d = new \DateTime($date);
 
@@ -80,5 +81,19 @@ class DataValidate
         } catch (\Exception $err) {
             return false;
         }
+    }
+
+    /**
+     * Checks if a string contains a number/digit in it.
+     */
+    public static function ContainDigits(string $str)
+    {
+        for ($i = 0; $i < strlen($str); ++$i) {
+            if (ctype_digit($str[$i])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
