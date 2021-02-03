@@ -15,7 +15,7 @@ class Entity
 
     public function __construct()
     {
-        self::$Errors = array();
+        self::$Errors = [];
         $this->_isloaded = false;
         $this->_tablename = '';
         $this->_primarykey = 0;
@@ -34,10 +34,10 @@ class Entity
         if ($error == '') {
             return false;
         }
-        self::$Errors[] = array(
+        self::$Errors[] = [
             'message' => $error,
             'level' => $level,
-        );
+        ];
     }
 
     public static function GetError()
@@ -70,7 +70,7 @@ class Entity
     {
         $array = $this->ObjectAsArray();
         $a = \TAS\Core\Utility::SinglizeArray($array);
-        $array = array();
+        $array = [];
         foreach ($a as $i => $k) {
             $array[strtolower($i)] = $k;
         }
@@ -221,14 +221,14 @@ class Entity
         $this->_isloaded = true;
     }
 
-    public static function GetFieldsGeneric($tablename = '', $param = array())
+    public static function GetFieldsGeneric($tablename = '', $param = [])
     {
         $tableinfo = \TAS\Core\DB::GetTableInformation($tablename);
 
-        $fields = array();
+        $fields = [];
         $ctr = (isset($param['startcounter']) ? $param['startcounter'] : 0);
         foreach ($tableinfo as $k => $v) {
-            $fields[$k] = array(
+            $fields[$k] = [
                 'field' => $k,
                 'id' => $k,
                 'type' => 'varchar',
@@ -237,7 +237,7 @@ class Entity
                 'size' => '30',
                 'group' => (isset($param['group']) ? $param['group'] : 'basic'),
                 'label' => ucwords(str_replace('_', ' ', $k)),
-            );
+            ];
 
             switch ($v['type']) {
                 case 'varchar':
@@ -246,9 +246,12 @@ class Entity
                     $fields[$k]['maxlength'] = (($v['size'] > 0) ? $v['size'] : null);
                     break;
                 case 'int':
-                case 'float':
                     $fields[$k]['type'] = 'numeric';
                     $fields[$k]['size'] = 10;
+                    break;
+                case 'float':
+                    $fields[$k]['type'] = 'numeric';
+                    $fields[$k]['size'] = 15;
                     break;
                 case 'text':
                     $fields[$k]['type'] = 'text';
@@ -266,9 +269,9 @@ class Entity
         return $fields;
     }
 
-    public static function ValidateAgainstTable($postdata = array(), $table, $callback = null)
+    public static function ValidateAgainstTable($postdata = [], $table, $callback = null)
     {
-        $message = array();
+        $message = [];
         if ($callback != null) {
             $tableinfo = call_user_func($callback);
         } else {
@@ -281,18 +284,18 @@ class Entity
                 if (isset($tableinfo[$k]) && isset($tableinfo[$k]['required'])) {
                     if ($tableinfo[$k]['required'] == true) {
                         if ($v == '') {
-                            $message[] = array(
+                            $message[] = [
                                 'level' => 10,
                                 'message' => $tableinfo[$k]['label'].' is required field.',
-                            );
+                            ];
                         }
                     }
                     if ($tableinfo[$k]['type'] == 'numeric') {
                         if (($v != '') && !is_numeric($v)) {
-                            $message[] = array(
+                            $message[] = [
                                 'level' => 10,
                                 'message' => $tableinfo[$k]['label'].' is not a number.',
-                            );
+                            ];
                         }
                     }
                 }
@@ -304,9 +307,9 @@ class Entity
 
     public static function ParsePostToArray($fields)
     {
-        $obj=new \TAS\Core\DataFormat();
+        $obj = new \TAS\Core\DataFormat();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-            $d = array();
+            $d = [];
             foreach ($fields as $field) {
                 if ($field['type'] == 'readonly') {
                     continue;
@@ -345,7 +348,7 @@ class Entity
 
             return $d;
         } else {
-            return array();
+            return [];
         }
     }
 }

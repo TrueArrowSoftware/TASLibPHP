@@ -845,7 +845,7 @@ class DB
                 $TableArray[$k['Field']]['type'] = 'float';
             } elseif (substr($k['Type'], 0, 4) == 'date') {
                 $TableArray[$k['Field']]['type'] = 'date';
-            } elseif (substr($k['Type'], 0, 4) == 'text') {
+            } elseif (substr($k['Type'], 0, 4) == 'text' || $k['Type'] == 'mediumtext' || $k['Type'] == 'tinytext' || $k['Type'] == 'longtext') {
                 $TableArray[$k['Field']]['type'] = 'text';
             } else {
                 $TableArray[$k['Field']]['type'] = 'string';
