@@ -96,7 +96,10 @@ class Entity
         $isvalid = true;
         foreach ($fields as $fieldname => $fieldinfo) {
             if (isset($fieldinfo['required']) && $fieldinfo['required'] == true) {
-                if (empty($values[$fieldname])) {
+                if (isset($values[$fieldname]) && ($values[$fieldname] == null || $values[$fieldname] == '')) {
+                    $isvalid = false;
+                    self::SetError($fieldinfo['label'].' is required');
+                } elseif (is_array($values[$fieldname]) && count($values[$fieldname]) == 0) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
                 }
@@ -138,8 +141,9 @@ class Entity
 
         $tableinfo = \TAS\Core\DB::GetTableInformation($tablename);
         foreach ($values as $i => $v) {
-            if (isset($tableinfo[$i])) {
-                switch ($tableinfo[$i]['type']) {
+            try {
+                if (isset($tableinfo[$i])) {
+                    switch ($tableinfo[$i]['type']) {
                     case 'int':
                         if (strtolower($tableinfo[$i]['Null']) == 'yes') {
                             if ($v != '' && !is_numeric($v)) {
@@ -199,6 +203,11 @@ class Entity
                         break;
                     default: break;
                 }
+                }
+            } catch (\Exception $ex) {
+                self::SetError("For $i,  $v generate Exception. ".$ex->getMessage(), 10);
+
+                return false;
             }
         }
 

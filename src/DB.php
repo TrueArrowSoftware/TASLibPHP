@@ -184,18 +184,36 @@ class DB
         return $this->MySqlObject->real_escape_string($str);
     }
 
-    // Public function to execute a query
+    public function ClearStoredResults()
+    {
+        //------------------------------------------
+        while ($this->MySqlObject->next_result()) {
+            if ($l_result = $this->MySqlObject->store_result()) {
+                $l_result->free();
+            }
+        }
+    }
+
+    /**
+     * Main function to execute any sql query. In case you use Store procedure use ClearStoredResults to clear result set.
+     *
+     * @param string $query
+     *
+     * @return void
+     */
     public function Execute($query)
     {
         if ($this->IsConnected()) {
             $this->CleanError();
             if (trim($query) != '') {
-                $result = $this->MySqlObject->query($query);
+                $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
                 if ($result === false) {
                     $this->SetError("<br />Error in Query $query is ".$this->MySqlObject->error.'::'.print_r($result, true));
 
                     return false;
                 } else {
+                    $this->MySqlObject->store_result();
+
                     return $result;
                 }
             } else {
