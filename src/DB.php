@@ -186,8 +186,7 @@ class DB
 
     public function ClearStoredResults()
     {
-        //------------------------------------------
-        while ($this->MySqlObject->next_result()) {
+        while ($this->MySqlObject->more_results() && $this->MySqlObject->next_result()) {
             if ($l_result = $this->MySqlObject->store_result()) {
                 $l_result->free();
             }

@@ -276,10 +276,12 @@ class Grid
                     $cssClass = '';
                     switch ($val['type']) {
                             case 'globalarray':
-                                if (isset($val['arrayname'])) {
-                                    $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
-                                } else {
-                                    $fielddata = $GLOBALS[$field][$row[$field]];
+                                if ($row[$field] != null) {
+                                    if (isset($val['arrayname'])) {
+                                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
+                                    } else {
+                                        $fielddata = $GLOBALS[$field][$row[$field]];
+                                    }
                                 }
                                 break;
                             case 'string':
