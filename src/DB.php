@@ -427,6 +427,11 @@ class DB
                     echo "\n<br>Insert Query is : ".$query;
                 }
                 $stmt = $this->MySqlObject->prepare($query);
+                if (is_bool($stmt) && $stmt === false) {
+                    $this->SetError($this->MySqlObject->error);
+
+                    return false;
+                }
                 array_unshift($refs, $datatype);
                 $params = array_merge([
                     $datatype,
@@ -508,6 +513,11 @@ class DB
                     echo "\n<br>Update Query is : ".$query."\r\n<br \>".print_r($refs, true);
                 }
                 $stmt = $this->MySqlObject->prepare($query);
+                if (is_bool($stmt) && $stmt === false) {
+                    $this->SetError($this->MySqlObject->error);
+
+                    return false;
+                }
                 array_unshift($refs, $datatype);
 
                 $params = array_merge([
