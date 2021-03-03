@@ -29,6 +29,7 @@ class UI
     {
         if (is_array($sourceArray)) {
             $val = '';
+            reset($sourceArray);
             foreach ($sourceArray as $i => $v) {
                 if (is_array($selectedvalue)) {
                     $select = in_array(\TAS\Core\DataFormat::DoSecure($i), $selectedvalue) ? true : false;
@@ -53,6 +54,7 @@ class UI
         $list = '';
         $SelectionDone = false;
         if ($db->RowCount($rs) > 0) {
+            $db->Reset($rs);
             $columns = explode(' ', $labelCol);
             while ($row = $db->FetchArray($rs)) {
                 if (count($columns) > 1) {
@@ -119,6 +121,7 @@ class UI
             }
         }
         if (is_array($array) && count($array) > 0) {
+            reset($array);
             $list .= '<ul class="rslist">';
             foreach ($array as $i => $v) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, [
@@ -149,6 +152,7 @@ class UI
             }
         }
         if ($GLOBALS['db']->RowCount($rs) > 0) {
+            $db->Reset($rs);
             $list .= '<ul class="rslist">';
             while ($row = $GLOBALS['db']->FetchArray($rs)) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
@@ -658,7 +662,7 @@ class UI
         }
         $returnString = '<div class="hidemessage">';
         $returnString .= '<ul>';
-
+        reset($messages);
         foreach ($messages as $i => $value) {
             if ($value['level'] < 10) {
                 $returnString .= '<li class="alert alert-success mrgntop">'.$value['message'].'</li>';
