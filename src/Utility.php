@@ -7,18 +7,17 @@ use PHPMailer\PHPMailer\PHPMailer;
 class Utility
 {
     public static $IncludePath;
-    
+
     /**
      * @deprecated
-     * 
-     * with CreateReportPDF function
      *
+     * with CreateReportPDF function
      */
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
         $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
-        
+
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
             foreach ($SQLQuery['orderby'] as $key => $val) {
@@ -29,13 +28,13 @@ class Utility
             }
         }
         $sortstring = trim($sortstring, ',');
-        
+
         $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring ";
         $rs = $GLOBALS['db']->Execute($query);
-        
+
         $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.uniqid().'.html';
         $filecreated = false;
-        
+
         $reportContent['ReportTitle'] = $reporttitle;
         $reportContent['PageTitle'] = $reporttitle;
         $reportContent['Content'] = ''; // $query . "\r\n : :: ". \TAS\Core\DB::Count($rs);
@@ -45,7 +44,7 @@ class Utility
                 $reportContent['Content'] .= '<td>'.$val['name'].'</td>';
             }
             $reportContent['Content'] .= '</tr>';
-            
+
             while ($row = $GLOBALS['db']->Fetch($rs)) {
                 if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
                     if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
@@ -56,7 +55,7 @@ class Utility
                 } else {
                     $additionalClass = '';
                 }
-                
+
                 $reportContent['Content'] .= '<tr class="'.$additionalClass.' datarow">';
                 foreach ($param['fields'] as $key => $val) {
                     $reportContent['Content'] .= '<td>'.$row[$key].'</td>';
@@ -65,7 +64,7 @@ class Utility
             }
             $reportContent['Content'] .= '</table>';
         }
-        
+
         $reportContent['MetaExtra'] = '';
         $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].DIRECTORY_SEPARATOR.$template, $reportContent);
         file_put_contents($htmlfilepath, $content);
@@ -88,12 +87,11 @@ class Utility
         }
     }
 
-    
     public static function CreateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $SQLQuery['defaultorderby'])));
         $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $SQLQuery['defaultsortdirection'])));
-        
+
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
             foreach ($SQLQuery['orderby'] as $key => $val) {
@@ -104,13 +102,13 @@ class Utility
             }
         }
         $sortstring = trim($sortstring, ',');
-        
+
         $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by $orderby $orderdirection $sortstring ";
         $rs = $GLOBALS['db']->Execute($query);
-        
+
         $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.uniqid().'.html';
         $filecreated = false;
-        
+
         $reportContent['ReportTitle'] = $reporttitle;
         $reportContent['PageTitle'] = $reporttitle;
         $reportContent['Content'] = ''; // $query . "\r\n : :: ". \TAS\Core\DB::Count($rs);
@@ -120,7 +118,7 @@ class Utility
                 $reportContent['Content'] .= '<td>'.$val['name'].'</td>';
             }
             $reportContent['Content'] .= '</tr>';
-            
+
             while ($row = $GLOBALS['db']->Fetch($rs)) {
                 if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
                     if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
@@ -131,7 +129,7 @@ class Utility
                 } else {
                     $additionalClass = '';
                 }
-                
+
                 $reportContent['Content'] .= '<tr class="'.$additionalClass.' datarow">';
                 foreach ($param['fields'] as $key => $val) {
                     $reportContent['Content'] .= '<td>'.$row[$key].'</td>';
@@ -140,7 +138,7 @@ class Utility
             }
             $reportContent['Content'] .= '</table>';
         }
-        
+
         $reportContent['MetaExtra'] = '';
         $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'].DIRECTORY_SEPARATOR.$template, $reportContent);
         file_put_contents($htmlfilepath, $content);
@@ -162,7 +160,7 @@ class Utility
             return false;
         }
     }
-    
+
     /**
      * Generate CSV is compatible with HTMLGrid function's SQLQuery method.
      * If you need more direct method use ExportCSV. Also it force download.
@@ -175,20 +173,17 @@ class Utility
      *
      * @return boolean
      */
-    
+
     /**
      * @deprecated
-     * 
-     * 
-     * with CreateCSV function
      *
+     * with CreateCSV function
      */
-
-    public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = array())
+    public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
         $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
-        
+
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
             foreach ($SQLQuery['orderby'] as $key => $val) {
@@ -199,14 +194,14 @@ class Utility
             }
         }
         $sortstring = trim($sortstring, ',');
-        
+
         $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring ";
         $rs = $GLOBALS['db']->Execute($query);
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
         }
-        
-        $header = array();
+
+        $header = [];
         foreach ($param['fields'] as $field => $val) {
             $header[$field] = $val['name'];
         }
@@ -215,7 +210,7 @@ class Utility
             echo 'header';
             print_r($header);
         }
-        
+
         if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
@@ -224,9 +219,7 @@ class Utility
             return false;
         }
     }
-    
-    
-    
+
     /**
      * Create CSV is compatible with HTMLGrid function's SQLQuery method.
      * If you need more direct method use ExportCSV. Also it force download.
@@ -239,11 +232,11 @@ class Utility
      *
      * @return boolean
      */
-    public static function CreateCSV($SQLQuery, $filename, $tagname, $param = array())
+    public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $SQLQuery['defaultorderby'])));
         $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $SQLQuery['defaultsortdirection'])));
-        
+
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
             foreach ($SQLQuery['orderby'] as $key => $val) {
@@ -259,8 +252,8 @@ class Utility
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
         }
-        
-        $header = array();
+
+        $header = [];
         foreach ($param['fields'] as $field => $val) {
             $header[$field] = $val['name'];
         }
@@ -269,7 +262,7 @@ class Utility
             echo 'header';
             print_r($header);
         }
-        
+
         if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
@@ -278,7 +271,7 @@ class Utility
             return false;
         }
     }
-    
+
     /**
      * Generic function to create CSV file on disk.
      *
@@ -289,7 +282,7 @@ class Utility
      * @param array  $fields
      *                         list of fields to put in csv
      */
-    public static function ExportCSV($SQLQuery, $filename = '', $fields = array())
+    public static function ExportCSV($SQLQuery, $filename = '', $fields = [])
     {
         $rs = $GLOBALS['db']->Execute($SQLQuery);
         if ($GLOBALS['AppConfig']['DebugMode']) {
@@ -310,12 +303,12 @@ class Utility
         if (!is_array($fields) || count($fields) == 0) {
             $fields = \TAS\Core\DB::Columns($rs);
         }
-        
+
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fields);
         }
         $csvHeader = '';
-        $fieldindex = array();
+        $fieldindex = [];
         foreach ($fields as $index => $field) {
             if (is_object($field)) {
                 $fieldname = $field->name;
@@ -327,7 +320,7 @@ class Utility
         }
         $csvHeader = trim($csvHeader, ',');
         $csvHeader .= "\n";
-        
+
         fwrite($fh, $csvHeader);
         unset($csvHeader);
         if ($GLOBALS['AppConfig']['DebugMode']) {
@@ -342,10 +335,10 @@ class Utility
             fwrite($fh, $dataline);
         }
         fclose($fh);
-        
+
         return true;
     }
-    
+
     /**
      * Auto Load implementation to enable Loading of classes from /include/classes folder.
      *
@@ -360,7 +353,7 @@ class Utility
                 $defaultpaths[] = $path;
             }
         }
-        
+
         $included = false;
         if (strpos($classname, '\\') > 0) {
             $t = explode('\\', $classname);
@@ -379,12 +372,12 @@ class Utility
             }
         }
         if (!$included) {
-            \TAS\Core\Log::AddEvent(array(
+            \TAS\Core\Log::AddEvent([
                 'message' => $classname.' is not found. Fail to load required code.',
-            ), 'high');
+            ], 'high');
         }
     }
-    
+
     /**
      * New Paging function. Replacement of incFunctions.php.
      *
@@ -394,13 +387,13 @@ class Utility
      * @param unknown_type $condition
      * @param unknown_type $querystring
      */
-    public static function Paging($tablename, $pagename, $start = 0, $condition = '', $querystring = '', $isMultiTable = false, $param = array())
+    public static function Paging($tablename, $pagename, $start = 0, $condition = '', $querystring = '', $isMultiTable = false, $param = [])
     {
         global $db, $AppConfig, $tables;
         // how many link pages to show
-        
+
         $pagesize = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
-        
+
         $nLinks = 10;
         if (!isset($tables[$tablename])) {
             $_tablename = array_keys($GLOBALS['Tables'], $tablename);
@@ -415,21 +408,21 @@ class Utility
         } else {
             $query = 'select count(*) from '.$GLOBALS['Tables'][$tablename]." $condition";
         }
-        
+
         if ($GLOBALS['AppConfig']['DebugMode'] == true) {
             echo 'Paging Query : '.$query."\r\n";
         }
-        
+
         $pageQuery = parse_url($pagename, PHP_URL_QUERY);
         $pagename = str_replace('?'.$pageQuery, '', $pagename);
         parse_str($querystring, $userQuery);
         parse_str($pageQuery, $pageQuery2);
-        
+
         $querystring = array_merge($userQuery, $pageQuery2);
         $pagename = $pagename.((count($querystring) > 0) ? '?'.http_build_query($querystring) : '');
-        
+
         $num = $GLOBALS['db']->ExecuteScalar($query);
-        $bar = array();
+        $bar = [];
         $pages = 1;
         if ($num > $pagesize) {
             $pages = $num / $pagesize;
@@ -472,10 +465,10 @@ class Utility
                 }
             }
         }
-        
+
         return '<ul><li>'.implode('</li><li>', $bar).'</li></ul><div class="showcurrentpage">'.$start.' of '.$pages.'</div>';
     }
-    
+
     /**
      * Return the list of Directory content.
      *
@@ -486,13 +479,13 @@ class Utility
      */
     public static function ListFiles($filter, $directory)
     {
-        $output = array();
+        $output = [];
         if ($handle = opendir($directory)) {
             while (false !== ($entry = readdir($handle))) {
-                if (!in_array($entry, array(
+                if (!in_array($entry, [
                     '.',
                     '..',
-                )) && !is_dir($directory.DIRECTORY_SEPARATOR.$entry)) {
+                ]) && !is_dir($directory.DIRECTORY_SEPARATOR.$entry)) {
                     if (preg_match($filter, $entry)) {
                         $output[] = $entry;
                     }
@@ -500,10 +493,10 @@ class Utility
             }
             closedir($handle);
         }
-        
+
         return $output;
     }
-    
+
     /**
      * Search in 2D array for value.
      *
@@ -518,13 +511,13 @@ class Utility
                 return $key;
             }
         }
-        
+
         return -1;
     }
-    
+
     public static function SinglizeArray($a)
     {
-        $output = array();
+        $output = [];
         foreach ($a as $i => $k) {
             if (is_array($k)) {
                 $t = \TAS\Core\Utility::SinglizeArray($k);
@@ -535,10 +528,32 @@ class Utility
                 $output[$i] = $k;
             }
         }
-        
+
         return $output;
     }
-    
+
+    /**
+     * Sort an given array in given Order Array, use $key for Associative error.
+     * check : https://stackoverflow.com/a/61267293/1160395.
+     *
+     * @param [type] $order
+     * @param string $key
+     *
+     * @return void
+     */
+    public static function SortArrayInOrder(array &$array, array $order, string $key = null)
+    {
+        $dict = array_flip($order);
+        $positions = array_map(function ($elem) use ($dict, $key) {
+            if ($key == null) {
+                return $dict[$elem] ?? INF;
+            } else {
+                return $dict[$elem[$key]] ?? INF;
+            }
+        }, $array);
+        array_multisort($positions, $array);
+    }
+
     /**
      * Class casting ,ex.
      * $x = cast('A',$b);.
@@ -568,15 +583,14 @@ class Utility
                 $destination->$name = $value;
             }
         }
-        
+
         return $destination;
     }
-    
+
     /**
      * Contain word in array list.
      *
      * @param unknown $str
-     * @param array   $arr
      *
      * @return boolean
      */
@@ -587,10 +601,10 @@ class Utility
                 return true;
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Send email from EMAIL CMS.
      *
@@ -605,7 +619,7 @@ class Utility
         if ($sender == null) {
             $sender = $GLOBALS['AppConfig']['SenderEmail'];
         }
-        
+
         $row = UI::GetEmailContent($EmailID);
         $finalcontent = $row['content'];
         if (is_array($row)) {
@@ -617,7 +631,7 @@ class Utility
                 }
                 $finalcontent = str_replace('{Content}', $row['content'], $finalcontent);
             }
-            
+
             $content = TemplateHandler::PrepareContent($finalcontent, $keywords);
             $subject = TemplateHandler::PrepareContent($row['subject'], $keywords);
             $to = strpos($to, ';') > 0 ? explode(';', $to) : explode(',', $to);
@@ -631,20 +645,20 @@ class Utility
                         $output = false;
                     }
                 }
-                
+
                 return $output;
             } else {
                 if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
                     return false;
                 }
-                
+
                 return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
             }
         } else {
             return false;
         }
     }
-    
+
     public static function SendHTMLMail($to, $subject, $html_body, $text_body = '', $fromemail, $fromName, $returnpath = '', $attachment = null)
     {
         $mail = new PHPMailer();
@@ -658,11 +672,11 @@ class Utility
             $mail->Username = $GLOBALS['AppConfig']['SMTPUsername']; // GMAIL username
             $mail->Password = $GLOBALS['AppConfig']['SMTPPassword'];
         }
-        
+
         if ($GLOBALS['AppConfig']['DeveloperMode'] == true) {
             $to = $GLOBALS['AppConfig']['DeveloperEmail'];
         }
-        
+
         if ($returnpath != '') {
             $mail->AddReplyTo($returnpath, $returnpath);
         }
@@ -674,63 +688,67 @@ class Utility
         $mail->Subject = $subject;
         $mail->Body = $html_body;
         $mail->AltBody = (empty($text_body) ? $html_body : $text_body);
-        
+
         $mail->AddAddress($to);
         if ($attachment != null && !empty($attachment)) {
             $mail->AddAttachment($attachment);
         }
         if (!$mail->Send()) {
-            \TAS\Core\Log::AddEvent(array(
+            \TAS\Core\Log::AddEvent([
                 'message' => 'IncFunction SendHTMLMail Failed !!!',
                 'Mail Error' => $mail->ErrorInfo,
                 'mail' => print_r($mail, true),
-            ), 'debug');
+            ], 'debug');
             $mailstat = false;
         } else {
             $mailstat = true;
         }
-        
+
         return $mailstat;
     }
-    
-    public static function CreateGUID() {
+
+    public static function CreateGUID()
+    {
         $guid = '';
         $namespace = date('Ymdhis');
         $uid = uniqid('', true);
         $data = $namespace;
-        $hash = strtoupper(hash('ripemd128', $uid . $guid . md5($data)));
-        $guid = substr($hash,  0,  8) . '-' .
-            substr($hash,  8,  4) . '-' .
-            substr($hash, 12,  4) . '-' .
-            substr($hash, 16,  4) . '-' .
+        $hash = strtoupper(hash('ripemd128', $uid.$guid.md5($data)));
+        $guid = substr($hash, 0, 8).'-'.
+            substr($hash, 8, 4).'-'.
+            substr($hash, 12, 4).'-'.
+            substr($hash, 16, 4).'-'.
             substr($hash, 20, 12);
-            return $guid;
+
+        return $guid;
     }
-    
-    public static function CreateGUIDString($length=10) {
+
+    public static function CreateGUIDString($length = 10)
+    {
         $GUID = self::CreateGUID();
-        $removeDashGUID = str_replace('-','',$GUID);
-        return substr($removeDashGUID,0,$length);
+        $removeDashGUID = str_replace('-', '', $GUID);
+
+        return substr($removeDashGUID, 0, $length);
     }
-    
+
     public static function PasswordValidation($password)
     {
         $uppercase = preg_match('@[A-Z]@', $password);
         $lowercase = preg_match('@[a-z]@', $password);
-        $number    = preg_match('@[0-9]@', $password);
+        $number = preg_match('@[0-9]@', $password);
         $specialChars = preg_match('@[^\w]@', $password);
-        
+
         if (strlen($password) < 8) {
-            return  "Password should be at least 8 characters in length.";
-        }elseif(!$uppercase){
-            return  "Password must include at least upper case letter.";
-        }elseif(!$lowercase){
-            return  "Password must include at least lower case letter.";
-        }elseif(!$number){
-            return  "Password must include at least one number.";
-        }elseif(!$specialChars){
-            return  "Password must include at least one special character.";
-        }else{
+            return  'Password should be at least 8 characters in length.';
+        } elseif (!$uppercase) {
+            return  'Password must include at least upper case letter.';
+        } elseif (!$lowercase) {
+            return  'Password must include at least lower case letter.';
+        } elseif (!$number) {
+            return  'Password must include at least one number.';
+        } elseif (!$specialChars) {
+            return  'Password must include at least one special character.';
+        } else {
             return true;
         }
     }
