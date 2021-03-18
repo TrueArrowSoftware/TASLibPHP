@@ -38,12 +38,19 @@ class ImageFile extends \TAS\Core\UserFile
         $this->LinkerType = 'product';
     }
 
+    /**
+     * Validate if the file is image file or application-octet-stream, all other type will fail.
+     *
+     * @param string $file
+     *
+     * @return void
+     */
     public function Validate($file = '')
     {
         if ($file == '') {
             return false;
         }
-        if (!empty($file['type']) && (!is_bool(strpos($file['type'], 'image')))) {
+        if (!empty($file['type']) && (!is_bool(strpos($file['type'], 'image')) || $file['type'] == 'application/octet-stream')) {
             return true;
         } else {
             return false;
