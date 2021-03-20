@@ -323,8 +323,18 @@ class DB
         return $this->MySqlObject->insert_id;
     }
 
-    public function Reset($rs)
+    /**
+     * Reset the Recordset to 0th position for reiteration.
+     *
+     * @param [type] $rs
+     *
+     * @return void
+     */
+    public static function Reset(\mysqli_result $rs)
     {
+        if (is_null($rs)) {
+            return;
+        }
         @$rs->data_seek(0);
     }
 
@@ -897,5 +907,15 @@ class DB
         $result = $GLOBALS['db']->ExecuteScalarRow("show table status where Name = '".$tablename."'");
 
         return $result['Auto_increment'];
+    }
+
+    public static function ToJSON(\mysqli_result $recordset)
+    {
+        if (\is_null($recordset) || is_bool($recordset)) {
+            return json_encode([]);
+        }
+        DB::Reset($recordset);
+
+        return json_encode($recordset->fetch_all(MYSQLI_ASSOC));
     }
 }
