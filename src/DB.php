@@ -438,7 +438,13 @@ class DB
                 }
                 $stmt = $this->MySqlObject->prepare($query);
                 if (is_bool($stmt) && $stmt === false) {
-                    $this->SetError($this->MySqlObject->error);
+                    $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
+
+                    \TAS\Core\Log::AddEvent([
+                        'message' => 'Database Insert Prepare Failed !!!',
+                        'query' => $query,
+                        'error' => $this->MySqlObject->error,
+                    ], 'normal');
 
                     return false;
                 }
@@ -524,7 +530,12 @@ class DB
                 }
                 $stmt = $this->MySqlObject->prepare($query);
                 if (is_bool($stmt) && $stmt === false) {
-                    $this->SetError($this->MySqlObject->error);
+                    $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
+                    \TAS\Core\Log::AddEvent([
+                        'message' => 'Database Update Prepare Failed !!!',
+                        'query' => $query,
+                        'error' => $this->MySqlObject->error,
+                    ], 'normal');
 
                     return false;
                 }
