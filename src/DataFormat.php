@@ -2,22 +2,51 @@
 
 namespace TAS\Core;
 
-/*
+/**
  * Collection of Static Function to valid the format of given Data.
  */
 class DataFormat
 {
-    public static function FormatPhone($phone, $length = 10)
+    /**
+     * Clear the phone from given format such (111)-111-1111 to 1111111111. It remove space,- bracket and dot from phone only.
+     *
+     * @param [type] $phone
+     *
+     * @return void
+     */
+    public static function CleanPhone(string $phone, int $length = 10)
     {
-        if (trim($phone) == '') {
-            return '';
+        if (empty(trim($phone)) == '') {
+            return;
         }
-        $phone = trim($phone);
-        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
-        if (strlen($phone) > 12) {
-            $phone = substr($phone, 0, 12);
+        if ($length < 5 && $length > 20) {
+            return;
         }
 
+        $phone = trim($phone);
+        $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
+        if (strlen($phone) > $length) {
+            $phone = substr($phone, 0, $length);
+        }
+
+        return $phone;
+    }
+
+    /**
+     * Format a give Phone as (123)-123-1234 or different one based on length of number given.
+     *
+     * @param string/int $phone
+     * @param int        $length Default to 10
+     *
+     * @return void
+     */
+    public static function FormatPhone(string $phone, int $length = 10)
+    {
+        if (empty(trim($phone))) {
+            return $phone;
+        }
+
+        $phone = DataFormat::CleanPhone($phone, $length);
         if (!\TAS\Core\DataValidate::ValidatePhoneFormat($phone, $length)) {
             throw new \Exception("Phone number $phone is not valid.");
         }
@@ -52,7 +81,14 @@ class DataFormat
         }
     }
 
-    public static function FormatString($str)
+    /**
+     * UCWord formatting after lower a string.
+     *
+     * @param [type] $str
+     *
+     * @return void
+     */
+    public static function FormatString(string $str)
     {
         return ucwords(strtolower($str));
     }
