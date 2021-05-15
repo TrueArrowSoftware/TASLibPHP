@@ -855,7 +855,7 @@ class DB
         }
         $f = $GLOBALS['db']->Execute('show Columns from '.$table);
         $fields = [];
-        while ($row = $GLOBALS['db']->Fetch($f)) {
+        foreach ($f as $row) {
             $fields[] = $row;
         }
 

@@ -248,7 +248,7 @@ class Grid
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
             $RowValueTotal = [];
-            while ($row = $GLOBALS['db']->FetchArray($rs)) {
+            foreach ($rs as $row) {
                 $option = '';
                 if (isset($this->Options['option']) && is_array($this->Options['option'])) {
                     foreach ($this->Options['option'] as $icon) {

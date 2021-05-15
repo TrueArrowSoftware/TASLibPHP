@@ -56,7 +56,7 @@ class UI
         if ($db->RowCount($rs) > 0) {
             $db->Reset($rs);
             $columns = explode(' ', $labelCol);
-            while ($row = $db->FetchArray($rs)) {
+            foreach ($rs as $row) {
                 if (count($columns) > 1) {
                     reset($columns);
                     $text = '';
@@ -154,7 +154,7 @@ class UI
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $db->Reset($rs);
             $list .= '<ul class="rslist">';
-            while ($row = $GLOBALS['db']->FetchArray($rs)) {
+            foreach ($rs as $row) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
                 $list .= '<li><label class="'.($type == 'radio' ? 'custom-radio' : ($type == 'checkbox' ? 'custom-checkbox' : 'customlist')).'">
                           <input type="'.$type.'" class="form-control '.(($isrequired) ? 'required' : '').'" '.(($type == 'radio') ? ' value="'.$row[$indexCol].'"' : ' value="on"').(($type == 'radio') ? ' name="'.$name.'"' : ' name="'.$name.'['.$row[$indexCol].']"').' '.(in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '').'>
