@@ -17,7 +17,7 @@ class DataFormat
     public static function CleanPhone(string $phone, int $length = 10)
     {
         if (empty(trim($phone))) {
-            throw new \Exception('Invalid Arugment supplied');
+            return $phone;
         }
         if ($length < 5 && $length > 20) {
             throw new \Exception('Length of desire phone should be in between 5 to 20 characters only.');
