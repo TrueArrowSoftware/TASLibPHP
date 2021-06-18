@@ -86,7 +86,7 @@ class Entity
         return $obj->_tablename;
     }
 
-    /*
+    /**
      * Validate the Form input against the field information.
      * @param $fields array Field information, output of GetFields() function call.
      * @param $values array Values capture from input form.
@@ -133,6 +133,9 @@ class Entity
         return $isvalid;
     }
 
+    /**
+     * Validate the values array against the database table column.
+     */
     public static function Validate($values, $tablename)
     {
         if (!is_array($values)) {
@@ -278,8 +281,19 @@ class Entity
         return $fields;
     }
 
-    public static function ValidateAgainstTable($postdata = [], $table, $callback = null)
+    /**
+     * Validate given data against the table structure.
+     * @deprecated 1.1 Use InputValidate instead 
+     */
+    public static function ValidateAgainstTable($postdata, $table, $callback = null)
     {
+        if ($postdata==null) {
+            return [
+                    'level' => 10,
+                    'message' => 'No data to validate',
+                   ];
+        }
+
         $message = [];
         if ($callback != null) {
             $tableinfo = call_user_func($callback);
