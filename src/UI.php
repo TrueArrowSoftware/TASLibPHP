@@ -89,6 +89,37 @@ class UI
         return $list;
     }
 
+    /** 
+     * Create a Option List for DataList HTML tag $labelCol can use space separated column name to combine them.
+     */
+    public static function RecordSetToDataListOptions($rs, $labelCol)
+    {
+        $list = '';
+        $SelectionDone = false;
+        if (\TAS\Core\DB::Count($rs) > 0) {
+            \TAS\Core\DB::Reset($rs);
+            $columns = explode(' ', $labelCol);
+            foreach ($rs as $row) {
+                if (count($columns) > 1) {
+                    reset($columns);
+                    $text = '';
+                    foreach ($columns as $ckey => $cval) {
+                        if (isset($row[$cval])) {
+                            $text .= ucwords($row[$cval]).' ';
+                        }
+                    }
+                } else {
+                    $text = ucwords($row[$labelCol]);
+                }
+                $list .= '<option value="'.$text.'" />';
+            }
+        }
+        return $list;
+    }
+
+    /**
+     * Create numeric dropdown for given range and steps
+     */
     public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue, $showSelect = true, $showSelectName = 'Select')
     {
         if ($showSelect) {
@@ -107,6 +138,9 @@ class UI
         return $list;
     }
 
+    /**
+     * Create HTML Checkbox using array.
+     */
     public static function ArrayToCheckRadioList($array, $selectedvalues, $name = 'list', $type = 'checkbox', $isrequired = false, $labelformat = '{text}')
     {
         $list = '';
