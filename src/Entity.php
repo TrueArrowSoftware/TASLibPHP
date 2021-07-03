@@ -283,7 +283,7 @@ class Entity
 
     /**
      * Validate given data against the table structure.
-     * @deprecated 1.1 Use InputValidate instead 
+     * @deprecated 1.1 Use InputValidate instead
      */
     public static function ValidateAgainstTable($postdata, $table, $callback = null)
     {
@@ -357,8 +357,9 @@ class Entity
                             $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]);
                         } else {
                             foreach ($_POST[$field['id']] as $i => $val) {
-                                $_POST[$field['id']][$i] = \TAS\Core\DataFormat::DoSecure($val);
+                                $d[$field['id']][$i] = \TAS\Core\DataFormat::DoSecure($val);
                             }
+                            $d[$field['id']]= json_encode($d[$field['id']]);
                         }
                         break;
                     default:

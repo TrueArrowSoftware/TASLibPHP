@@ -25,6 +25,9 @@ class UI
         }
     }
 
+    /**
+     * Convert a give array in HTML Option Tags.
+     */
     public static function ArrayToDropDown($sourceArray, $selectedvalue)
     {
         if (is_array($sourceArray)) {
@@ -68,7 +71,7 @@ class UI
                 } else {
                     $text = ucwords($row[$labelCol]);
                 }
-                if ($row[$indexCol] == $selectedvalue) {
+                if ( (is_array($selectedvalue) && in_array($row[$indexCol],$selectedvalue) ) || $row[$indexCol] == $selectedvalue) {
                     $list .= '<option value="'.$row[$indexCol].'" selected="selected">'.$text."</option>\n";
                     $SelectionDone = true;
                 } else {
@@ -89,7 +92,7 @@ class UI
         return $list;
     }
 
-    /** 
+    /**
      * Create a Option List for DataList HTML tag $labelCol can use space separated column name to combine them.
      */
     public static function RecordSetToDataListOptions($rs, $labelCol)
@@ -186,7 +189,7 @@ class UI
             }
         }
         if ($GLOBALS['db']->RowCount($rs) > 0) {
-            $db->Reset($rs);
+            \TAS\Core\DB::Reset($rs);
             $list .= '<ul class="rslist">';
             foreach ($rs as $row) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
@@ -680,6 +683,196 @@ class UI
 
         return $HTML;
     }
+
+
+    /**
+     * Create HTML for Form in Readonly Mode.
+     *
+     */
+    public static function GetReadOnlyHTML($param = [])
+    {
+        $fieldHTML = [];
+        foreach ($param['Fields'] as $i => $field) {
+            $fieldtype = $field['type'];
+            $id = (isset($field['id']) ? $field['id'] : $i);
+            $fieldname = (isset($field['field']) ? $field['field'] : $field['Field']);
+            $isrequired = (isset($field['required']) ? $field['required'] : false);
+            $fieldtype = explode('(', $fieldtype);
+            $fieldtype = $fieldtype[0];
+
+            $field['group'] = (!isset($field['group'])) ? 'nogroup' : $field['group'];
+
+            $DoLabel = true;
+            $DoLabel = (isset($field['DoLabel']) && is_bool($field['DoLabel']) ? $field['DoLabel'] : true);
+
+            switch (strtolower($fieldtype)) {
+                case 'file':
+                    $DoLabel = false;
+                    $HTML = '';
+                    break;
+                case 'radiolist':
+                case 'checklist':
+                    if($field['selecttype']=='query') {
+                        $field['selecttype']='recordset';
+                        $field['query']= $field['recordset'];
+                    }
+                case 'select':
+                    $options = [];
+                    try {
+                        switch ($field['selecttype']) {
+                            case 'query': // Run from DB;
+                                $rs =$GLOBALS['db']->Execute($field['query']);
+                                if ($rs!=null && \TAS\Core\DB::Count($rs)>0) {
+                                    foreach ($rs as $row) {
+                                        if (\strpos($field['dbLabelField'], "{")===FALSE) {
+                                            $options[$row[$field['dbID']]]=  $row[$field['dbLabelField']];
+                                        } else {
+                                            $options[$row[$field['dbID']]]=  \TAS\Core\TemplateHandler::PrepareContent($field['dbLabelField'], $row);                                            
+                                        }
+                                    }
+                                }
+                                break;
+                            case 'recordset':
+                                if ($field['query']!=null && \TAS\Core\DB::Count($field['query'])>0) {
+                                    foreach ($field['query'] as $row) {
+                                        if (\strpos($field['dbLabelField'], "{")===FALSE) {
+                                            $options[$row[$field['dbID']]]=  $row[$field['dbLabelField']];
+                                        } else {
+                                            $options[$row[$field['dbID']]]=  \TAS\Core\TemplateHandler::PrepareContent($field['dbLabelField'], $row);                                            
+                                        }
+                                    }
+                                }
+                                break;
+                                break;
+                            case 'globalarray': // run from global Array
+                                $options = $GLOBALS[(isset($field['arrayname']) ? $field['arrayname'] : '')];
+                                break;
+                            case 'array': // array pass along.
+                                $options = (isset($field['arrayname']) ? $field['arrayname'] : []);
+                                break;
+                        }
+                    } catch (\Exception $ex) {
+                        trigger_error('Unable to create Select list, argument invalid', E_USER_ERROR);
+                    }
+                    $multi = (isset($field['multiple']) ? $field['multiple'] : false);
+                    $HTML ='';
+                    foreach ($options as $key=>$option) {
+                        if ((is_array($field['value']) && in_array($key, $field['value']))  ||
+                            ($key== $field['value'])) {
+                            $HTML .=  \TAS\Core\HTML::ReadOnly($option);
+                        }
+                    }
+                    break;
+                case 'checkbox':
+                    $HTML = (isset($field['value']) && ($field['value']==1 || $field['value']==true)) ?'Yes':'No';
+                    break;
+                case 'hidden':
+                    $DoLabel = false;
+                    $HTML = '';
+                    break;
+                case 'cb':
+                    $HTML = call_user_func($field['function'], $field, true); // @remark, $field data array is only parameter.
+
+                    break;
+                case 'color':
+                case 'password':
+                case 'text':
+                case 'textarea':
+                case 'longtext':
+                case 'mediumtext':
+                case 'inputbox':
+                case 'varchar':
+                case 'string':
+                case 'bigint':
+                case 'int':
+                case 'float':
+                case 'numeric':
+                case 'number':
+                case 'datetime':
+                case 'date':
+                case 'email':
+                case 'phone':
+                case 'zipcode':
+                case 'url':
+                default:
+                        $HTML = \TAS\Core\HTML::ReadOnly(isset($field['value']) ? $field['value'] : '', $id, (isset($field['css']) ? $field['css'] : ''));
+                    break;
+            }
+            if ($DoLabel) {
+                $HTMLLabel = \TAS\Core\HTML::Label((isset($field['label']) ? $field['label'] : $field['Field']), $id, $isrequired);
+            } else {
+                $HTMLLabel = '';
+            }
+
+            $groupName = 'nogroup';
+            if (isset($param['Group']) && isset($param['Group'][$field['group']])) {
+                $groupName = $field['group'];
+            }
+
+            if (isset($field['DoWrapper']) && $field['DoWrapper'] == false) {
+                $fieldHTML[$groupName][$fieldname]['html'] = $HTMLLabel.$HTML;
+            } else {
+                $fieldHTML[$groupName][$fieldname]['html'] = \TAS\Core\HTML::FormField($HTMLLabel, \TAS\Core\HTML::InputWrapper($HTML), (isset($field['wrappertag']) ? $field['wrappertag'] : ''));
+            }
+
+            $fieldHTML[$groupName][$fieldname]['displayorder'] = (isset($field['displayorder']) ? $field['displayorder'] : 1);
+        }
+
+        // Iterate to $fieldHTML To put fields in order if provided
+        $HTML = '';
+        if (isset($param['Group'])) {
+            foreach ($param['Group'] as $group => $info) {
+                if (isset($fieldHTML[$group])) {
+                    $tmp[$group] = $fieldHTML[$group];
+                    unset($fieldHTML[$group]);
+                }
+            }
+            $tmp2 = $fieldHTML;
+            $fieldHTML = $tmp;
+            $fieldHTML = array_merge($fieldHTML, $tmp2);
+            unset($tmp);
+            unset($tmp2);
+            foreach ($fieldHTML as $group => $fieldinfo) {
+                $sortfield = [];
+                foreach ($fieldinfo as $fieldname => $tfield) {
+                    $sortfield[$tfield['displayorder']] = $fieldname;
+                }
+                ksort($sortfield);
+                reset($sortfield);
+                if (isset($param['Group'][$group])) {
+                    $HTML .= '<fieldset class="'.$group.'"><legend>'.$param['Group'][$group]['legend'].'</legend>';
+                }
+
+                foreach ($sortfield as $i => $v) {
+                    $HTML .= "\r\n".$fieldHTML[$group][$v]['html'];
+                }
+                if (isset($param['Group'][$group])) {
+                    $HTML .= '</fieldset>';
+                }
+            }
+        } else {
+            foreach ($fieldHTML as $group => $fieldinfo) {
+                $sortfield = [];
+                foreach ($fieldinfo as $fieldname => $tfield) {
+                    $sortfield[$tfield['displayorder']] = $fieldname;
+                }
+                ksort($sortfield);
+                reset($sortfield);
+                if (isset($param['Group'][$group])) {
+                    $HTML .= '<fieldset class="'.$group.'"><legend>'.$param['Group'][$group]['legend'].'</legend>';
+                }
+                foreach ($sortfield as $i => $v) {
+                    $HTML .= "\r\n".$fieldHTML[$group][$v]['html'];
+                }
+                if (isset($param['Group'][$group])) {
+                    $HTML .= '</fieldset>';
+                }
+            }
+        }
+
+        return $HTML;
+    }
+
 
     /**
      * Display the UI message on screen for form.
