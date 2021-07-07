@@ -356,10 +356,14 @@ class Entity
                         if (!isset($field['multiple']) || $field['multiple'] == false) {
                             $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]);
                         } else {
-                            foreach ($_POST[$field['id']] as $i => $val) {
-                                $d[$field['id']][$i] = \TAS\Core\DataFormat::DoSecure($val);
+                            if (isset($_POST[$field['id']])) {
+                                foreach ($_POST[$field['id']] as $i => $val) {
+                                    $d[$field['id']][$i] = \TAS\Core\DataFormat::DoSecure($val);
+                                }
+                                $d[$field['id']]= json_encode($d[$field['id']]);
+                            } else {
+                                $d[$field['id']]= '{}';
                             }
-                            $d[$field['id']]= json_encode($d[$field['id']]);
                         }
                         break;
                     default:
