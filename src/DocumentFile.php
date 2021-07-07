@@ -143,9 +143,9 @@ class DocumentFile extends \TAS\Core\UserFile
     public static function GetLinkerDocument(int $linkerid, $linkertype)
     {
         $files = new DocumentFile();
-        $files->LinkerType = $linkerType;
+        $files->LinkerType = $linkertype;
 
-        return $files->GetDocumentOnLinker($linkerID);
+        return $files->GetDocumentOnLinker($linkerid);
     }
 
     /**
@@ -206,7 +206,7 @@ class DocumentFile extends \TAS\Core\UserFile
         return $x->DeleteDocument($documentID);
     }
     
-    
+
     //Function to delete document on Linker
     public function DeleteDocument($documentid)
     {
