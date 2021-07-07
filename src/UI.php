@@ -487,8 +487,8 @@ class UI
                 case 'file':
                     $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
                     if ($field['value'] > 0) {
-                        $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" data-imageid="'.$field['value'].'">See/Download File</a> /
-									<a href="#" class="deleteimage" data-imageid="'.$field['value'].'">Delete</a></span>';
+                        $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" '.(isset($field['filesource'])?'data-source="'. $field['filesource'] .'"':'').' data-imageid="'.$field['value'].'">View File</a> /
+                        <a href="#" class="deleteimage" data-imageid="'.$field['value'].'"'.(isset($field['filesource'])?' data-source="'. $field['filesource'] .'"':'').'>Delete</a></span>';
                     }
                     break;
                 case 'readonly':

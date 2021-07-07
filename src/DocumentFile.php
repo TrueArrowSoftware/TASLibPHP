@@ -136,7 +136,18 @@ class DocumentFile extends \TAS\Core\UserFile
         
         return $document;
     }
-    
+
+     /**
+     * Get Document/s for given Linker ID and Type.
+     */
+    public static function GetLinkerDocument(int $linkerid, $linkertype)
+    {
+        $files = new DocumentFile();
+        $files->LinkerType = $linkerType;
+
+        return $files->GetDocumentOnLinker($linkerID);
+    }
+
     /**
      * Return the document information.
      *
@@ -186,6 +197,15 @@ class DocumentFile extends \TAS\Core\UserFile
         //Clean From DB
         $GLOBALS['db']->Execute('Delete from '.$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid");
     }
+    
+    /**
+     * Delete the document.
+     */
+    public static function Delete($documentID){
+        $x = new DocumentFile();
+        return $x->DeleteDocument($documentID);
+    }
+    
     
     //Function to delete document on Linker
     public function DeleteDocument($documentid)
