@@ -354,7 +354,7 @@ class Entity
                         break; // do nothing.
                     case 'select':
                         if (!isset($field['multiple']) || $field['multiple'] == false) {
-                            $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]);
+                            $d[$field['id']] = array_key_exists($field['id'], $_POST)?\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]):'';
                         } else {
                             if (isset($_POST[$field['id']])) {
                                 foreach ($_POST[$field['id']] as $i => $val) {

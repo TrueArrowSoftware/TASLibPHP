@@ -659,8 +659,23 @@ class Utility
         }
     }
 
-    public static function SendHTMLMail($to, $subject, $html_body, $text_body = '', $fromemail, $fromName, $returnpath = '', $attachment = null)
+    /**
+     * Send Email using PHPMailer with or without SMTP
+     *
+     * @param [type] $to
+     * @param [type] $subject
+     * @param [type] $html_body
+     * @param [type] $text_body
+     * @param [type] $fromemail
+     * @param string $fromName
+     * @param string $returnpath
+     * @param [type] $attachment
+     * @return void
+     */
+    public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName='', $returnpath = '', $attachment = null)
     {
+        $text_body = $text_body??'';
+        $mailstat = true;
         $mail = new PHPMailer();
         $mail->IsMail();
         if ($GLOBALS['AppConfig']['UseSMTPAuth'] == true) {
@@ -700,13 +715,16 @@ class Utility
                 'mail' => print_r($mail, true),
             ], 'debug');
             $mailstat = false;
-        } else {
-            $mailstat = true;
         }
 
         return $mailstat;
     }
 
+    /**
+     * Create a uniq GUID in {8}-{4}-{4}-{4}-{12}
+     *
+     * @return void
+     */
     public static function CreateGUID()
     {
         $guid = '';
@@ -723,6 +741,12 @@ class Utility
         return $guid;
     }
 
+    /**
+     * Wrapper for CreateGUID to cut the string in given length and without -
+     *
+     * @param int $length
+     * @return void
+     */
     public static function CreateGUIDString($length = 10)
     {
         $GUID = self::CreateGUID();

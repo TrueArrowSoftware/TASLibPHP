@@ -5,8 +5,9 @@ namespace TAS\Core;
 class Grid
 {
     public $QueryOptions;
-
     public $Options;
+
+    private $CorePage;
 
     public function __construct($options = null, $queryoptions = null)
     {
@@ -132,7 +133,7 @@ class Grid
         $newdirection = (strtolower($orderdirection) == 'asc') ? 'desc' : 'asc';
 
         $page = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage.'&d='.$newdirection);
-        $corepage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
+        $this->CorePage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
 
         if (isset($_GET['direction'])) {
             $filter .= '&direction='.$orderdirection;
@@ -274,121 +275,10 @@ class Grid
                 foreach ($this->Options['fields'] as $field => $val) {
                     $fielddata = '';
                     $cssClass = '';
-                    switch ($val['type']) {
-                            case 'globalarray':
-                                if ($row[$field] != null) {
-                                    if (isset($val['arrayname'])) {
-                                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
-                                    } else {
-                                        $fielddata = $GLOBALS[$field][$row[$field]];
-                                    }
-                                }
-                                break;
-                            case 'string':
-                                $fielddata = $row[$field];
-                                break;
-                            case 'longstring':
-                                $fielddata = $row[$field];
-                                break;
-                            case 'onoff':
-                                $fielddata = (((int) $row[$field] === 1 || strtolower($row[$field]) === 'active' || $row[$field] === true || strtolower($row[$field]) === 'yes') ? 'Yes' : 'No');
-
-                                if (isset($val['mode']) && $val['mode'] == 'fa') {
-                                    if ($fielddata == 'Yes') {
-                                        $fielddata = ' <i class="fas '.(isset($val['iconyes']) ? $val['iconyes'] : 'fa-heart').' green" aria-hidden="true"></i>';
-                                    } else {
-                                        $fielddata = ' <i class="fas '.(isset($val['iconno']) ? $val['iconno'] : 'fa-heart').' red" aria-hidden="true"></i>';
-                                    }
-                                } else {
-                                    if ($fielddata == 'Yes' && isset($val['iconyes'])) {
-                                        $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
-                                    }
-                                    if ($fielddata == 'No' && isset($val['iconno'])) {
-                                        $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
-                                    }
-                                }
-                                $fielddata = '<a href="'.$corepage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                $cssClass = 'gridtable-onoff';
-                                break;
-                            case 'flag':
-                                $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
-                                if ($fielddata == 'Yes') {
-                                    $fielddata = '<img src="'.(isset($val['icon']) ? $val['icon'] : '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
-                                } else {
-                                    $fielddata = '';
-                                }
-                                $fielddata = '<a href="'.$corepage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
-                                $cssClass = 'gridtable-flag';
-                                break;
-                            case 'phone':
-                                if ($row[$field] != '') {
-                                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
-                                } else {
-                                    $fielddata = $row[$field];
-                                }
-                                break;
-                            case 'date':
-                                $format = (isset($val['DateFormat']) ?
-                                            $val['DateFormat'] :
-                                            (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
-
-                                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
-                                break;
-                            case 'datetime':
-                                $format = (isset($val['DateFormat']) ?
-                                        $val['DateFormat'] :
-                                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
-
-                                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
-                                break;
-                            case 'currency':
-                                $cssClass = 'gridtable-currency';
-                                if ($val['showtotal'] ?? false == true) {
-                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
-                                    $RowValueTotal[$field] += (float) $row[$field];
-                                }
-                                if (isset($val['postsymbol']) && $val['postsymbol']) {
-                                    $fielddata = number_format((float) $row[$field], 2).$val['postsymbol'];
-                                } else {
-                                    $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
-                                }
-                                break;
-                            case 'numeric':
-                            case 'number':
-                                $cssClass = 'gridtable-numeric';
-                                if ($val['showtotal'] ?? false == true) {
-                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
-                                    $RowValueTotal[$field] += (float) $row[$field];
-                                }
-
-                                if (isset($val['number-decimal']) && $val['number-decimal']) {
-                                    $fielddata = number_format((float) $row[$field], 2);
-                                } else {
-                                    $fielddata = (int) round((float) $row[$field], 4);
-                                }
-
-                                break;
-                            case 'cb':
-                            case 'callback':
-                                if ($val['showtotal'] ?? false == true) {
-                                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
-                                    $t = $RowValueTotal[$field];
-                                    $fielddata = call_user_func_array($val['function'], [$row, $field, &$t]);
-                                    $RowValueTotal[$field] = $t;
-                                } else {
-                                    $fielddata = call_user_func_array($val['function'], [$row, $field]);
-                                }
-                                break;
-                            case 'image':
-                                $fielddata = '<img src="'.(isset($val['prefixUrl']) ? $val['prefixUrl'] : '').$row[$field].'" class="thumbnailsize">';
-                                break;
-                            case 'color':
-                                $fielddata = '<div class="colordiv" style="background:'.$row[$field].';"></div>';
-                                break;
-                            default:
-                                $fielddata = $row[$field];
-                                break;
-                        }
+                   
+                    $_output = $this->ProcessColumnData($field, $val, $row);
+                    $fielddata = $_output['fielddata'];
+                    $cssClass = $_output['cssClass'];
 
                     $listing .= "\r\n \t";
 
@@ -482,6 +372,128 @@ class Grid
         }
 
         return $listing;
+    }
+
+    public function ProcessColumnData($field, $val, $row){
+        $fielddata ='';
+        $cssClass='';
+        switch ($val['type']) {
+            case 'globalarray':
+                if ($row[$field] != null) {
+                    if (isset($val['arrayname'])) {
+                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
+                    } else {
+                        $fielddata = $GLOBALS[$field][$row[$field]];
+                    }
+                }
+                break;
+            case 'string':
+                $fielddata = $row[$field];
+                break;
+            case 'longstring':
+                $fielddata = $row[$field];
+                break;
+            case 'onoff':
+                $fielddata = (((int) $row[$field] === 1 || strtolower($row[$field]) === 'active' || $row[$field] === true || strtolower($row[$field]) === 'yes') ? 'Yes' : 'No');
+
+                if (isset($val['mode']) && $val['mode'] == 'fa') {
+                    if ($fielddata == 'Yes') {
+                        $fielddata = ' <i class="fas '.(isset($val['iconyes']) ? $val['iconyes'] : 'fa-heart').' green" aria-hidden="true"></i>';
+                    } else {
+                        $fielddata = ' <i class="fas '.(isset($val['iconno']) ? $val['iconno'] : 'fa-heart').' red" aria-hidden="true"></i>';
+                    }
+                } else {
+                    if ($fielddata == 'Yes' && isset($val['iconyes'])) {
+                        $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
+                    }
+                    if ($fielddata == 'No' && isset($val['iconno'])) {
+                        $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
+                    }
+                }
+                $fielddata = '<a href="'.$this->CorePage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
+                $cssClass = 'gridtable-onoff';
+                break;
+            case 'flag':
+                $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
+                if ($fielddata == 'Yes') {
+                    $fielddata = '<img src="'.(isset($val['icon']) ? $val['icon'] : '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
+                } else {
+                    $fielddata = '';
+                }
+                $fielddata = '<a href="'.$this->CorePage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
+                $cssClass = 'gridtable-flag';
+                break;
+            case 'phone':
+                if ($row[$field] != '') {
+                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
+                } else {
+                    $fielddata = $row[$field];
+                }
+                break;
+            case 'date':
+                $format = (isset($val['DateFormat']) ?
+                            $val['DateFormat'] :
+                            (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
+
+                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
+                break;
+            case 'datetime':
+                $format = (isset($val['DateFormat']) ?
+                        $val['DateFormat'] :
+                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
+
+                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
+                break;
+            case 'currency':
+                $cssClass = 'gridtable-currency';
+                if ($val['showtotal'] ?? false == true) {
+                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $RowValueTotal[$field] += (float) $row[$field];
+                }
+                if (isset($val['postsymbol']) && $val['postsymbol']) {
+                    $fielddata = number_format((float) $row[$field], 2).$val['postsymbol'];
+                } else {
+                    $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
+                }
+                break;
+            case 'numeric':
+            case 'number':
+                $cssClass = 'gridtable-numeric';
+                if ($val['showtotal'] ?? false == true) {
+                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $RowValueTotal[$field] += (float) $row[$field];
+                }
+
+                if (isset($val['number-decimal']) && $val['number-decimal']) {
+                    $fielddata = number_format((float) $row[$field], 2);
+                } else {
+                    $fielddata = (int) round((float) $row[$field], 4);
+                }
+
+                break;
+            case 'cb':
+            case 'callback':
+                if ($val['showtotal'] ?? false == true) {
+                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $t = $RowValueTotal[$field];
+                    $fielddata = call_user_func_array($val['function'], [$row, $field, &$t]);
+                    $RowValueTotal[$field] = $t;
+                } else {
+                    $fielddata = call_user_func_array($val['function'], [$row, $field]);
+                }
+                break;
+            case 'image':
+                $fielddata = '<img src="'.(isset($val['prefixUrl']) ? $val['prefixUrl'] : '').$row[$field].'" class="thumbnailsize">';
+                break;
+            case 'color':
+                $fielddata = '<div class="colordiv" style="background:'.$row[$field].';"></div>';
+                break;
+            default:
+                $fielddata = $row[$field];
+                break;
+        }
+
+        return ['fielddata'=>$fielddata, 'cssClass'=>$cssClass];
     }
 
     private function ShowFilter()
