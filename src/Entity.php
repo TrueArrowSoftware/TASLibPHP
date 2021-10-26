@@ -31,7 +31,7 @@ class Entity
 
     public static function SetError($error, $level = 0)
     {
-        if ($error == '') {
+        if ('' == $error) {
             return false;
         }
         self::$Errors[] = [
@@ -88,18 +88,19 @@ class Entity
 
     /**
      * Validate the Form input against the field information.
-     * @param $fields array Field information, output of GetFields() function call.
-     * @param $values array Values capture from input form.
+     *
+     * @param $fields array Field information, output of GetFields() function call
+     * @param $values array Values capture from input form
      */
     public static function InputValidate($fields, $values)
     {
         $isvalid = true;
         foreach ($fields as $fieldname => $fieldinfo) {
-            if (isset($fieldinfo['required']) && $fieldinfo['required'] == true) {
-                if (isset($values[$fieldname]) && ($values[$fieldname] == null || $values[$fieldname] == '')) {
+            if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
+                if (isset($values[$fieldname]) && (null == $values[$fieldname] || '' == $values[$fieldname])) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
-                } elseif (is_array($values[$fieldname]) && count($values[$fieldname]) == 0) {
+                } elseif (is_array($values[$fieldname]) && 0 == count($values[$fieldname])) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
                 }
@@ -148,8 +149,8 @@ class Entity
                 if (isset($tableinfo[$i])) {
                     switch ($tableinfo[$i]['type']) {
                     case 'int':
-                        if (strtolower($tableinfo[$i]['Null']) == 'yes') {
-                            if ($v != '' && !is_numeric($v)) {
+                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                            if ('' != $v && !is_numeric($v)) {
                                 self::SetError("For $i, $v is not numeric", 10);
 
                                 return false;
@@ -161,8 +162,8 @@ class Entity
                         }
                         break;
                     case 'float':
-                        if (strtolower($tableinfo[$i]['Null']) == 'yes') {
-                            if ($v != '' && !is_numeric($v)) {
+                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                            if ('' != $v && !is_numeric($v)) {
                                 self::SetError("For $i, $v is not numeric", 10);
 
                                 return false;
@@ -181,14 +182,14 @@ class Entity
                         }
                         break;
                     case 'date':
-                        if (strtolower($tableinfo[$i]['Null']) == 'yes') {
-                            if ($v != '' && !\TAS\Core\DataValidate::IsDate($v)) {
+                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                            if ('' != $v && !\TAS\Core\DataValidate::IsDate($v)) {
                                 self::SetError("For $i, $v is not a date", 10);
 
                                 return false;
                             }
                         } else {
-                            if ($v == '' || !\TAS\Core\DataValidate::IsDate($v)) {
+                            if ('' == $v || !\TAS\Core\DataValidate::IsDate($v)) {
                                 self::SetError("For $i, $v is not a date", 10);
 
                                 return false;
@@ -228,6 +229,19 @@ class Entity
         foreach ($this as $key => $value) {
             if (isset($row[strtolower($key)])) {
                 $this->{$key} = \mb_convert_encoding($row[strtolower($key)], 'utf-8');
+            }
+        }
+        $this->_isloaded = true;
+    }
+
+    /**
+     * Load the object using Array Data. Array key must be lower case member name .
+     */
+    public function LoadFromArray(array $data)
+    {
+        foreach ($this as $key => $value) {
+            if (array_key_exists(strtolower($key), $data)) {
+                $this->{$key} = \mb_convert_encoding($data[strtolower($key)], 'utf-8');
             }
         }
         $this->_isloaded = true;
@@ -273,7 +287,7 @@ class Entity
                     $fields[$k]['size'] = 20;
                     break;
             }
-            if ($v['Null'] == 'NO') {
+            if ('NO' == $v['Null']) {
                 $field[$k]['required'] = true;
             }
         }
@@ -283,11 +297,12 @@ class Entity
 
     /**
      * Validate given data against the table structure.
+     *
      * @deprecated 1.1 Use InputValidate instead
      */
     public static function ValidateAgainstTable($postdata, $table, $callback = null)
     {
-        if ($postdata==null) {
+        if (null == $postdata) {
             return [
                     'level' => 10,
                     'message' => 'No data to validate',
@@ -295,7 +310,7 @@ class Entity
         }
 
         $message = [];
-        if ($callback != null) {
+        if (null != $callback) {
             $tableinfo = call_user_func($callback);
         } else {
             $tableinfo = self::GetFieldsGeneric($table);
@@ -305,16 +320,16 @@ class Entity
             if (!is_array($v)) {
                 $v = \TAS\Core\DataFormat::DoSecure($v);
                 if (isset($tableinfo[$k]) && isset($tableinfo[$k]['required'])) {
-                    if ($tableinfo[$k]['required'] == true) {
-                        if ($v == '') {
+                    if (true == $tableinfo[$k]['required']) {
+                        if ('' == $v) {
                             $message[] = [
                                 'level' => 10,
                                 'message' => $tableinfo[$k]['label'].' is required field.',
                             ];
                         }
                     }
-                    if ($tableinfo[$k]['type'] == 'numeric') {
-                        if (($v != '') && !is_numeric($v)) {
+                    if ('numeric' == $tableinfo[$k]['type']) {
+                        if (('' != $v) && !is_numeric($v)) {
                             $message[] = [
                                 'level' => 10,
                                 'message' => $tableinfo[$k]['label'].' is not a number.',
@@ -331,10 +346,10 @@ class Entity
     public static function ParsePostToArray($fields)
     {
         $obj = new \TAS\Core\DataFormat();
-        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        if ('POST' == $_SERVER['REQUEST_METHOD']) {
             $d = [];
             foreach ($fields as $field) {
-                if ($field['type'] == 'readonly') {
+                if ('readonly' == $field['type']) {
                     continue;
                 }
                 switch ($field['type']) {
@@ -353,16 +368,16 @@ class Entity
                     case 'cb':
                         break; // do nothing.
                     case 'select':
-                        if (!isset($field['multiple']) || $field['multiple'] == false) {
-                            $d[$field['id']] = array_key_exists($field['id'], $_POST)?\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]):'';
+                        if (!isset($field['multiple']) || false == $field['multiple']) {
+                            $d[$field['id']] = array_key_exists($field['id'], $_POST) ? \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]) : '';
                         } else {
                             if (isset($_POST[$field['id']])) {
                                 foreach ($_POST[$field['id']] as $i => $val) {
                                     $d[$field['id']][$i] = \TAS\Core\DataFormat::DoSecure($val);
                                 }
-                                $d[$field['id']]= json_encode($d[$field['id']]);
+                                $d[$field['id']] = json_encode($d[$field['id']]);
                             } else {
-                                $d[$field['id']]= '{}';
+                                $d[$field['id']] = '{}';
                             }
                         }
                         break;

@@ -284,6 +284,18 @@ class DB
     }
 
     /**
+     * Shorthand function to comvert a recordset to array.
+     *
+     * @param string $query
+     * @return array
+     */
+    public function ExecuteAll(string $query) : array
+    {
+        $result = $this->Execute($query);
+        return ($result!== false && static::Count($result)>0)?$result->fetch_all(MYSQLI_ASSOC):[];
+    }
+
+    /**
      * @deprecated 2.0.0
      *
      *  Return number of rows in give recordset. Use Static function DB::Count instead for shorter syntax.
@@ -302,7 +314,6 @@ class DB
 
     /**
      * Static Function as replacement of RowCount.
-     * Returns false if error.
      *
      * @param $result
      */
@@ -740,6 +751,7 @@ class DB
             $columnsList = [];
             $QueryParts = [];
             $Columns = '';
+            $query='';
 
             if (isset($values['data']) && is_array($values['data'])) {
                 foreach ($values['data'] as $row) {
@@ -775,7 +787,7 @@ class DB
             $columnsList = [];
             $QueryParts = [];
             $Columns = '';
-
+            $query='';
             if (isset($values['data']) && is_array($values['data'])) {
                 foreach ($values['data'] as $row) {
                     if (is_array($row)) {
@@ -919,6 +931,8 @@ class DB
 
         return $result['Auto_increment'];
     }
+
+    
 
     public static function ToJSON(\mysqli_result $recordset)
     {

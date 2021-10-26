@@ -82,14 +82,14 @@ class DataFormat
     }
 
     /**
-     * UCWord formatting after lower a string.
+     * UCWord formatting after lower a string
      *
      * @param [type] $str
      *
      * @return void
      */
     public static function FormatString(string $str)
-    {
+    {        
         return ucwords(strtolower($str));
     }
 

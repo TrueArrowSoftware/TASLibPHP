@@ -58,9 +58,8 @@ class TemplateHandler
     public static function TemplateChooser(string $pagetemplate)
     {
         if (empty(self::$TemplateName[$pagetemplate])) {
-            throw \Exception('Template Name not available');
-        }
-        
+            throw new \Exception('Template Name not available');
+        }        
         return TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'] . DIRECTORY_SEPARATOR . self::$TemplateName[$pagetemplate], $GLOBALS['pageParse']);
     }
     
