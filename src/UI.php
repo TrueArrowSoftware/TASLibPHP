@@ -6,6 +6,9 @@ class UI
 {
     public static function ImageURLFinder($imageObj, $width, $height)
     {
+        if (null == $imageObj) {
+            return $GLOBALS['AppConfig']['NoImage_Listing'];
+        }
         if (is_array($imageObj['thumbnails']) && count($imageObj['thumbnails']) > 0 && isset($imageObj['thumbnails']['w'.$width.'.h'.$height])) {
             return $imageObj['baseurl'].$imageObj['thumbnails']['w'.$width.'.h'.$height];
         }
@@ -163,6 +166,32 @@ class UI
     }
 
     /**
+     * Dropdown option for Months.
+     *
+     * @param string $selectedValue
+     * @return void
+     */
+    public static function MonthDropDown(string $selectedValue='')
+    {
+        $month = [
+            '01' => 'January',
+            '02' => 'February',
+            '03' => 'March',
+            '04' => 'April',
+            '05' => 'May',
+            '06' => 'June',
+            '07' => 'July',
+            '08' => 'August',
+            '09' => 'September',
+            '10' => 'October',
+            '11' => 'November',
+            '12' => 'December',
+        ];
+
+        return self::ArrayToDropDown($month, $selectedValue);
+    }
+
+    /**
      * Create HTML Checkbox using array.
      *
      * @param mixed $array
@@ -203,6 +232,18 @@ class UI
         return $list;
     }
 
+    /**
+     * Checklist for RecordSet.
+     *
+     * @param [type] $rs
+     * @param [type] $selectedvalues
+     * @param [type] $indexCol
+     * @param [type] $labelformat
+     * @param string $name
+     * @param bool $isrequired
+     * @param string $type
+     * @return void
+     */
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
         $list = '';

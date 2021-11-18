@@ -123,8 +123,11 @@ class DataFormat
      *
      * @param string $DBDate
      */
-    public static function DBToDateTimeFormat($DBDate, $format = 'm/d/Y H:i a')
+    public static function DBToDateTimeFormat($DBDate, $format = '')    
     {
+        if ($format==null || empty($format)) {
+            $format = Config::$DisplayDateTimeFormat;
+        }
         if (trim($DBDate) != '') {
             try {
                 $d = new \DateTime($DBDate);
@@ -143,8 +146,11 @@ class DataFormat
      *
      * @param string $format = 'm/d/Y' Default return format
      */
-    public static function DBToDateFormat($DBDate, $format = 'm/d/Y')
+    public static function DBToDateFormat($DBDate, $format = '')
     {
+        if ($format==null || empty($format)) {
+            $format = Config::$DisplayDateFormat;
+        }
         if (trim($DBDate) != '') {
             try {
                 $d = new \DateTime($DBDate);
@@ -164,20 +170,23 @@ class DataFormat
      * @param string $date
      * @param string $format = 'm/d/Y H:i:a' Read Format
      */
-    public static function DateToDBFormat($date, $format = 'm/d/Y H:i a')
+    public static function DateToDBFormat($date, $readformat = 'm/d/Y H:i a')
     {
         if ($date == '') {
             return '';
         }
+        if ($readformat==null || empty($readformat)) {
+            $readformat = Config::$DisplayDateTimeFormat;
+        }
         try {
             $d = new \DateTime($date);
 
-            return $d !== false ? $d->format('Y-m-d H:i:s') : '';
+            return $d !== false ? $d->format(Config::$DataTimeFormatDB) : '';
         } catch (\Exception $err) {
             try {
-                $d = \DateTime::createFromFormat($format, $date);
+                $d = \DateTime::createFromFormat($readformat, $date);
 
-                return ($d !== false) ? $d->format('Y-m-d H:i:s') : '';
+                return ($d !== false) ? $d->format(Config::$DataTimeFormatDB) : '';
             } catch (\Exception $e2) {
                 return false;
             }

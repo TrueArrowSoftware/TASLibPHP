@@ -11,8 +11,8 @@ class Grid
 
     public function __construct($options = null, $queryoptions = null)
     {
-        $this->QueryOptions = ($queryoptions == null ? Grid::DefaultQueryOptions() : $queryoptions);
-        $this->Options = ($options == null ? Grid::DefaultOptions() : $options);
+        $this->QueryOptions = (null == $queryoptions ? Grid::DefaultQueryOptions() : $queryoptions);
+        $this->Options = (null == $options ? Grid::DefaultOptions() : $options);
     }
 
     /**
@@ -86,15 +86,15 @@ class Grid
     {
         $listing = '';
         $startpage = ((isset($_GET['page']) && is_numeric($_GET['page'])) ? (int) $_GET['page'] : (int) $this->Options['currentpage']);
-        $pagesize = isset($this->Options['pagesize']) ? $this->Options['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
+        $pagesize = $this->Options['pagesize'] ?? $GLOBALS['AppConfig']['PageSize'];
 
         $start = ($startpage - 1) * $pagesize;
 
-        $this->QueryOptions['defaultorderby'] = isset($this->QueryOptions['defaultorderby']) ? $this->QueryOptions['defaultorderby'] : '';
-        $this->QueryOptions['defaultsortdirection'] = isset($this->QueryOptions['defaultsortdirection']) ? $this->QueryOptions['defaultsortdirection'] : '';
+        $this->QueryOptions['defaultorderby'] ??= '';
+        $this->QueryOptions['defaultsortdirection'] ??= '';
 
-        $orderby = (isset($_GET['ob']) ? $_GET['ob'] : (isset($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob']) ? $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] : $this->QueryOptions['defaultorderby']));
-        $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : ((isset($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d']) ? $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] : $this->QueryOptions['defaultsortdirection'])));
+        $orderby = ($_GET['ob'] ?? ($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] ?? $this->QueryOptions['defaultorderby']));
+        $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : (($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] ?? $this->QueryOptions['defaultsortdirection'])));
 
         $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] = $orderdirection;
         $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] = $orderby;
@@ -111,26 +111,26 @@ class Grid
         }
 
         $orderLine = '';
-        if (isset($this->Options['noorderby']) && $this->Options['noorderby'] == true) {
+        if (isset($this->Options['noorderby']) && true == $this->Options['noorderby']) {
             $orderLine = ' ';
         } else {
-            $orderLine = " order by $orderby $orderdirection $sortstring ";
+            $orderLine = " order by {$orderby} {$orderdirection} {$sortstring} ";
         }
 
-        if (isset($this->Options['allowpaging']) && $this->Options['allowpaging'] === false) {
+        if (isset($this->Options['allowpaging']) && false === $this->Options['allowpaging']) {
             $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine;
             if (isset($this->QueryOptions['recordshowlimit']) && is_numeric($this->QueryOptions['recordshowlimit']) && (int) $this->QueryOptions['recordshowlimit'] > 0) {
                 $query .= ' limit '.(int) $this->QueryOptions['recordshowlimit'];
             }
         } else {
-            $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine." limit $start, ".$pagesize;
+            $query = $this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].$orderLine." limit {$start}, ".$pagesize;
         }
 
         $filter = '';
 
-        $defaultpage = (!isset($this->Options['gridurl']) || $this->Options['gridurl'] == '') ? 'index.php' : $this->Options['gridurl'];
+        $defaultpage = (!isset($this->Options['gridurl']) || '' == $this->Options['gridurl']) ? 'index.php' : $this->Options['gridurl'];
         $pagingPage = $defaultpage;
-        $newdirection = (strtolower($orderdirection) == 'asc') ? 'desc' : 'asc';
+        $newdirection = ('asc' == strtolower($orderdirection)) ? 'desc' : 'asc';
 
         $page = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage.'&d='.$newdirection);
         $this->CorePage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
@@ -148,7 +148,7 @@ class Grid
 
         $TotalRecordCount = $GLOBALS['db']->ExecuteScalar('Select count(*) from ('.$this->QueryOptions['basicquery'].$this->QueryOptions['whereconditions'].') t');
 
-        $recordText = isset($this->Options['totalrecordtext']) ? $this->Options['totalrecordtext'] : '{totalrecord} records';
+        $recordText = $this->Options['totalrecordtext'] ?? '{totalrecord} records';
         $recordText = str_replace('{totalrecord}', $TotalRecordCount, $recordText);
 
         $listing .= '<section class="content-section">
@@ -164,7 +164,7 @@ class Grid
 
         $totalfield = 1;
 
-        $allowRowSorting = ((isset($this->Options['roworder']) && $this->Options['roworder'] == true) ? 'tablesort' : '');
+        $allowRowSorting = ((isset($this->Options['roworder']) && true == $this->Options['roworder']) ? 'tablesort' : '');
         $listing .= '<div class="table-responsive">
                         <table class="table table-striped '.$allowRowSorting.'" data-url="'.$defaultpage.'" id="'.((isset($this->Options['tablename'])) ? $this->Options['tablename'] : 'usergrid').'">';
         $listing .= '<thead>
@@ -175,7 +175,7 @@ class Grid
         }
 
         $RemoveFieldOption = false;
-        if (isset($this->Options['option']) && is_array($this->Options['option']) && count($this->Options['option']) == 0) {
+        if (isset($this->Options['option']) && is_array($this->Options['option']) && 0 == count($this->Options['option'])) {
             $RemoveFieldOption = true;
             --$totalfield;
         }
@@ -185,7 +185,7 @@ class Grid
         foreach ($this->Options['fields'] as $field => $val) {
             $sorticon = '';
             if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                if (strtolower($orderdirection) == 'asc') {
+                if ('asc' == strtolower($orderdirection)) {
                     $sorticon = '<a class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
                     <i class="fas fa-sort-alpha-up"></i></a>';
                 } else {
@@ -194,7 +194,7 @@ class Grid
                 }
             }
             $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
-            $Label = isset($val['label']) ? $val['label'] : $val['name'];
+            $Label = $val['label'] ?? $val['name'];
 
             switch ($val['type']) {
                 case 'longstring':
@@ -202,21 +202,30 @@ class Grid
                     ++$count;
                     $count = (int) ((2 / $count) * 100);
                     $listing .= '<th style="width:'.$count.'%;">';
+
                     break;
+
                 case 'flag':
                     $listing .= '<th style="width: 20px;">';
+
                     break;
+
                 case 'currency':
                     $listing .= '<th class="currency">';
+
                     break;
+
                 case 'number':
                     $listing .= '<th class="number">';
+
                     break;
+
                 default:
                     $listing .= '<th>';
+
                     break;
             }
-            if (isset($this->Options['allowsorting']) && $this->Options['allowsorting'] === false) {
+            if (isset($this->Options['allowsorting']) && false === $this->Options['allowsorting']) {
                 $listing .= $Text;
             } else {
                 $listing .= '<a href="'.$page.'&ob='.$field.'" title="Sort by '.$Label.'">'.$Text.'</a>'.$sorticon.'</th>';
@@ -234,12 +243,19 @@ class Grid
         }
 
         if ($this->Options['allowpaging']) {
-            $pquery = isset($this->QueryOptions['pagingquery']) ? $this->QueryOptions['pagingquery'] : $this->QueryOptions['basicquery'];
+            $pquery = $this->QueryOptions['pagingquery'] ?? $this->QueryOptions['basicquery'];
             $pageingrow = '<tr><td class="pager" colspan="'.$totalfield.'">'.
-                \TAS\Core\Utility::Paging($this->QueryOptions['tablename'], $pagingPage, $startpage, $pquery.$this->QueryOptions['whereconditions'].(isset($this->QueryOptions['pagingqueryend']) ? $this->QueryOptions['pagingqueryend'] : ''), $filter, true,
-                        [
-                'pagesize' => $pagesize,
-            ]).'</td></tr>';
+                \TAS\Core\Utility::Paging(
+                    $this->QueryOptions['tablename'],
+                    $pagingPage,
+                    $startpage,
+                    $pquery.$this->QueryOptions['whereconditions'].($this->QueryOptions['pagingqueryend'] ?? ''),
+                    $filter,
+                    true,
+                    [
+                        'pagesize' => $pagesize,
+                    ]
+                ).'</td></tr>';
 
             $listing .= $pageingrow;
         }
@@ -260,7 +276,7 @@ class Grid
                 }
 
                 $additionalClass = '';
-                if (isset($this->Options['rowconditioncb']) && $this->Options['rowconditioncb'] != '' && function_exists($this->Options['rowconditioncb'])) {
+                if (isset($this->Options['rowconditioncb']) && '' != $this->Options['rowconditioncb'] && function_exists($this->Options['rowconditioncb'])) {
                     $additionalClass = call_user_func($this->Options['rowconditioncb'], $row, $additionalClass);
                 }
                 $listing .= "\n".'<tr data-id="'.$row[$this->QueryOptions['indexfield']].'" id="row_'.$row[$this->QueryOptions['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';
@@ -275,7 +291,7 @@ class Grid
                 foreach ($this->Options['fields'] as $field => $val) {
                     $fielddata = '';
                     $cssClass = '';
-                   
+
                     $_output = $this->ProcessColumnData($field, $val, $row);
                     $fielddata = $_output['fielddata'];
                     $cssClass = $_output['cssClass'];
@@ -313,7 +329,9 @@ class Grid
                                     $_v = (int) round((float) $RowValueTotal[$field], 4);
                                 }
                                 $listing .= '<td>'.$_v.'</td>';
+
                                 break;
+
                             case 'currency':
                                 if (isset($val['postsymbol']) && $val['postsymbol']) {
                                     $_v = number_format((float) $RowValueTotal[$field], 2).$val['postsymbol'];
@@ -322,10 +340,13 @@ class Grid
                                 }
 
                                 $listing .= '<td>'.$_v.'</td>';
+
                                 break;
+
                             case 'callback':
                             case 'cb':
                                 $listing .= '<td>'.(int) round((float) $RowValueTotal[$field], 4).'</td>';
+
                                 break;
                         }
                     } else {
@@ -374,80 +395,92 @@ class Grid
         return $listing;
     }
 
-    public function ProcessColumnData($field, $val, $row){
-        $fielddata ='';
-        $cssClass='';
+    public function ProcessColumnData($field, $val, $row)
+    {
+        $fielddata = '';
+        $cssClass = '';
+
         switch ($val['type']) {
             case 'globalarray':
-                if ($row[$field] != null) {
+                if (null != $row[$field]) {
                     if (isset($val['arrayname'])) {
                         $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
                     } else {
                         $fielddata = $GLOBALS[$field][$row[$field]];
                     }
                 }
+
                 break;
+
             case 'string':
                 $fielddata = $row[$field];
+
                 break;
+
             case 'longstring':
                 $fielddata = $row[$field];
-                break;
-            case 'onoff':
-                $fielddata = (((int) $row[$field] === 1 || strtolower($row[$field]) === 'active' || $row[$field] === true || strtolower($row[$field]) === 'yes') ? 'Yes' : 'No');
 
-                if (isset($val['mode']) && $val['mode'] == 'fa') {
-                    if ($fielddata == 'Yes') {
-                        $fielddata = ' <i class="fas '.(isset($val['iconyes']) ? $val['iconyes'] : 'fa-heart').' green" aria-hidden="true"></i>';
+                break;
+
+            case 'onoff':
+                $fielddata = ((1 === (int) $row[$field] || 'active' === strtolower($row[$field]) || true === $row[$field] || 'yes' === strtolower($row[$field])) ? 'Yes' : 'No');
+
+                if (isset($val['mode']) && 'fa' == $val['mode']) {
+                    if ('Yes' == $fielddata) {
+                        $fielddata = ' <i class="fas '.($val['iconyes'] ?? 'fa-heart').' green" aria-hidden="true"></i>';
                     } else {
-                        $fielddata = ' <i class="fas '.(isset($val['iconno']) ? $val['iconno'] : 'fa-heart').' red" aria-hidden="true"></i>';
+                        $fielddata = ' <i class="fas '.($val['iconno'] ?? 'fa-heart').' red" aria-hidden="true"></i>';
                     }
                 } else {
-                    if ($fielddata == 'Yes' && isset($val['iconyes'])) {
+                    if ('Yes' == $fielddata && isset($val['iconyes'])) {
                         $fielddata = '<img src="'.$val['iconyes'].'" class="gridimage '.$field.'">';
                     }
-                    if ($fielddata == 'No' && isset($val['iconno'])) {
+                    if ('No' == $fielddata && isset($val['iconno'])) {
                         $fielddata = '<img src="'.$val['iconno'].'" class="gridimage '.$field.'">';
                     }
                 }
                 $fielddata = '<a href="'.$this->CorePage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
                 $cssClass = 'gridtable-onoff';
+
                 break;
+
             case 'flag':
-                $fielddata = (($row[$field] == 1 || strtolower($row[$field]) == 'active' || $row[$field] == true || strtolower($row[$field]) == 'yes') ? 'Yes' : 'No');
-                if ($fielddata == 'Yes') {
-                    $fielddata = '<img src="'.(isset($val['icon']) ? $val['icon'] : '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
+                $fielddata = ((1 == $row[$field] || 'active' == strtolower($row[$field]) || true == $row[$field] || 'yes' == strtolower($row[$field])) ? 'Yes' : 'No');
+                if ('Yes' == $fielddata) {
+                    $fielddata = '<img src="'.($val['icon'] ?? '{HomeURL}/theme/images/flag.png').'" class="gridimage flag '.$field.'">';
                 } else {
                     $fielddata = '';
                 }
                 $fielddata = '<a href="'.$this->CorePage.'&id='.$row[$this->QueryOptions['indexfield']].'&type='.$field.'" class="'.$field.' gridinnerlink">'.$fielddata.'</a>';
                 $cssClass = 'gridtable-flag';
+
                 break;
+
             case 'phone':
-                if ($row[$field] != '') {
+                if ('' != $row[$field]) {
                     $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
                 } else {
                     $fielddata = $row[$field];
                 }
+
                 break;
+
             case 'date':
-                $format = (isset($val['DateFormat']) ?
-                            $val['DateFormat'] :
-                            (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y'));
-
+                $format = ($val['DateFormat'] ?? (Config::$DisplayDateFormat ?? 'm/d/Y'));
                 $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
-                break;
-            case 'datetime':
-                $format = (isset($val['DateFormat']) ?
-                        $val['DateFormat'] :
-                    (isset($GLOBALS['AppConfig']['DateFormat']) ? $GLOBALS['AppConfig']['DateFormat'] : 'm/d/Y H:i a'));
 
-                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
                 break;
+
+            case 'datetime':
+                $format = ($val['DateFormat'] ??  (Config::$DisplayDateTimeFormat ?? 'm/d/Y H:i a'));
+                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
+
+                break;
+
             case 'currency':
                 $cssClass = 'gridtable-currency';
                 if ($val['showtotal'] ?? false == true) {
-                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $RowValueTotal[$field] ??= 0.0;
                     $RowValueTotal[$field] += (float) $row[$field];
                 }
                 if (isset($val['postsymbol']) && $val['postsymbol']) {
@@ -455,12 +488,14 @@ class Grid
                 } else {
                     $fielddata = $GLOBALS['AppConfig']['Currency'].number_format(floatval($row[$field]), 2);
                 }
+
                 break;
+
             case 'numeric':
             case 'number':
                 $cssClass = 'gridtable-numeric';
                 if ($val['showtotal'] ?? false == true) {
-                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $RowValueTotal[$field] ??= 0.0;
                     $RowValueTotal[$field] += (float) $row[$field];
                 }
 
@@ -471,29 +506,37 @@ class Grid
                 }
 
                 break;
+
             case 'cb':
             case 'callback':
                 if ($val['showtotal'] ?? false == true) {
-                    $RowValueTotal[$field] = $RowValueTotal[$field] ?? 0.0;
+                    $RowValueTotal[$field] ??= 0.0;
                     $t = $RowValueTotal[$field];
                     $fielddata = call_user_func_array($val['function'], [$row, $field, &$t]);
                     $RowValueTotal[$field] = $t;
                 } else {
                     $fielddata = call_user_func_array($val['function'], [$row, $field]);
                 }
+
                 break;
+
             case 'image':
-                $fielddata = '<img src="'.(isset($val['prefixUrl']) ? $val['prefixUrl'] : '').$row[$field].'" class="thumbnailsize">';
+                $fielddata = '<img src="'.($val['prefixUrl'] ?? '').$row[$field].'" class="thumbnailsize">';
+
                 break;
+
             case 'color':
                 $fielddata = '<div class="colordiv" style="background:'.$row[$field].';"></div>';
+
                 break;
+
             default:
                 $fielddata = $row[$field];
+
                 break;
         }
 
-        return ['fielddata'=>$fielddata, 'cssClass'=>$cssClass];
+        return ['fielddata' => $fielddata, 'cssClass' => $cssClass];
     }
 
     private function ShowFilter()
@@ -504,7 +547,7 @@ class Grid
         }
 
         $RemoveFieldOption = false;
-        if (isset($this->Options['option']) && is_array($this->Options['option']) && count($this->Options['option']) == 0) {
+        if (isset($this->Options['option']) && is_array($this->Options['option']) && 0 == count($this->Options['option'])) {
             $RemoveFieldOption = true;
         }
 
@@ -517,18 +560,27 @@ class Grid
                     ++$count;
                     $count = (int) ((2 / $count) * 100);
                     $listing .= '<th style="width:'.$count.'%;">';
+
                     break;
+
                 case 'flag':
                     $listing .= '<th style="width: 20px;">';
+
                     break;
+
                 case 'currency':
                     $listing .= '<th class="currency">';
+
                     break;
+
                 case 'number':
                     $listing .= '<th class="number">';
+
                     break;
+
                 default:
                     $listing .= '<th>';
+
                     break;
             }
             $v = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'].'-filter-'.$field] ?? '')) : '';
