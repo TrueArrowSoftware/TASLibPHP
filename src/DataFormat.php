@@ -181,12 +181,12 @@ class DataFormat
         try {
             $d = new \DateTime($date);
 
-            return $d !== false ? $d->format(Config::$DataTimeFormatDB) : '';
+            return $d !== false ? $d->format(Config::$DateTimeFormatDB) : '';
         } catch (\Exception $err) {
             try {
                 $d = \DateTime::createFromFormat($readformat, $date);
 
-                return ($d !== false) ? $d->format(Config::$DataTimeFormatDB) : '';
+                return ($d !== false) ? $d->format(Config::$DateTimeFormatDB) : '';
             } catch (\Exception $e2) {
                 return false;
             }
