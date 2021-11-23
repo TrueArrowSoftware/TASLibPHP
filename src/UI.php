@@ -1,6 +1,7 @@
 <?php
 
 namespace TAS\Core;
+use \TAS\Core\Config;
 
 class UI
 {
@@ -167,11 +168,8 @@ class UI
 
     /**
      * Dropdown option for Months.
-     *
-     * @param string $selectedValue
-     * @return void
      */
-    public static function MonthDropDown(string $selectedValue='')
+    public static function MonthDropDown(string $selectedValue = '')
     {
         $month = [
             '01' => 'January',
@@ -240,9 +238,8 @@ class UI
      * @param [type] $indexCol
      * @param [type] $labelformat
      * @param string $name
-     * @param bool $isrequired
+     * @param bool   $isrequired
      * @param string $type
-     * @return void
      */
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
@@ -312,8 +309,8 @@ class UI
         $options['fields'] = $param['fields'];
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
-        $options['dateformat'] = 'm/d/Y';
-        $options['datetimeformat'] = 'm/d/Y H:i a';
+        $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
+        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; //'m/d/Y H:i a';
         $options['norecordtext'] = 'No Record Found';
 
         $grid = new \TAS\Core\Grid($options, $queryoptions);
@@ -380,8 +377,8 @@ class UI
         $options['fields'] = $param['fields'];
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
-        $options['dateformat'] = 'm/d/Y';
-        $options['datetimeformat'] = 'm/d/Y H:i a';
+        $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
+        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; //'m/d/Y H:i a';
         $options['norecordtext'] = 'No Record Found';
 
         $grid = new \TAS\Core\Grid($options, $queryoptions);
@@ -452,7 +449,7 @@ class UI
                         break;
 
                     case 'date':
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput date'), ($param['Fields'][$field['Field']]['size'] ?? '30'), ($param['Fields'][$field['Field']]['maxlength'] ?? '30'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                        $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
 
                         break;
 
@@ -602,12 +599,12 @@ class UI
                     break;
 
                 case 'datetime':
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'datetime '.($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '30'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputDateTime($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateTimeCSS.' '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
 
                     break;
 
                 case 'date':
-                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, 'date '.($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '30'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.' '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
 
                     break;
 

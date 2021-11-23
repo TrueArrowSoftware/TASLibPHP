@@ -8,6 +8,8 @@ class Config
     public static $DateTimeFormatDB = 'Y-m-d H:i:s';
     public static $DisplayDateFormat = 'm/d/Y';
     public static $DisplayDateTimeFormat = 'm/d/Y H:i:s';
+    public static $WebUI_DateCSS = 'date';
+    public static $WebUI_DateTimeCSS = 'datetime';
 
     /**
      * @var array

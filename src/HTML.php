@@ -32,10 +32,34 @@ class HTML
         '" value="'.$value.'" '.$additionaattr.' />';
     }
 
-    public static function InputDate($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
+    public static function InputDate($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $additionaattr = [])
     {
-        return '<input type="text" id="'.$id.'" name="'.($name == '' ? $id : $name).'" class="'.$css.($isrequired ? ' required' : '').
-        '" size="'.$size.'" maxlength="'.$maxlength.'" value="'.$value.'" '.$additionaattr.' autocomplete="off"/>';
+        $inputtime = new \TAS\Core\WebUI\InputDate();
+        $inputtime->SetAttribute('ID', $id);
+        $inputtime->SetAttribute('Name', empty($name)?$id:$name);
+        $inputtime->SetValue ($value ?? '');
+        $inputtime->SetAttribute('class', $css.($isrequired ? ' required' : ''));
+        if(is_array($additionaattr)) {
+            foreach($additionaattr as $key => $value) {
+                $inputtime->SetAttribute($key, $value);
+            }
+        }
+        return $inputtime->Render();
+    }
+
+    public static function InputDateTime($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $additionaattr = [])
+    {
+        $inputtime = new \TAS\Core\WebUI\InputDateTime();
+        $inputtime->SetAttribute('ID', $id);
+        $inputtime->SetAttribute('Name', empty($name)?$id:$name);
+        $inputtime->SetValue ($value ?? '');
+        $inputtime->SetAttribute('class', $css.($isrequired ? ' required' : ''));
+        if(is_array($additionaattr)) {
+            foreach($additionaattr as $key => $value) {
+                $inputtime->SetAttribute($key, $value);
+            }
+        }
+        return $inputtime->Render();
     }
 
     public static function InputEmail($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
