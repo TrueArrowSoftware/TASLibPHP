@@ -276,8 +276,12 @@ class Grid
                 }
 
                 $additionalClass = '';
-                if (isset($this->Options['rowconditioncb']) && '' != $this->Options['rowconditioncb'] && function_exists($this->Options['rowconditioncb'])) {
-                    $additionalClass = call_user_func($this->Options['rowconditioncb'], $row, $additionalClass);
+                if (isset($this->Options['rowconditioncallback']) && 
+                    ( (is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback'])>0) 
+                       || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback'])>0) ) 
+                    ) {
+                    
+                    $additionalClass = call_user_func($this->Options['rowconditioncallback'], $row, $additionalClass);
                 }
                 $listing .= "\n".'<tr data-id="'.$row[$this->QueryOptions['indexfield']].'" id="row_'.$row[$this->QueryOptions['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';
 
@@ -472,7 +476,7 @@ class Grid
                 break;
 
             case 'datetime':
-                $format = ($val['DateFormat'] ??  (Config::$DisplayDateTimeFormat ?? 'm/d/Y H:i a'));
+                $format = ($val['DateFormat'] ?? (Config::$DisplayDateTimeFormat ?? 'm/d/Y H:i a'));
                 $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
 
                 break;
