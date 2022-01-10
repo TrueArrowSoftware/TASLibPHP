@@ -24,7 +24,7 @@ class UserFile
         } else {
             $this->BaseUrl = str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['REQUEST_URI']).'/upload/';
         }
-        $GLOBALS['db'] = $GLOBALS['db'] ?? null;
+        $GLOBALS['db'] ??= null;
     }
 
     /**
@@ -41,7 +41,7 @@ class UserFile
 
     public function SetError($error)
     {
-        if (trim($error) != '') {
+        if ('' != trim($error)) {
             $this->Errors[] = $error;
         }
         $this->Error = $error;
@@ -63,11 +63,6 @@ class UserFile
         return $this->Errors;
     }
 
-    protected function Validate($file = '')
-    {
-        return true;
-    }
-
     /**
      * @deprecated deprecated since version 1.0.24
      */
@@ -75,20 +70,22 @@ class UserFile
     {
         if (function_exists($GLOBALS['db']->Connect())) {
             return $GLOBALS['db']->Connect();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
      * Find Path for new record to come.
+     *
+     * @param mixed $Table
      */
     public function FindPathForNew($Table = '')
     {
         // $count = $GLOBALS['db']->FetchArray($GLOBALS['db']->Execute("SHOW TABLE STATUS LIKE '".$GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]."'"));
         // $count = $count['Auto_increment'];
 
-        $NextID = \TAS\Core\DB::GetAutoIncrementID($GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]);
+        $NextID = \TAS\Core\DB::GetAutoIncrementID($GLOBALS['Tables'][('' == $Table ? 'images' : $Table)]);
         $count = floor((int) $NextID / self::$MAX_FILE_PER_FOLDER);
 
         $this->FullPath = $this->Path.DIRECTORY_SEPARATOR.$this->FileType.DIRECTORY_SEPARATOR.$count;
@@ -96,39 +93,44 @@ class UserFile
         if (file_exists($this->FullPath)) {
             if (is_dir($this->FullPath) && is_writable($this->FullPath)) {
                 return true;
-            } else {
-                $this->SetError('Folder is not writeable');
-
-                return false;
             }
-        } else {
-            if (mkdir($this->FullPath, 0777, true)) {
-                @chmod($this->FullPath, 0777);
+            $this->SetError('Folder is not writeable');
 
-                return true;
-            } else {
-                $this->SetError('Fail to create storage folder');
-
-                return false;
-            }
+            return false;
         }
+        if (mkdir($this->FullPath, 0777, true)) {
+            @chmod($this->FullPath, 0777);
+
+            return true;
+        }
+        $this->SetError('Fail to create storage folder');
+
+        return false;
     }
 
     /**
      * Calculate the folder for assets folder.
+     *
+     * @param mixed $fileid
+     * @param mixed $forURL
      */
     public function FindFolder($fileid, $forURL = false)
     {
         $folder = floor($fileid / self::$MAX_FILE_PER_FOLDER);
         if ($forURL) {
             return $this->FileType.'/'.$folder;
-        } else {
-            return $this->FileType.DIRECTORY_SEPARATOR.$folder;
         }
+
+        return $this->FileType.DIRECTORY_SEPARATOR.$folder;
     }
 
     public function FindFullPath($fileid)
     {
         $this->FullPath = realpath($this->Path).DIRECTORY_SEPARATOR.$this->FindFolder($fileid, false);
+    }
+
+    protected function Validate($file = '')
+    {
+        return true;
     }
 }

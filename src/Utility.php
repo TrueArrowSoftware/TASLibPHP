@@ -12,11 +12,18 @@ class Utility
      * @deprecated
      *
      * with CreateReportPDF function
+     *
+     * @param mixed $SQLQuery
+     * @param mixed $filename
+     * @param mixed $reporttitle
+     * @param mixed $param
+     * @param mixed $tagname
+     * @param mixed $template
      */
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder'])));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $param['defaultsort'])));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -29,7 +36,7 @@ class Utility
         }
         $sortstring = trim($sortstring, ',');
 
-        $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring ";
+        $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by {$orderby} {$orderdirection} {$sortstring} ";
         $rs = $GLOBALS['db']->Execute($query);
 
         $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.uniqid().'.html';
@@ -72,25 +79,26 @@ class Utility
         $out = 1;
         if (file_exists($htmlfilepath)) {
             $cmd = 'xvfb-run wkhtmltopdf';
-            if ($_SERVER['HTTP_HOST'] == 'localhost') {
+            if ('localhost' == $_SERVER['HTTP_HOST']) {
                 $cmd = 'wkhtmltopdf';
             }
-            exec($cmd." --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"$htmlfilepath\" \"$pdfpath\"", $output, $out);
+            exec($cmd." --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"{$htmlfilepath}\" \"{$pdfpath}\"", $output, $out);
         }
-        if ($out == 0) {
+        if (0 == $out) {
             \TAS\Core\Web::DownloadHeader($filename);
             @unlink($htmlfilepath);
             readfile($pdfpath);
+
             exit();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     public static function CreateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $SQLQuery['defaultorderby'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $SQLQuery['defaultsortdirection'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby'])));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection'])));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -103,7 +111,7 @@ class Utility
         }
         $sortstring = trim($sortstring, ',');
 
-        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by $orderby $orderdirection $sortstring ";
+        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by {$orderby} {$orderdirection} {$sortstring} ";
         $rs = $GLOBALS['db']->Execute($query);
 
         $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.uniqid().'.html';
@@ -146,19 +154,20 @@ class Utility
         $out = 1;
         if (file_exists($htmlfilepath)) {
             $cmd = 'xvfb-run wkhtmltopdf';
-            if ($_SERVER['HTTP_HOST'] == 'localhost') {
+            if ('localhost' == $_SERVER['HTTP_HOST']) {
                 $cmd = 'wkhtmltopdf';
             }
-            exec($cmd." --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"$htmlfilepath\" \"$pdfpath\"", $output, $out);
+            exec($cmd." --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"{$htmlfilepath}\" \"{$pdfpath}\"", $output, $out);
         }
-        if ($out == 0) {
+        if (0 == $out) {
             \TAS\Core\Web::DownloadHeader($filename);
             @unlink($htmlfilepath);
             readfile($pdfpath);
+
             exit();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -170,8 +179,9 @@ class Utility
      * @param unknown $filename
      *                          filename ex export.csv
      * @param unknown $param
+     * @param mixed   $tagname
      *
-     * @return boolean
+     * @return bool
      */
 
     /**
@@ -181,8 +191,8 @@ class Utility
      */
     public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $param['defaultsort'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder'])));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $param['defaultsort'])));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -195,7 +205,7 @@ class Utility
         }
         $sortstring = trim($sortstring, ',');
 
-        $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by $orderby $orderdirection $sortstring ";
+        $query = $SQLQuery['basicquery'].$SQLQuery['where']." order by {$orderby} {$orderdirection} {$sortstring} ";
         $rs = $GLOBALS['db']->Execute($query);
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
@@ -214,10 +224,11 @@ class Utility
         if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
+
             exit();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -229,13 +240,14 @@ class Utility
      * @param unknown $filename
      *                          filename ex export.csv
      * @param unknown $param
+     * @param mixed   $tagname
      *
-     * @return boolean
+     * @return bool
      */
     public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $SQLQuery['defaultorderby'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $SQLQuery['defaultsortdirection'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby'])));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection'])));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -247,7 +259,7 @@ class Utility
             }
         }
         $sortstring = trim($sortstring, ',');
-        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by $orderby $orderdirection $sortstring ";
+        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by {$orderby} {$orderdirection} {$sortstring} ";
         $rs = $GLOBALS['db']->Execute($query);
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
@@ -266,10 +278,11 @@ class Utility
         if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
+
             exit();
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
@@ -292,7 +305,7 @@ class Utility
             return false;
         }
         $fh = '';
-        if ($filename == '') {
+        if ('' == $filename) {
             $fh = fopen('export.csv', 'w+');
         } else {
             $fh = fopen($filename, 'w+');
@@ -300,7 +313,7 @@ class Utility
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fields);
         }
-        if (!is_array($fields) || count($fields) == 0) {
+        if (!is_array($fields) || 0 == count($fields)) {
             $fields = \TAS\Core\DB::Columns($rs);
         }
 
@@ -362,12 +375,15 @@ class Utility
         foreach ($defaultpaths as $defaultpath) {
             if (file_exists($defaultpath.DIRECTORY_SEPARATOR.'class.'.strtolower($classname).'.php')) {
                 $included = true;
+
                 require_once $defaultpath.DIRECTORY_SEPARATOR.'class.'.strtolower($classname).'.php';
             } elseif (file_exists($defaultpath.DIRECTORY_SEPARATOR.$classname.'.php')) {
                 $included = true;
+
                 require_once $defaultpath.DIRECTORY_SEPARATOR.$classname.'.php';
             } elseif (file_exists($defaultpath.DIRECTORY_SEPARATOR.'class.'.$classname.'.php')) {
                 $included = true;
+
                 require_once $defaultpath.DIRECTORY_SEPARATOR.'class.'.$classname.'.php';
             }
         }
@@ -386,13 +402,15 @@ class Utility
      * @param unknown_type $start
      * @param unknown_type $condition
      * @param unknown_type $querystring
+     * @param mixed        $isMultiTable
+     * @param mixed        $param
      */
     public static function Paging($tablename, $pagename, $start = 0, $condition = '', $querystring = '', $isMultiTable = false, $param = [])
     {
         global $db, $AppConfig, $tables;
         // how many link pages to show
 
-        $pagesize = isset($param['pagesize']) ? $param['pagesize'] : $GLOBALS['AppConfig']['PageSize'];
+        $pagesize = $param['pagesize'] ?? $GLOBALS['AppConfig']['PageSize'];
 
         $nLinks = 10;
         if (!isset($tables[$tablename])) {
@@ -400,16 +418,16 @@ class Utility
             if (count($_tablename) > 0) {
                 $tablename = $_tablename[0];
             } else {
-                throw new \Exception("Invalid table name: $tablename");
+                throw new \Exception("Invalid table name: {$tablename}");
             }
         }
         if ($isMultiTable) {
             $query = $condition;
         } else {
-            $query = 'select count(*) from '.$GLOBALS['Tables'][$tablename]." $condition";
+            $query = 'select count(*) from '.$GLOBALS['Tables'][$tablename]." {$condition}";
         }
 
-        if ($GLOBALS['AppConfig']['DebugMode'] == true) {
+        if (true == $GLOBALS['AppConfig']['DebugMode']) {
             echo 'Paging Query : '.$query."\r\n";
         }
 
@@ -427,7 +445,7 @@ class Utility
         if ($num > $pagesize) {
             $pages = $num / $pagesize;
             $pages = ceil($pages);
-            if ($GLOBALS['AppConfig']['DebugMode'] == true) {
+            if (true == $GLOBALS['AppConfig']['DebugMode']) {
                 echo 'Page found '.$pages;
             }
             if ($pages > 0) {
@@ -443,7 +461,7 @@ class Utility
                 if ($start > ($nLinks - 1)) {
                     $nStart = 1;
                     $prev = $startl - $nLinks;
-                    $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page='.$prev)."' class=\"ui-state-default ui-corner-all\" >$prev</a> <li>....</li> ";
+                    $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page='.$prev)."' class=\"ui-state-default ui-corner-all\" >{$prev}</a> <li>....</li> ";
                 } else {
                     $nStart = 0;
                 }
@@ -451,10 +469,10 @@ class Utility
                     if ($i == $start) {
                         $bar[] = '<a href="#" class="ui-state-default ui-corner-all active">'.$i.'</a>'; // no need to create a link to current page
                     } else {
-                        if ($i == 1) {
-                            $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page=1')."' class=\"ui-state-default ui-corner-all\">$i</a>";
+                        if (1 == $i) {
+                            $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page=1')."' class=\"ui-state-default ui-corner-all\">{$i}</a>";
                         } else {
-                            $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page='.$i)."' class=\"ui-state-default ui-corner-all\">$i</a>";
+                            $bar[] = "<a href='".\TAS\Core\Web::AppendQueryString($pagename, 'page='.$i)."' class=\"ui-state-default ui-corner-all\">{$i}</a>";
                         }
                     }
                 }
@@ -538,18 +556,16 @@ class Utility
      *
      * @param [type] $order
      * @param string $key
-     *
-     * @return void
      */
     public static function SortArrayInOrder(array &$array, array $order, string $key = null)
     {
         $dict = array_flip($order);
         $positions = array_map(function ($elem) use ($dict, $key) {
-            if ($key == null) {
+            if (null == $key) {
                 return $dict[$elem] ?? INF;
-            } else {
-                return $dict[$elem[$key]] ?? INF;
             }
+
+            return $dict[$elem[$key]] ?? INF;
         }, $array);
         array_multisort($positions, $array);
     }
@@ -558,7 +574,7 @@ class Utility
      * Class casting ,ex.
      * $x = cast('A',$b);.
      *
-     * @param string|object $destination
+     * @param object|string $destination
      * @param object        $sourceObject
      *
      * @return object
@@ -580,7 +596,7 @@ class Utility
                 $propDest->setAccessible(true);
                 $propDest->setValue($destination, $value);
             } else {
-                $destination->$name = $value;
+                $destination->{$name} = $value;
             }
         }
 
@@ -592,12 +608,12 @@ class Utility
      *
      * @param unknown $str
      *
-     * @return boolean
+     * @return bool
      */
     public static function Contain($str, array $arr)
     {
         foreach ($arr as $a) {
-            if (stripos($str, $a) !== false) {
+            if (false !== stripos($str, $a)) {
                 return true;
             }
         }
@@ -608,15 +624,17 @@ class Utility
     /**
      * Send email from EMAIL CMS.
      *
-     * @param unknown $EmailID
-     * @param unknown $keywords
-     * @param unknown $to
+     * @param unknown    $EmailID
+     * @param unknown    $keywords
+     * @param unknown    $to
+     * @param null|mixed $sender
+     * @param null|mixed $attachment
      *
-     * @return boolean
+     * @return bool
      */
     public static function DoEmail($EmailID, $keywords, $to, $sender = null, $attachment = null)
     {
-        if ($sender == null) {
+        if (null == $sender) {
             $sender = $GLOBALS['AppConfig']['SenderEmail'];
         }
 
@@ -624,9 +642,9 @@ class Utility
         $finalcontent = $row['content'];
         if (is_array($row)) {
             $sendername = ($sender == $GLOBALS['AppConfig']['SenderEmail']) ? $GLOBALS['AppConfig']['SiteName'] : $sender;
-            if ($row['usetemplate'] == 1) {
+            if (1 == $row['usetemplate']) {
                 $content = file_get_contents($GLOBALS['AppConfig']['TemplatePath'].'/mail.tpl');
-                if ($content != '') {
+                if ('' != $content) {
                     $finalcontent = $content;
                 }
                 $finalcontent = str_replace('{Content}', $row['content'], $finalcontent);
@@ -647,20 +665,19 @@ class Utility
                 }
 
                 return $output;
-            } else {
-                if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
-                    return false;
-                }
-
-                return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
             }
-        } else {
-            return false;
+            if (!\TAS\Core\DataValidate::ValidateEmail($to)) {
+                return false;
+            }
+
+            return self::SendHTMLMail($to, $subject, $content, '', $sender, $sendername, $sender, $attachment);
         }
+
+        return false;
     }
 
     /**
-     * Send Email using PHPMailer with or without SMTP
+     * Send Email using PHPMailer with or without SMTP.
      *
      * @param [type] $to
      * @param [type] $subject
@@ -670,32 +687,31 @@ class Utility
      * @param string $fromName
      * @param string $returnpath
      * @param [type] $attachment
-     * @return void
      */
-    public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName='', $returnpath = '', $attachment = null)
+    public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName = '', $returnpath = '', $attachment = null)
     {
-        $text_body = $text_body??'';
+        $text_body ??= '';
         $mailstat = true;
         $mail = new PHPMailer();
         $mail->IsMail();
-        if ($GLOBALS['AppConfig']['UseSMTPAuth'] == true) {
+        if (true == $GLOBALS['AppConfig']['UseSMTPAuth']) {
             $mail->IsSMTP();
             $mail->SMTPAuth = true; // enable SMTP authentication
             $mail->SMTPSecure = ''; // sets the prefix to the servier
             $mail->Host = $GLOBALS['AppConfig']['SMTPServer']; // sets GMAIL as the SMTP server
-            $mail->Port = isset($GLOBALS['AppConfig']['SMTPServerPort']) ? $GLOBALS['AppConfig']['SMTPServerPort'] : 25; // set the SMTP port for the GMAIL server
+            $mail->Port = $GLOBALS['AppConfig']['SMTPServerPort'] ?? 25; // set the SMTP port for the GMAIL server
             $mail->Username = $GLOBALS['AppConfig']['SMTPUsername']; // GMAIL username
             $mail->Password = $GLOBALS['AppConfig']['SMTPPassword'];
         }
 
-        if ($GLOBALS['AppConfig']['DeveloperMode'] == true) {
+        if (true == $GLOBALS['AppConfig']['DeveloperMode']) {
             $to = $GLOBALS['AppConfig']['DeveloperEmail'];
         }
 
-        if ($returnpath != '') {
+        if ('' != $returnpath) {
             $mail->AddReplyTo($returnpath, $returnpath);
         }
-        if ($html_body != null && !empty($html_body)) {
+        if (null != $html_body && !empty($html_body)) {
             $mail->isHTML(true);
         }
         $mail->From = $fromemail;
@@ -705,7 +721,7 @@ class Utility
         $mail->AltBody = (empty($text_body) ? $html_body : $text_body);
 
         $mail->AddAddress($to);
-        if ($attachment != null && !empty($attachment)) {
+        if (null != $attachment && !empty($attachment)) {
             $mail->AddAttachment($attachment);
         }
         if (!$mail->Send()) {
@@ -721,9 +737,7 @@ class Utility
     }
 
     /**
-     * Create a uniq GUID in {8}-{4}-{4}-{4}-{12}
-     *
-     * @return void
+     * Create a uniq GUID in {8}-{4}-{4}-{4}-{12}.
      */
     public static function CreateGUID()
     {
@@ -732,20 +746,18 @@ class Utility
         $uid = uniqid('', true);
         $data = $namespace;
         $hash = strtoupper(hash('ripemd128', $uid.$guid.md5($data)));
-        $guid = substr($hash, 0, 8).'-'.
+
+        return substr($hash, 0, 8).'-'.
             substr($hash, 8, 4).'-'.
             substr($hash, 12, 4).'-'.
             substr($hash, 16, 4).'-'.
             substr($hash, 20, 12);
-
-        return $guid;
     }
 
     /**
-     * Wrapper for CreateGUID to cut the string in given length and without -
+     * Wrapper for CreateGUID to cut the string in given length and without -.
      *
      * @param int $length
-     * @return void
      */
     public static function CreateGUIDString($length = 10)
     {
@@ -763,17 +775,21 @@ class Utility
         $specialChars = preg_match('@[^\w]@', $password);
 
         if (strlen($password) < 8) {
-            return  'Password should be at least 8 characters in length.';
-        } elseif (!$uppercase) {
-            return  'Password must include at least upper case letter.';
-        } elseif (!$lowercase) {
-            return  'Password must include at least lower case letter.';
-        } elseif (!$number) {
-            return  'Password must include at least one number.';
-        } elseif (!$specialChars) {
-            return  'Password must include at least one special character.';
-        } else {
-            return true;
+            return 'Password should be at least 8 characters in length.';
         }
+        if (!$uppercase) {
+            return 'Password must include at least upper case letter.';
+        }
+        if (!$lowercase) {
+            return 'Password must include at least lower case letter.';
+        }
+        if (!$number) {
+            return 'Password must include at least one number.';
+        }
+        if (!$specialChars) {
+            return 'Password must include at least one special character.';
+        }
+
+        return true;
     }
 }

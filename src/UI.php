@@ -1,7 +1,6 @@
 <?php
 
 namespace TAS\Core;
-use \TAS\Core\Config;
 
 class UI
 {

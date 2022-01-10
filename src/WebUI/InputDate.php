@@ -8,26 +8,27 @@ class InputDate extends Element
     public $Name;
 
     public function __construct($args = null)
-    {        
+    {
         $this->init();
+    }
+
+    public function SetValue($value)
+    {
+        $this->Attributes['value'] = \TAS\Core\DataFormat::DBToDateTimeFormat($value, 'Y-m-d');
     }
 
     private function init()
     {
-        $this->TagName ='INPUT';
-        $this->IsContainer= false;
-        $this->Children=[];
+        $this->TagName = 'INPUT';
+        $this->IsContainer = false;
+        $this->Children = [];
         $this->MustClass[] = 'date';
 
-        $this->Attributes=[
-           'type'=>'date',
-           'id'=>$this->ID,
-           'name'=>$this->Name,           
-       ];
-       $this->SetAttribute('class', '');
-    }
-
-    public function SetValue($value){
-        $this->Attributes['value'] = \TAS\Core\DataFormat::DBToDateTimeFormat( $value, 'Y-m-d');
+        $this->Attributes = [
+            'type' => 'date',
+            'id' => $this->ID,
+            'name' => $this->Name,
+        ];
+        $this->SetAttribute('class', '');
     }
 }

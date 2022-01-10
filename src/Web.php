@@ -1,13 +1,14 @@
 <?php
+
 namespace TAS\Core;
 
-class Web {
-    
+class Web
+{
     public static function DownloadHeader($file, $type = 'application/octet-stream')
     {
         header('Cache-Control: public');
         header('Content-Description: File Transfer');
-        header("Content-Disposition: attachment; filename=$file");
+        header("Content-Disposition: attachment; filename={$file}");
         header('Content-Type: '.$type);
         header('Content-Transfer-Encoding: binary');
     }
@@ -42,15 +43,16 @@ class Web {
         // $seperator = (parse_url ( $url, PHP_URL_QUERY ) == NULL) ? '?' : '&';
         $url = str_replace('?'.parse_url($url, PHP_URL_QUERY), '', $url);
 
-        return $url.'?'.http_build_query($querystring).(($fragment != null) ? '#'.$fragment : ''); // Append Fragment again.
+        return $url.'?'.http_build_query($querystring).((null != $fragment) ? '#'.$fragment : ''); // Append Fragment again.
     }
 
     public static function Redirect($url)
     {
-        if (trim($url) == '') {
+        if ('' == trim($url)) {
             return false;
         }
         header('Location: '.$url);
+
         exit();
     }
 
@@ -59,5 +61,4 @@ class Web {
         session_destroy();
         session_start();
     }
-
 }

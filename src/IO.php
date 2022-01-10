@@ -2,11 +2,12 @@
 
 namespace TAS\Core;
 
-class IO {
+class IO
+{
+    public static function GetExtension($filename)
+    {
+        $n = strrpos($filename, '.');
 
-    public static function GetExtension($filename) {
-        $n = strrpos($filename,".");
-        return ($n===false) ? "" : substr($filename,$n+1);
-    }    
-    
+        return (false === $n) ? '' : substr($filename, $n + 1);
+    }
 }

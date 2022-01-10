@@ -11,8 +11,6 @@ class DataFormat
      * Clear the phone from given format such (111)-111-1111 to 1111111111. It remove space,- bracket and dot from phone only.
      *
      * @param [type] $phone
-     *
-     * @return void
      */
     public static function CleanPhone(string $phone, int $length = 10)
     {
@@ -36,9 +34,7 @@ class DataFormat
      * Format a give Phone as (123)-123-1234 or different one based on length of number given.
      *
      * @param string/int $phone
-     * @param int        $length Default to 10
-     *
-     * @return void
+     * @param int $length Default to 10
      */
     public static function FormatPhone(string $phone, int $length = 10)
     {
@@ -48,67 +44,89 @@ class DataFormat
 
         $phone = DataFormat::CleanPhone($phone, $length);
         if (!\TAS\Core\DataValidate::ValidatePhoneFormat($phone, $length)) {
-            throw new \Exception("Phone number $phone is not valid.");
+            throw new \Exception("Phone number {$phone} is not valid.");
         }
+
         switch ($length) {
             case 5:
                 return $phone;
+
                 break;
+
             case 6:
                 return $phone;
+
                 break;
+
             case 7:
                 return preg_replace('/([0-9]{3})([0-9]{4})/', '$1-$2', $phone);
+
                 break;
+
             case 8:
                 return preg_replace('/([0-9]{4})([0-9]{4})/', '$1-$2', $phone);
+
                 break;
+
             case 9:
                 return preg_replace('/([0-9]{3})([0-9]{3})([0-9]{3})/', '$1-$2-$3', $phone);
+
                 break;
+
             case 10:
                 return preg_replace('/([0-9]{3})([0-9]{3})([0-9]{4})/', '($1) $2-$3', $phone);
+
                 break;
+
             case 11:
                 return preg_replace('/([0-9]{3})([0-9]{4})([0-9]{4})/', '($1) $2-$3', $phone);
+
                 break;
+
             case 12:
                 return preg_replace('/([0-9]{4})([0-9]{4})([0-9]{4})/', '($1) $2-$3', $phone);
+
                 break;
+
             default:
                 return $phone;
+
                 break;
         }
     }
 
     /**
-     * UCWord formatting after lower a string
+     * UCWord formatting after lower a string.
      *
      * @param [type] $str
-     *
-     * @return void
      */
     public static function FormatString(string $str)
-    {        
+    {
         return ucwords(strtolower($str));
     }
 
     /**
      * Validate password security.
+     *
+     * @param mixed $str
      */
     public static function ValidatePassword($str)
     {
         if (strlen($str) < 7) {
             return false;
-        } elseif (preg_match('/^.*(?=.{6,})(?=.*[a-z])(?=.*[A-Z])(?=.*[\d]).*$/i', $str)) {
-            return true;
-        } else {
-            return false;
         }
+        if (preg_match('/^.*(?=.{6,})(?=.*[a-z])(?=.*[A-Z])(?=.*[\d]).*$/i', $str)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
      * Convert Size in Bytes to respective Nice looking format.
+     *
+     * @param mixed $size
+     * @param mixed $precision
      */
     public static function FormatBytes($size, $precision = 2)
     {
@@ -122,13 +140,14 @@ class DataFormat
      * Convert Database based value to presentable format.
      *
      * @param string $DBDate
+     * @param mixed  $format
      */
-    public static function DBToDateTimeFormat($DBDate, $format = '')    
+    public static function DBToDateTimeFormat($DBDate, $format = '')
     {
-        if ($format==null || empty($format)) {
+        if (null == $format || empty($format)) {
             $format = Config::$DisplayDateTimeFormat;
         }
-        if (trim($DBDate) != '') {
+        if ('' != trim($DBDate)) {
             try {
                 $d = new \DateTime($DBDate);
 
@@ -145,13 +164,14 @@ class DataFormat
      * Convert Database DateTime object to Date Only. Look for DBToDateTimeFormat if you need Time as well.
      *
      * @param string $format = 'm/d/Y' Default return format
+     * @param mixed  $DBDate
      */
     public static function DBToDateFormat($DBDate, $format = '')
     {
-        if ($format==null || empty($format)) {
+        if (null == $format || empty($format)) {
             $format = Config::$DisplayDateFormat;
         }
-        if (trim($DBDate) != '') {
+        if ('' != trim($DBDate)) {
             try {
                 $d = new \DateTime($DBDate);
 
@@ -168,25 +188,27 @@ class DataFormat
      * Return DB Formated Date from user input. Returns date as "Y-m-d H:i:s".
      *
      * @param string $date
-     * @param string $format = 'm/d/Y H:i:a' Read Format
+     * @param string $format     = 'm/d/Y H:i:a' Read Format
+     * @param mixed  $readformat
      */
     public static function DateToDBFormat($date, $readformat = 'm/d/Y H:i a')
     {
-        if ($date == '') {
+        if ('' == $date) {
             return '';
         }
-        if ($readformat==null || empty($readformat)) {
+        if (null == $readformat || empty($readformat)) {
             $readformat = Config::$DisplayDateTimeFormat;
         }
+
         try {
             $d = new \DateTime($date);
 
-            return $d !== false ? $d->format(Config::$DateTimeFormatDB) : '';
+            return false !== $d ? $d->format(Config::$DateTimeFormatDB) : '';
         } catch (\Exception $err) {
             try {
                 $d = \DateTime::createFromFormat($readformat, $date);
 
-                return ($d !== false) ? $d->format(Config::$DateTimeFormatDB) : '';
+                return (false !== $d) ? $d->format(Config::$DateTimeFormatDB) : '';
             } catch (\Exception $e2) {
                 return false;
             }
@@ -197,9 +219,8 @@ class DataFormat
     {
         $value = str_replace("\r", '', $value);
         $value = str_replace("\n", '', $value);
-        $value = trim($value, " \t");
 
-        return $value;
+        return trim($value, " \t");
     }
 
     /**
@@ -240,8 +261,6 @@ class DataFormat
      * Clean a string for Database Insert using default (mysql) database function.
      *
      * @param [type] $a_value
-     *
-     * @return void
      */
     public static function DBString($a_value)
     {
@@ -252,8 +271,6 @@ class DataFormat
      * Remove slashes added by web forms.
      *
      * @param [type] $a_value
-     *
-     * @return void
      */
     public static function RemoveSlashes($a_value)
     {
@@ -301,10 +318,10 @@ class DataFormat
         if ($timestamp < 0 || empty($timestamp)) {
             throw new \InvalidArgumentException('Invalid argument, timestamp must be positive integer');
         }
-        $starttime = $starttime ?? time();
+        $starttime ??= time();
         $diff = time() - (int) $timestamp;
 
-        if ($diff == 0) {
+        if (0 == $diff) {
             return 'just now';
         }
         $intervals = [
@@ -374,9 +391,8 @@ class DataFormat
     public static function GenerateVerificationCode($username)
     {
         $verificationCode = $username;
-        $verificationCode = md5($username << 2);
 
-        return $verificationCode;
+        return md5($username << 2);
     }
 
     /**
@@ -402,9 +418,7 @@ class DataFormat
         });
         $replace = '';
         // echo $output;
-        $output = preg_replace($search, $replace, $output);
-
-        return $output;
+        return preg_replace($search, $replace, $output);
     }
 
     /**
@@ -413,15 +427,15 @@ class DataFormat
      * else will redirect to give string url.
      *
      * @param string $var
+     * @param mixed  $return
      */
     public static function ReturnNumericGet($var = 'id', $return = 'index.php')
     {
         if (!isset($_GET[$var]) || !is_numeric($_GET[$var]) || (int) $_GET[$var] <= 0) {
-            if (is_bool($return) && $return == false) {
+            if (is_bool($return) && false == $return) {
                 return false;
-            } else {
-                \TAS\Core\Web::Redirect($return);
             }
+            \TAS\Core\Web::Redirect($return);
         } else {
             return (int) $_GET[$var];
         }
@@ -445,9 +459,9 @@ class DataFormat
         $diff = $dobObject->diff($nowObject);
         if ($diff->m > 0) {
             return $diff->y.' yrs '.$diff->m.' months';
-        } else {
-            return $diff->y.' yrs';
         }
+
+        return $diff->y.' yrs';
     }
 
     /**
@@ -469,7 +483,7 @@ class DataFormat
         $color = trim($color);
         $prependHash = false;
 
-        if (strpos($color, '#') !== false) {
+        if (false !== strpos($color, '#')) {
             $prependHash = true;
             $color = str_replace('#', null, $color);
         }
@@ -477,9 +491,12 @@ class DataFormat
         switch ($len = strlen($color)) {
             case 3:
                 $color = preg_replace('/(.)(.)(.)/', '\\1\\1\\2\\2\\3\\3', $color);
+
                 break;
+
             case 6:
                 break;
+
             default:
                 // trigger_error("Invalid hex length ($len). Must be a minimum length of (3) or maxium of (6) characters", E_USER_ERROR);
                 return '';
@@ -487,7 +504,7 @@ class DataFormat
 
         if (!preg_match('/^[a-f0-9]{6}$/i', $color)) {
             $color = htmlentities($color);
-            trigger_error("Invalid hex string #$color", E_USER_ERROR);
+            trigger_error("Invalid hex string #{$color}", E_USER_ERROR);
         }
 
         $r = dechex(255 - hexdec(substr($color, 0, 2)));
@@ -524,14 +541,12 @@ class DataFormat
         $replace = '-';
         $string = strtolower($string);
         // replace / and . with white space
-        $string = preg_replace("/[\/\.]/", ' ', $string);
-        $string = preg_replace("/[^a-z0-9_\s-]/", '', $string);
+        $string = preg_replace('/[\\/\\.]/', ' ', $string);
+        $string = preg_replace('/[^a-z0-9_\\s-]/', '', $string);
         // remove multiple dashes or whitespaces
-        $string = preg_replace("/[\s-]+/", ' ', $string);
+        $string = preg_replace('/[\\s-]+/', ' ', $string);
         // convert whitespaces and underscore to $replace
-        $string = preg_replace("/[\s_]/", $replace, $string);
-
-        return $string;
+        return preg_replace('/[\\s_]/', $replace, $string);
     }
 
     public static function RemoveNumberFormat(string $number)

@@ -7,11 +7,10 @@ namespace TAS\Core;
  */
 class Entity
 {
+    public static $Errors;
     protected $_isloaded;
     protected $_tablename;
     protected $_primarykey;
-
-    public static $Errors;
 
     public function __construct()
     {
@@ -61,9 +60,8 @@ class Entity
     public function ObjectAsArray()
     {
         $t = $this->ToJson();
-        $t = json_decode($t, true);
 
-        return $t;
+        return json_decode($t, true);
     }
 
     public function EmailKeywords()
@@ -112,6 +110,7 @@ class Entity
                             $isvalid = false;
                             self::SetError($fieldinfo['label'].' is not a valid email');
                         }
+
                         break;
 
                     case 'url':
@@ -119,6 +118,7 @@ class Entity
                             $isvalid = false;
                             self::SetError($fieldinfo['label'].' is not a valid url');
                         }
+
                         break;
 
                     case 'date':
@@ -126,6 +126,7 @@ class Entity
                             $isvalid = false;
                             self::SetError($fieldinfo['label'].' is not a valid date');
                         }
+
                         break;
                 }
             }
@@ -136,6 +137,9 @@ class Entity
 
     /**
      * Validate the values array against the database table column.
+     *
+     * @param mixed $values
+     * @param mixed $tablename
      */
     public static function Validate($values, $tablename)
     {
@@ -151,65 +155,73 @@ class Entity
                     case 'int':
                         if ('yes' == strtolower($tableinfo[$i]['Null'])) {
                             if ('' != $v && !is_numeric($v)) {
-                                self::SetError("For $i, $v is not numeric", 10);
+                                self::SetError("For {$i}, {$v} is not numeric", 10);
 
                                 return false;
                             }
                         } elseif (!is_numeric($v)) {
-                            self::SetError("For $i, $v is not numeric", 10);
+                            self::SetError("For {$i}, {$v} is not numeric", 10);
 
                             return false;
                         }
+
                         break;
+
                     case 'float':
                         if ('yes' == strtolower($tableinfo[$i]['Null'])) {
                             if ('' != $v && !is_numeric($v)) {
-                                self::SetError("For $i, $v is not numeric", 10);
+                                self::SetError("For {$i}, {$v} is not numeric", 10);
 
                                 return false;
                             }
                         } elseif (!is_numeric($v)) {
-                            self::SetError("For $i, $v is not numeric", 10);
+                            self::SetError("For {$i}, {$v} is not numeric", 10);
 
                             return false;
                         } else {
                             $v1 = floatval($v);
                             if ($v1 != $v) {
-                                self::SetError("For $i,  $v is not numeric", 10);
+                                self::SetError("For {$i},  {$v} is not numeric", 10);
 
                                 return false;
                             }
                         }
+
                         break;
+
                     case 'date':
                         if ('yes' == strtolower($tableinfo[$i]['Null'])) {
                             if ('' != $v && !\TAS\Core\DataValidate::IsDate($v)) {
-                                self::SetError("For $i, $v is not a date", 10);
+                                self::SetError("For {$i}, {$v} is not a date", 10);
 
                                 return false;
                             }
                         } else {
                             if ('' == $v || !\TAS\Core\DataValidate::IsDate($v)) {
-                                self::SetError("For $i, $v is not a date", 10);
+                                self::SetError("For {$i}, {$v} is not a date", 10);
 
                                 return false;
                             }
                         }
+
                         break;
+
                     case 'string':
                         if (isset($tableinfo[$i]['size']) && $tableinfo[$i]['size'] > 0) {
                             if (strlen($v) > $tableinfo[$i]['size']) {
-                                self::SetError("For $i, $v exceed size limit", 10);
+                                self::SetError("For {$i}, {$v} exceed size limit", 10);
 
                                 return false;
                             }
                         }
+
                         break;
+
                     default: break;
                 }
                 }
             } catch (\Exception $ex) {
-                self::SetError("For $i,  $v generate Exception. ".$ex->getMessage(), 10);
+                self::SetError("For {$i},  {$v} generate Exception. ".$ex->getMessage(), 10);
 
                 return false;
             }
@@ -252,7 +264,7 @@ class Entity
         $tableinfo = \TAS\Core\DB::GetTableInformation($tablename);
 
         $fields = [];
-        $ctr = (isset($param['startcounter']) ? $param['startcounter'] : 0);
+        $ctr = ($param['startcounter'] ?? 0);
         foreach ($tableinfo as $k => $v) {
             $fields[$k] = [
                 'field' => $k,
@@ -261,7 +273,7 @@ class Entity
                 'displayorder' => $ctr++,
                 'value' => '',
                 'size' => '30',
-                'group' => (isset($param['group']) ? $param['group'] : 'basic'),
+                'group' => ($param['group'] ?? 'basic'),
                 'label' => ucwords(str_replace('_', ' ', $k)),
             ];
 
@@ -270,21 +282,30 @@ class Entity
                 case 'string':
                     $fields[$k]['type'] = 'varchar';
                     $fields[$k]['maxlength'] = (($v['size'] > 0) ? $v['size'] : null);
+
                     break;
+
                 case 'int':
                     $fields[$k]['type'] = 'numeric';
                     $fields[$k]['size'] = 10;
+
                     break;
+
                 case 'float':
                     $fields[$k]['type'] = 'numeric';
                     $fields[$k]['size'] = 15;
+
                     break;
+
                 case 'text':
                     $fields[$k]['type'] = 'text';
+
                     break;
+
                 case 'date':
                     $fields[$k]['type'] = 'datetime';
                     $fields[$k]['size'] = 20;
+
                     break;
             }
             if ('NO' == $v['Null']) {
@@ -299,14 +320,18 @@ class Entity
      * Validate given data against the table structure.
      *
      * @deprecated 1.1 Use InputValidate instead
+     *
+     * @param mixed      $postdata
+     * @param mixed      $table
+     * @param null|mixed $callback
      */
     public static function ValidateAgainstTable($postdata, $table, $callback = null)
     {
         if (null == $postdata) {
             return [
-                    'level' => 10,
-                    'message' => 'No data to validate',
-                   ];
+                'level' => 10,
+                'message' => 'No data to validate',
+            ];
         }
 
         $message = [];
@@ -319,7 +344,7 @@ class Entity
         foreach ($postdata as $k => $v) {
             if (!is_array($v)) {
                 $v = \TAS\Core\DataFormat::DoSecure($v);
-                if (isset($tableinfo[$k]) && isset($tableinfo[$k]['required'])) {
+                if (isset($tableinfo[$k], $tableinfo[$k]['required'])) {
                     if (true == $tableinfo[$k]['required']) {
                         if ('' == $v) {
                             $message[] = [
@@ -352,21 +377,31 @@ class Entity
                 if ('readonly' == $field['type']) {
                     continue;
                 }
+
                 switch ($field['type']) {
                     case 'checkbox':
                         $d[$field['id']] = isset($_POST[$field['id']]) ? 1 : 0;
+
                         break;
+
                     case 'text':
                         $d[$field['id']] = $obj->DBString($_POST[$field['id']]);
+
                         break;
+
                     case 'numeric':
                         $d[$field['id']] = floatval(\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]));
+
                         break;
+
                     case 'date':
                         $d[$field['id']] = \TAS\Core\DataFormat::DateToDBFormat(\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]));
+
                         break;
+
                     case 'cb':
                         break; // do nothing.
+
                     case 'select':
                         if (!isset($field['multiple']) || false == $field['multiple']) {
                             $d[$field['id']] = array_key_exists($field['id'], $_POST) ? \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]) : '';
@@ -380,18 +415,21 @@ class Entity
                                 $d[$field['id']] = '{}';
                             }
                         }
+
                         break;
+
                     default:
                         if (isset($_POST[$field['id']])) {
                             $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]);
                         }
+
                         break;
                 }
             }
 
             return $d;
-        } else {
-            return [];
         }
+
+        return [];
     }
 }
