@@ -10,6 +10,45 @@ namespace TAS\Core;
 class DB
 {
     /**
+     * Character set.
+     *
+     * @var string
+     */
+    public $Charset = 'utf8';
+
+    /**
+     * Collation.
+     *
+     * @var string
+     */
+    public $Collation = 'utf8mb4_bin';
+
+    /**
+     * Array of all error captured during operations.
+     *
+     * @var array
+     */
+    public $lastError = [];
+
+    /**
+     * Database object after connection.
+     *
+     * @var object
+     */
+    public $MySqlObject;
+
+    /**
+     * Mysql Version.
+     */
+    public $MysqlVersion;
+
+    /**
+     * defines is Queries needs to be printed as out for debugging.
+     *
+     * @var bool
+     */
+    public $Debug = false;
+    /**
      * Server IP/Name for database connection.
      *
      * @var string
@@ -45,51 +84,11 @@ class DB
     private $DBName = 'demo';
 
     /**
-     * Character set.
-     *
-     * @var string
-     */
-    public $Charset = 'utf8';
-
-    /**
-     * Collation.
-     *
-     * @var string
-     */
-    public $Collation = 'utf8mb4_bin';
-
-    /**
      * Returns if database is connected or not.
      *
      * @var bool
      */
     private $_isconnected = false;
-
-    /**
-     * Array of all error captured during operations.
-     *
-     * @var array
-     */
-    public $lastError = [];
-
-    /**
-     * Database object after connection.
-     *
-     * @var object
-     */
-    public $MySqlObject;
-
-    /**
-     * Mysql Version.
-     */
-    public $MysqlVersion;
-
-    /**
-     * defines is Queries needs to be printed as out for debugging.
-     *
-     * @var bool
-     */
-    public $Debug = false;
 
     // Constuctor function
     public function __construct($server = 'localhost', $user = 'root', $password = '', $DBname = 'demo')
@@ -112,18 +111,18 @@ class DB
         if ($this->MySqlObject->connect_errno) {
             $this->SetError('Connect Error ('.$this->MySqlObject->connect_errno.') '.$this->MySqlObject->connect_error);
             $this->_isconnected = false;
+
             throw new \Exception('Unable to connect to database');
-        } else {
-            $this->_isconnected = true;
-
-            $this->MySqlObject->set_charset($this->Charset);
-            $this->MySqlObject->query('SET collation_connection = '.$this->Collation);
-            $_v = $this->MySqlObject->server_info;
-            $_vs = explode('.', $_v);
-            $this->MysqlVersion = $_vs[0];
-
-            return true;
         }
+        $this->_isconnected = true;
+
+        $this->MySqlObject->set_charset($this->Charset);
+        $this->MySqlObject->query('SET collation_connection = '.$this->Collation);
+        $_v = $this->MySqlObject->server_info;
+        $_vs = explode('.', $_v);
+        $this->MysqlVersion = $_vs[0];
+
+        return true;
     }
 
     /**
@@ -138,14 +137,6 @@ class DB
         return $this->_isconnected;
     }
 
-    private function CleanError()
-    {
-        if (trim($this->SQLERROR) != '') {
-            $this->lastError[] = $this->SQLERROR;
-        }
-        $this->SQLERROR = '';
-    }
-
     public function LastError()
     {
         return $this->SQLERROR;
@@ -154,19 +145,6 @@ class DB
     public function LastErrors()
     {
         return $this->lastError;
-    }
-
-    private function SetError($error)
-    {
-        if ($this->Debug) {
-            \TAS\Core\Log::AddEvent([
-                'message' => 'Database Query Fail in '.debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'],
-                'error' => $error,
-            ], 'normal');
-        }
-
-        $this->CleanError();
-        $this->SQLERROR = $error;
     }
 
     /**
@@ -197,42 +175,35 @@ class DB
      * Main function to execute any sql query. In case you use Store procedure use ClearStoredResults to clear result set.
      *
      * @param string $query
-     *
-     * @return void
      */
     public function Execute($query)
     {
         if ($this->IsConnected()) {
             $this->CleanError();
-            if (trim($query) != '') {
+            if ('' != trim($query)) {
                 $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
-                if ($result === false) {
-                    $this->SetError("<br />Error in Query $query is ".$this->MySqlObject->error.'::'.print_r($result, true));
+                if (false === $result) {
+                    $this->SetError("<br />Error in Query {$query} is ".$this->MySqlObject->error.'::'.print_r($result, true));
 
                     return false;
-                } else {
-                    $this->MySqlObject->store_result();
-
-                    return $result;
                 }
-            } else {
-                $this->SetError('Attempt to execute blank query');
+                $this->MySqlObject->store_result();
 
-                return false;
+                return $result;
             }
-        } else {
-            $this->SetError('Database is not connected');
+            $this->SetError('Attempt to execute blank query');
 
             return false;
         }
+        $this->SetError('Database is not connected');
+
+        return false;
     }
 
     /**
      * Execute Query and return first row, first column if success else it returns false.
      *
      * @param string $query
-     *
-     * @return void
      */
     public function ExecuteScalar($query)
     {
@@ -240,27 +211,23 @@ class DB
         if ($result) {
             $this->CleanError();
             if ($result->num_rows > 0) {
-                $rs = @$result->fetch_row() or $this->SetError("<br />Error in Query $query is ".$this->MySqlObject->error);
+                $rs = @$result->fetch_row() or $this->SetError("<br />Error in Query {$query} is ".$this->MySqlObject->error);
 
-                return isset($rs[0]) ? $rs[0] : false;
-            } else {
-                $this->SetError('Empty recordset returned');
-
-                return false;
+                return $rs[0] ?? false;
             }
-        } else {
-            $this->SetError('No Record found');
+            $this->SetError('Empty recordset returned');
 
             return false;
         }
+        $this->SetError('No Record found');
+
+        return false;
     }
 
     /**
      * Returns first row from given query.
      *
      * @param [type] $query
-     *
-     * @return void
      */
     public function ExecuteScalarRow($query)
     {
@@ -271,28 +238,24 @@ class DB
                 $rs = $this->FetchArray($result);
 
                 return ($rs) ? $rs : false;
-            } else {
-                $this->SetError('Empty recordset returned');
-
-                return false;
             }
-        } else {
-            $this->SetError('No Record found');
+            $this->SetError('Empty recordset returned');
 
             return false;
         }
+        $this->SetError('No Record found');
+
+        return false;
     }
 
     /**
      * Shorthand function to comvert a recordset to array.
-     *
-     * @param string $query
-     * @return array
      */
-    public function ExecuteAll(string $query) : array
+    public function ExecuteAll(string $query): array
     {
         $result = $this->Execute($query);
-        return ($result!== false && static::Count($result)>0)?$result->fetch_all(MYSQLI_ASSOC):[];
+
+        return (false !== $result && static::Count($result) > 0) ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     /**
@@ -301,8 +264,6 @@ class DB
      *  Return number of rows in give recordset. Use Static function DB::Count instead for shorter syntax.
      *
      * @param [type] $result
-     *
-     * @return void
      */
     public function RowCount($result)
     {
@@ -326,8 +287,6 @@ class DB
 
     /**
      * Return last Generated ID (autoincrement) from last insert.
-     *
-     * @return void
      */
     public function GeneratedID()
     {
@@ -338,8 +297,6 @@ class DB
      * Reset the Recordset to 0th position for reiteration.
      *
      * @param [type] $rs
-     *
-     * @return void
      */
     public static function Reset(\mysqli_result $rs)
     {
@@ -353,6 +310,7 @@ class DB
     public function FetchArray($result)
     {
         $this->CleanError();
+
         try {
             $row = @$result->fetch_array();
             if (!is_array($row)) {
@@ -371,6 +329,7 @@ class DB
     public function Fetch($result)
     {
         $this->CleanError();
+
         try {
             $row = $result->fetch_assoc();
             if (!is_array($row)) {
@@ -388,6 +347,7 @@ class DB
     public function FetchRow($result)
     {
         $this->CleanError();
+
         try {
             $row = $result->fetch_row();
             if (!is_array($row)) {
@@ -406,11 +366,15 @@ class DB
      * function to insert record by taking array in following form
      * $value[index] = value : where $value is array name to parse,
      * index = db column name, and value is vlaue to insert.
+     *
+     * @param mixed $tablename
+     * @param mixed $values
+     * @param mixed $datatype
      */
     public function Insert($tablename, $values, $datatype = '')
     {
         $query = '';
-        if ($tablename != '') {
+        if ('' != $tablename) {
             if (is_array($values)) {
                 $keys = array_keys($values);
 
@@ -418,23 +382,30 @@ class DB
                     $refs[] = &$values[$k];
                 }
 
-                if ($datatype == '') {
+                if ('' == $datatype) {
                     $Columns = \TAS\Core\DB::GetColumns($tablename);
                     foreach (array_keys($values) as $k) {
                         reset($Columns);
                         foreach ($Columns as $field) {
                             if ($field['Field'] == $k) {
                                 $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
+
                                 switch ($field['Type']) {
                                     case 'bigint':
                                         $datatype .= 'i';
+
                                         break;
+
                                     case 'datetime':
                                         $datatype .= 's';
+
                                         break;
+
                                     case 'decimal':
                                         $datatype .= 'd';
+
                                         break;
+
                                     default:
                                         $datatype .= 's';
                                 }
@@ -443,12 +414,12 @@ class DB
                     }
                 }
 
-                $query = "INSERT INTO `$tablename` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
+                $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
                 if ($this->Debug) {
                     echo "\n<br>Insert Query is : ".$query;
                 }
                 $stmt = $this->MySqlObject->prepare($query);
-                if (is_bool($stmt) && $stmt === false) {
+                if (is_bool($stmt) && false === $stmt) {
                     $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
 
                     \TAS\Core\Log::AddEvent([
@@ -468,20 +439,19 @@ class DB
                     'bind_param',
                 ], $refs);
                 $stmt->execute();
-                if ($this->MySqlObject->error == '') {
+                if ('' == $this->MySqlObject->error) {
                     return true;
-                } else {
-                    \TAS\Core\Log::AddEvent([
-                        'message' => 'Database Insert Failed !!!',
-                        'query' => $query,
-                        'error' => $this->MySqlObject->error,
-                    ], 'normal');
-
-                    $this->SetError($this->MySqlObject->error);
-                    $this->CleanError();
-
-                    return false;
                 }
+                \TAS\Core\Log::AddEvent([
+                    'message' => 'Database Insert Failed !!!',
+                    'query' => $query,
+                    'error' => $this->MySqlObject->error,
+                ], 'normal');
+
+                $this->SetError($this->MySqlObject->error);
+                $this->CleanError();
+
+                return false;
             }
         } else {
             return false;
@@ -492,12 +462,18 @@ class DB
      * function to update record by taking array in following form
      * $value[index] = value : where $value is array name to parse,
      * index = db column name, and value is vlaue to insert.
+     *
+     * @param mixed $tablename
+     * @param mixed $values
+     * @param mixed $editid
+     * @param mixed $editfield
+     * @param mixed $datatype
      */
     public function Update($tablename, $values, $editid, $editfield, $datatype = '')
     {
         $query = '';
         $refs = [];
-        if ($tablename != '') {
+        if ('' != $tablename) {
             if (is_array($values)) {
                 $keys = array_keys($values);
 
@@ -507,23 +483,30 @@ class DB
                     $columnlist[] = $k.'=?';
                 }
 
-                if ($datatype == '') {
+                if ('' == $datatype) {
                     $Columns = \TAS\Core\DB::GetColumns($tablename);
                     foreach (array_keys($values) as $k) {
                         reset($Columns);
                         foreach ($Columns as $field) {
                             if ($field['Field'] == $k) {
                                 $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
+
                                 switch ($field['Type']) {
                                     case 'bigint':
                                         $datatype .= 'i';
+
                                         break;
+
                                     case 'datetime':
                                         $datatype .= 's';
+
                                         break;
+
                                     case 'decimal':
                                         $datatype .= 'd';
+
                                         break;
+
                                     default:
                                         $datatype .= 's';
                                 }
@@ -532,15 +515,15 @@ class DB
                     }
                 }
 
-                $query = "Update `$tablename` set ".implode(',', $columnlist)." where `$editfield`=?";
+                $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
                 $refs[] = &$editid;
                 $datatype .= is_numeric($editid) ? 'i' : 's';
 
                 if ($this->Debug) {
-                    echo "\n<br>Update Query is : ".$query."\r\n<br \>".print_r($refs, true);
+                    echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
                 }
                 $stmt = $this->MySqlObject->prepare($query);
-                if (is_bool($stmt) && $stmt === false) {
+                if (is_bool($stmt) && false === $stmt) {
                     $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
                     \TAS\Core\Log::AddEvent([
                         'message' => 'Database Update Prepare Failed !!!',
@@ -560,20 +543,19 @@ class DB
                     'bind_param',
                 ], $refs);
                 $stmt->execute();
-                if ($this->MySqlObject->error == '') {
+                if ('' == $this->MySqlObject->error) {
                     return true;
-                } else {
-                    \TAS\Core\Log::AddEvent([
-                        'message' => 'Database Update Failed !!!',
-                        'query' => $query,
-                        'error' => $this->MySqlObject->error,
-                    ], 'normal');
-
-                    $this->SetError($this->MySqlObject->error);
-                    $this->CleanError();
-
-                    return false;
                 }
+                \TAS\Core\Log::AddEvent([
+                    'message' => 'Database Update Failed !!!',
+                    'query' => $query,
+                    'error' => $this->MySqlObject->error,
+                ], 'normal');
+
+                $this->SetError($this->MySqlObject->error);
+                $this->CleanError();
+
+                return false;
             }
         } else {
             $this->SetError('Invalid Table name.');
@@ -585,26 +567,33 @@ class DB
 
     public function InsertUpdate($table, $values, $datatype = '')
     {
-        if ($table != '') {
+        if ('' != $table) {
             if (is_array($values)) {
                 $keys = array_keys($values);
-                if ($datatype == '') {
+                if ('' == $datatype) {
                     $Columns = \TAS\Core\DB::GetColumns($table);
                     foreach (array_keys($values) as $k) {
                         reset($Columns);
                         foreach ($Columns as $field) {
                             if ($field['Field'] == $k) {
                                 $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
+
                                 switch ($field['Type']) {
                                     case 'bigint':
                                         $datatype .= 'i';
+
                                         break;
+
                                     case 'datetime':
                                         $datatype .= 's';
+
                                         break;
+
                                     case 'decimal':
                                         $datatype .= 'd';
+
                                         break;
+
                                     default:
                                         $datatype .= 's';
                                 }
@@ -619,7 +608,7 @@ class DB
                     return false;
                 }
 
-                $query = "INSERT INTO $table (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)
+                $query = "INSERT INTO {$table} (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)
 				ON DUPLICATE KEY UPDATE ';
 
                 $refs = [];
@@ -628,7 +617,7 @@ class DB
                 $datatype .= $datatype;
                 $refs[] = &$datatype;
                 foreach ($values as $key => $value) {
-                    $queryAddon[] = "$key=?";
+                    $queryAddon[] = "{$key}=?";
                     $refs[] = &$values[$key];
                     $ref2[] = &$values[$key];
                 }
@@ -647,14 +636,13 @@ class DB
                 ], $refs);
 
                 $stmt->execute();
-                if ($this->MySqlObject->error == '') {
+                if ('' == $this->MySqlObject->error) {
                     return true;
-                } else {
-                    $this->SetError($this->MySqlObject->error);
-                    $this->CleanError();
-
-                    return false;
                 }
+                $this->SetError($this->MySqlObject->error);
+                $this->CleanError();
+
+                return false;
             }
         } else {
             return false;
@@ -666,13 +654,13 @@ class DB
     // index = db column name, and value is vlaue to REPLACE
     public function ReplaceArrayById($tablename, $values)
     {
-        if ($tablename != '') {
+        if ('' != $tablename) {
             if (is_array($values)) {
-                $query = "REPLACE into $tablename set ";
+                $query = "REPLACE into {$tablename} set ";
                 $valuecount = count($values);
                 $ctr = 1;
                 foreach ($values as $index => $value) {
-                    $query .= " $index = '".$this->MySqlObject->real_escape_string($value)."'";
+                    $query .= " {$index} = '".$this->MySqlObject->real_escape_string($value)."'";
                     if ($valuecount > $ctr) {
                         $query .= ', ';
                     }
@@ -685,7 +673,7 @@ class DB
                 // echo $query;die;
                 $this->CleanError();
                 $output = $this->Execute($query);
-                $output = ($output === true) ? true : false;
+                $output = (true === $output) ? true : false;
                 if (!$output) {
                     $this->SetError('Error in Query :'.$query.' with error  '.$this->MySqlObject->error);
                     $this->CleanError();
@@ -743,6 +731,9 @@ class DB
 
     /**
      * Insert multiple array.
+     *
+     * @param mixed $tablename
+     * @param mixed $values
      */
     public function InsertMultiArray($tablename, $values = [])
     {
@@ -751,7 +742,7 @@ class DB
             $columnsList = [];
             $QueryParts = [];
             $Columns = '';
-            $query='';
+            $query = '';
 
             if (isset($values['data']) && is_array($values['data'])) {
                 foreach ($values['data'] as $row) {
@@ -760,10 +751,11 @@ class DB
                         $QueryParts[] = "('".implode("','", $row)."')";
                     }
                 }
-                if ($Columns == '') {
-                    $Columns = '('.implode(',', array_keys($row)).')';
+                if ('' == $Columns && count($values['data']) > 0) {
+                    $rowColumn = array_merge(array_keys($values['data'][0]), array_keys($values['common']));
+                    $Columns = '('.implode(',', $rowColumn).')';
                 }
-                $query = "insert into $tablename".$Columns.' values '.implode(',', $QueryParts);
+                $query = "insert into {$tablename}".$Columns.' values '.implode(',', $QueryParts);
                 $this->Execute($query);
             }
 
@@ -772,13 +764,16 @@ class DB
             }
 
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
      * Replace multiple array.
+     *
+     * @param mixed $tablename
+     * @param mixed $values
      */
     public function ReplaceMultiArrayByID($tablename, $values = [])
     {
@@ -787,7 +782,7 @@ class DB
             $columnsList = [];
             $QueryParts = [];
             $Columns = '';
-            $query='';
+            $query = '';
             if (isset($values['data']) && is_array($values['data'])) {
                 foreach ($values['data'] as $row) {
                     if (is_array($row)) {
@@ -795,10 +790,11 @@ class DB
                         $QueryParts[] = "('".implode("','", $row)."')";
                     }
                 }
-                if ($Columns == '') {
-                    $Columns = '('.implode(',', array_keys($row)).')';
+                if ('' == $Columns && count($values['data']) > 0) {
+                    $rowColumn = array_merge(array_keys($values['data'][0]), array_keys($values['common']));
+                    $Columns = '('.implode(',', $rowColumn).')';
                 }
-                $query = "REPLACE into $tablename".$Columns.' values '.implode(',', $QueryParts);
+                $query = "REPLACE into {$tablename} ".$Columns.' values '.implode(',', $QueryParts);
                 $this->Execute($query);
             }
 
@@ -807,21 +803,25 @@ class DB
             }
 
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     /**
      * Returns the database Record set with given condition.
+     *
+     * @param mixed $table
+     * @param mixed $orderby
+     * @param mixed $where
      */
     public function DBRecordSet($table, $orderby = '', $where = 'status = 1')
     {
         $query = 'Select * from '.$GLOBALS['Tables'][$table];
-        if (trim($where) != '') {
+        if ('' != trim($where)) {
             $query .= ' where '.$where;
         }
-        if (trim($orderby) != '') {
+        if ('' != trim($orderby)) {
             $query .= ' order by '.$orderby;
         }
         if ($this->Debug) {
@@ -833,6 +833,10 @@ class DB
 
     /**
      * Delete from given table on given ID.
+     *
+     * @param mixed $table
+     * @param mixed $id
+     * @param mixed $idfield
      */
     public function Delete($table, $id, $idfield)
     {
@@ -841,7 +845,7 @@ class DB
         }
         $id = (int) $id;
 
-        return $this->Execute('Delete from '.$table." Where $idfield = $id");
+        return $this->Execute('Delete from '.$table." Where {$idfield} = {$id}");
     }
 
     public static function Columns($result)
@@ -884,11 +888,10 @@ class DB
             }
 
             return $output;
-        } else {
-            $this->SetError('No record found for FirstColumnArray Creation');
-
-            return [];
         }
+        $this->SetError('No record found for FirstColumnArray Creation');
+
+        return [];
     }
 
     public static function GetTableInformation($tablename)
@@ -899,19 +902,19 @@ class DB
         foreach ($x as $i => $k) {
             $TableArray[$k['Field']] = [];
             $TableArray[$k['Field']]['name'] = $k['Field'];
-            if (substr($k['Type'], 0, 6) == 'bigint' || substr($k['Type'], 0, 3) == 'int') {
+            if ('bigint' == substr($k['Type'], 0, 6) || 'int' == substr($k['Type'], 0, 3)) {
                 $TableArray[$k['Field']]['type'] = 'int';
-            } elseif (substr($k['Type'], 0, 5) == 'float' || substr($k['Type'], 0, 6) == 'double' || substr($k['Type'], 0, 4) == 'real' || substr($k['Type'], 0, 7) == 'decimal') {
+            } elseif ('float' == substr($k['Type'], 0, 5) || 'double' == substr($k['Type'], 0, 6) || 'real' == substr($k['Type'], 0, 4) || 'decimal' == substr($k['Type'], 0, 7)) {
                 $TableArray[$k['Field']]['type'] = 'float';
-            } elseif (substr($k['Type'], 0, 4) == 'date') {
+            } elseif ('date' == substr($k['Type'], 0, 4)) {
                 $TableArray[$k['Field']]['type'] = 'date';
-            } elseif (substr($k['Type'], 0, 4) == 'text' || $k['Type'] == 'mediumtext' || $k['Type'] == 'tinytext' || $k['Type'] == 'longtext') {
+            } elseif ('text' == substr($k['Type'], 0, 4) || 'mediumtext' == $k['Type'] || 'tinytext' == $k['Type'] || 'longtext' == $k['Type']) {
                 $TableArray[$k['Field']]['type'] = 'text';
             } else {
                 $TableArray[$k['Field']]['type'] = 'string';
             }
 
-            $size = preg_match("/[^\(]*\((.*)\)[^\)]*/", $k['Type'], $matches, PREG_OFFSET_CAPTURE);
+            $size = preg_match('/[^\\(]*\\((.*)\\)[^\\)]*/', $k['Type'], $matches, PREG_OFFSET_CAPTURE);
             if (count($matches) > 1 && isset($matches[1][0])) {
                 $size = $matches[1][0];
             }
@@ -932,8 +935,6 @@ class DB
         return $result['Auto_increment'];
     }
 
-    
-
     public static function ToJSON(\mysqli_result $recordset)
     {
         if (\is_null($recordset) || is_bool($recordset)) {
@@ -942,5 +943,26 @@ class DB
         DB::Reset($recordset);
 
         return json_encode($recordset->fetch_all(MYSQLI_ASSOC));
+    }
+
+    private function CleanError()
+    {
+        if ('' != trim($this->SQLERROR)) {
+            $this->lastError[] = $this->SQLERROR;
+        }
+        $this->SQLERROR = '';
+    }
+
+    private function SetError($error)
+    {
+        if ($this->Debug) {
+            \TAS\Core\Log::AddEvent([
+                'message' => 'Database Query Fail in '.debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'],
+                'error' => $error,
+            ], 'normal');
+        }
+
+        $this->CleanError();
+        $this->SQLERROR = $error;
     }
 }
