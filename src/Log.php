@@ -15,19 +15,19 @@ class Log
         if (defined('SKIPAUTOLOADERROR')) {
             return true;
         }
-        if ('' == $message) {
+        if ($message == '') {
             return true;
         }
         if (!is_array($message)) {
             $message = json_decode($message, true);
         }
-        $data = [
+        $data = array(
             'eventdate' => date('Y-m-d H:i:s'),
             'eventlevel' => \TAS\Core\DataFormat::DoSecure($level),
             'message' => $message['message'],
             'details' => json_encode($message),
             'debugtrace' => '', // print_r(debug_backtrace(),2)
-        ];
+        );
         if (!isset($GLOBALS['db'])) {
             \TAS\Core\Log::cLog($data);
         } else {
@@ -44,7 +44,7 @@ class Log
             }
         }
         $fh = fopen($logfile, 'a+');
-        if (is_bool($fh) && false == $fh) {
+        if (is_bool($fh) && $fh == false) {
             return;
         }
         if (is_object($msg) || is_array($msg)) {

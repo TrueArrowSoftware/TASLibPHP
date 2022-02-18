@@ -27,13 +27,9 @@ class DataFormattest extends TestCase
     {
         $output = DataFormat::FormatString('');
         $this->assertEquals('', $output);
-
-        $output = DataFormat::FormatString(null);
-        $this->assertEquals(null, $output);
     }
 
     // Test Case on formatFone with values
-
     public function testFormatPhone_WithValue()
     {
         $output = DataFormat::FormatPhone('74889', '5');
@@ -67,23 +63,17 @@ class DataFormattest extends TestCase
     {
         $output = DataFormat::FormatPhone('', '1');
         $this->assertEquals(false, $output, 'Error');
-
-        $output = DataFormat::FormatPhone(null, '1');
-        $this->assertEquals(false, $output, 'Error');
-
-        $output = DataFormat::FormatPhone(' ', '1');
-        $this->assertEquals(false, $output, 'Error');
-
-        $output = DataFormat::FormatPhone(null, '5');
-        $this->assertEquals(false, $output);
+        
+        $output = DataFormat::FormatPhone(' ', '1');        
+        $this->assertEquals(' ', $output, 'Error in Empty whitespace');
 
         $output = DataFormat::FormatPhone('', '5');
         $this->assertEquals(false, $output);
 
-        $output = DataFormat::FormatPhone('', '6');
+        $output = DataFormat::FormatPhone('', 6);
         $this->assertEquals(false, $output);
 
-        $output = DataFormat::FormatPhone('', '7');
+        $output = DataFormat::FormatPhone('', 7);
         $this->assertEquals(false, $output);
 
         $output = DataFormat::FormatPhone('', '8');
@@ -100,30 +90,7 @@ class DataFormattest extends TestCase
 
         $output = DataFormat::FormatPhone('', '12');
         $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '5');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '6');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '7');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '8');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '9');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '10');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '11');
-        $this->assertEquals(false, $output);
-
-        $output = DataFormat::FormatPhone(null, '12');
-        $this->assertEquals(false, $output);
+       
         // Test Case on Phone by sending invalid numbers
         try {
             $output = DataFormat::FormatPhone('74889601960147', '14');
@@ -206,7 +173,10 @@ class DataFormattest extends TestCase
 
     public function testDBToDateTimeFormat_WithValue()
     {
+        $_temp = \TAS\Core\Config::$DisplayDateTimeFormat ;
+        \TAS\Core\Config::$DisplayDateTimeFormat =  'm/d/Y H:i a';
         $output = DataFormat::DBToDateTimeFormat('2019-12-16 14:27:00');
+        
         $this->assertEquals('12/16/2019 14:27 pm', $output);
 
         $output = DataFormat::DBToDateTimeFormat('2019/12/16');
@@ -247,6 +217,8 @@ class DataFormattest extends TestCase
 
         $output = DataFormat::DBToDateTimeFormat('13-32-19 00:00');
         $this->assertEquals(false, $output, 'Error');
+
+        \TAS\Core\Config::$DisplayDateTimeFormat =  $_temp;
     }
 
     // Test Case On DBToDateTimeFormat without value
@@ -340,6 +312,9 @@ class DataFormattest extends TestCase
 
     public function testDateToDBFormat_WithValue()
     {
+        $_temp = \TAS\Core\Config::$DisplayDateTimeFormat ;
+        \TAS\Core\Config::$DisplayDateTimeFormat =  'm/d/Y H:i a';
+
         $output = DataFormat::DBToDateTimeFormat('12/16/2019');
         $this->assertEquals('12/16/2019 00:00 am', $output);
 
@@ -351,6 +326,8 @@ class DataFormattest extends TestCase
 
         $output = DataFormat::DBToDateTimeFormat('2019/12/16');
         $this->assertEquals('12/16/2019 00:00 am', $output);
+
+        \TAS\Core\Config::$DisplayDateTimeFormat =  $_temp;
     }
 
     public function testRemoveWhiteSpace_WithValue()
@@ -486,23 +463,24 @@ class DataFormattest extends TestCase
     {
         $date = new \DateTime(date('Y-m-d H:i:s'));
         $startdate = new \DateTime(date('2020-01-01 00:00:01'));
+
         $output = DataFormat::HumanizeTime($date->getTimestamp());
         $this->assertEquals('just now', $output, 'Error');
 
         $date = new \DateTime('2018-01-02 16:17:26');
-        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
-        $this->assertEquals('3 years ago', $output, 'Error');
+        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());        
+        $this->assertEquals('1 year ago', $output, 'Error ');
 
         $date = new \DateTime('2016/12/01');
         $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
-        $this->assertEquals('4 years ago', $output, 'Error');
+        $this->assertEquals('3 years ago', $output, 'Error');
 
         $date = new \DateTime('1997-01-02');
         $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
-        $this->assertEquals('24 years ago', $output, 'Error');
+        $this->assertEquals('22 years ago', $output, 'Error');
 
         $output = DataFormat::HumanizeTime('1', $startdate->getTimestamp());
-        $this->assertEquals('51 years ago', $output, 'Error');
+        $this->assertEquals('49 years ago', $output, 'Error');
     }
 
     public function testGetAge_WithValue()
@@ -510,24 +488,9 @@ class DataFormattest extends TestCase
         $date = new \DateTime(date('Y-m-d'));
         $output = DataFormat::GetAge($date->getTimestamp());
 
-        // $date = new \DateTime('2018-02-30 16:17:26');
-        // $output = DataFormat::GetAge($date->getTimestamp());
-        // $this->assertEquals('1 yrs 10 months', $output, 'Error');
-
-        // $date = new \DateTime('1997/01/02');
-        // $output = DataFormat::GetAge($date->getTimestamp());
-        // $this->assertEquals('23 yrs', $output, 'Error');
-
-        // $date = new \DateTime('2017-01-02');
-        // $output = DataFormat::GetAge($date->getTimestamp());
-        // $this->assertEquals('3 yrs', $output, 'Error');
-
         $date = new \DateTime();
         $output = DataFormat::GetAge($date->getTimestamp());
         $this->assertEquals('0 yrs', $output, 'Error');
-
-        // $output = DataFormat::GetAge(123);
-        // $this->assertEquals('50 yrs', $output, 'Error');
     }
 
     public function testInverseHex_WithValue()

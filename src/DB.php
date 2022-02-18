@@ -906,6 +906,8 @@ class DB
                 $TableArray[$k['Field']]['type'] = 'int';
             } elseif ('float' == substr($k['Type'], 0, 5) || 'double' == substr($k['Type'], 0, 6) || 'real' == substr($k['Type'], 0, 4) || 'decimal' == substr($k['Type'], 0, 7)) {
                 $TableArray[$k['Field']]['type'] = 'float';
+            } elseif ('datetime' == substr($k['Type'], 0, 8)) {
+                $TableArray[$k['Field']]['type'] = 'datetime';
             } elseif ('date' == substr($k['Type'], 0, 4)) {
                 $TableArray[$k['Field']]['type'] = 'date';
             } elseif ('text' == substr($k['Type'], 0, 4) || 'mediumtext' == $k['Type'] || 'tinytext' == $k['Type'] || 'longtext' == $k['Type']) {

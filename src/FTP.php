@@ -53,12 +53,10 @@ class FTP
     public static function FTPErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
     {
         echo 'error:: '.$errno.'::'.$errstr.'::'.$errfile.'::'.print_r($errcontext, true);
-
         switch ($errno) {
             case E_USER_ERROR:
             case E_USER_WARNING:
-                \TAS\Core\Log::AddEvent(json_encode(['FTP Connection Fail to invalid Information', $errstr, '']), 'normal');
-
+                \TAS\Core\Log::AddEvent(json_encode(array('FTP Connection Fail to invalid Information', $errstr, '')), 'normal');
                 break;
         }
     }
@@ -73,7 +71,7 @@ class FTP
                 return true;
             }
             //	set_error_handler("FTP::FTPErrorHandler");
-            $this->Connection = @ftp_connect($this->FTPServer, $this->FTPPort, 20) or exit('Connection failed'); //REMARK: We set timeout as 20 second to ensure it fail sooner
+            $this->Connection = @ftp_connect($this->FTPServer, $this->FTPPort, 20) or die('Connection failed'); //REMARK: We set timeout as 20 second to ensure it fail sooner
             if (ftp_login($this->Connection, $this->Username, $this->Password)) {
                 @ftp_chdir($this->Connection, $this->RemotePath);
                 $this->isConnected = true;
@@ -104,14 +102,16 @@ class FTP
         if ($this->isConnected) {
             if (@ftp_put($this->Connection, $remotepath, $localpath, $mode)) {
                 return true;
+            } else {
+                \TAS\Core\Log::AddEvent(json_encode(array("Unable to upload $localpath to remote server", print_r($this, true))), 'normal');
+
+                return false;
             }
-            \TAS\Core\Log::AddEvent(json_encode(["Unable to upload {$localpath} to remote server", print_r($this, true)]), 'normal');
+        } else {
+            \TAS\Core\Log::AddEvent(json_encode(array("Unable to upload $localpath to remote server as fail to connect to server", print_r($this, true))), 'normal');
 
             return false;
         }
-        \TAS\Core\Log::AddEvent(json_encode(["Unable to upload {$localpath} to remote server as fail to connect to server", print_r($this, true)]), 'normal');
-
-        return false;
     }
 
     public function Delete($remotepath)
@@ -122,13 +122,14 @@ class FTP
         if ($this->isConnected) {
             if (@ftp_delete($this->Connection, $remotepath)) {
                 return true;
+            } else {
+                return false;
             }
+        } else {
+            \TAS\Core\Log::AddEvent(json_encode(array('Unable to delete $remotepath from remote server as connection is not established', print_r($this, true))), 'normal');
 
             return false;
         }
-        \TAS\Core\Log::AddEvent(json_encode(['Unable to delete $remotepath from remote server as connection is not established', print_r($this, true)]), 'normal');
-
-        return false;
     }
 
     public function Get($localpath, $remotepath, $mode = FTP_BINARY)
@@ -139,14 +140,16 @@ class FTP
         if ($this->isConnected) {
             if (ftp_get($this->Connection, $localpath, $remotepath, $mode)) {
                 return true;
+            } else {
+                \TAS\Core\Log::AddEvent(json_encode(array("Unable to download $localpath from remote server [ $remotepath ]", print_r($this, true))), 'normal');
+
+                return false;
             }
-            \TAS\Core\Log::AddEvent(json_encode(["Unable to download {$localpath} from remote server [ {$remotepath} ]", print_r($this, true)]), 'normal');
+        } else {
+            \TAS\Core\Log::AddEvent(json_encode(array("Unable to download $localpath from remote server [ $remotepath ] as fail to connect to server", print_r($this, true))), 'normal');
 
             return false;
         }
-        \TAS\Core\Log::AddEvent(json_encode(["Unable to download {$localpath} from remote server [ {$remotepath} ] as fail to connect to server", print_r($this, true)]), 'normal');
-
-        return false;
     }
 
     public function GetRawList($remotedirectory = '', $tryPassive = true)
@@ -156,40 +159,37 @@ class FTP
         }
         if ($this->isConnected) {
             ftp_pasv($this->Connection, false);
-            $content = ftp_rawlist($this->Connection, ' -a '.('' == $remotedirectory ? $this->RemotePath : $remotedirectory));
+            $content = ftp_rawlist($this->Connection, ' -a '.($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
             if ($tryPassive) {
                 //try to do passive mode.
                 if (isset($GLOBALS['AppConfig']['Debug']) && $GLOBALS['AppConfig']['Debug']) {
                     echo 'FTP is in Passive mode';
                 }
                 ftp_pasv($this->Connection, true);
-                $content = ftp_rawlist($this->Connection, ' -a '.('' == $remotedirectory ? $this->RemotePath : $remotedirectory));
+                $content = ftp_rawlist($this->Connection, ' -a '.($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
             }
 
             return $content;
+        } else {
+            return false;
         }
-
-        return false;
     }
 
     public function GetList($remotedirectory = '', $trypassive = true)
     {
         $list = $this->GetRawList($remotedirectory, $trypassive);
-        if (false != $list) {
-            $fileList = [];
+        if ($list != false) {
+            $fileList = array();
             foreach ($list as $index => $value) {
-                $output = [];
-                preg_match(
-                    '/([drwx-]{10})\s*(\d*)\s*([^\s]*)\s*([^\s]*)\s*(\d*)\s*([A-Za-z]{3}\s*[0-9]{1,2})\s*([0-9:]*)\s*(.*)$/i',
-                    $value,
-                    $output
-                );
+                $output = array();
+                preg_match('/([drwx-]{10})\s*(\d*)\s*([^\s]*)\s*([^\s]*)\s*(\d*)\s*([A-Za-z]{3}\s*[0-9]{1,2})\s*([0-9:]*)\s*(.*)$/i',
+                $value, $output);
                 $fileList[] = $output;
             }
 
             return $fileList;
+        } else {
+            return false;
         }
-
-        return false;
     }
 }

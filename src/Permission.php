@@ -11,7 +11,28 @@ class Permission
 
     public function __construct()
     {
-        $this->permissions = [];
+        $this->permissions = array();
+    }
+
+    private function init()
+    {
+        $rsUserRole = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['userrole'].' order by rolename ');
+        if (\TAS\Core\DB::Count($rsUserRole) > 0) {
+            while ($row = $GLOBALS['db']->Fetch($rsUserRole)) {
+                $roles = json_decode($row['permission'], true);
+                foreach ($this->modules as $mkey => $mval) {
+                    foreach ($this->action as $akey => $aval) {
+                        if (isset($roles[$mkey][$akey])) {
+                            $this->permissions[$row['userroleid']][$mkey][$akey] = ($roles[$mkey][$akey] == true) ? true : false;
+                        } else {
+                            $this->permissions[$row['userroleid']][$mkey][$akey] = false;
+                        }
+                    }
+                }
+            }
+        } else {
+            throw new \Exception('Configuration error, Please check your site setup');
+        }
     }
 
     public function Reload()
@@ -29,26 +50,5 @@ class Permission
     public function CheckModulePermission($module, $userlevel)
     {
         return $this->CheckOperationPermission($module, 'access', $userlevel);
-    }
-
-    private function init()
-    {
-        $rsUserRole = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['userrole'].' order by rolename ');
-        if (\TAS\Core\DB::Count($rsUserRole) > 0) {
-            while ($row = $GLOBALS['db']->Fetch($rsUserRole)) {
-                $roles = json_decode($row['permission'], true);
-                foreach ($this->modules as $mkey => $mval) {
-                    foreach ($this->action as $akey => $aval) {
-                        if (isset($roles[$mkey][$akey])) {
-                            $this->permissions[$row['userroleid']][$mkey][$akey] = (true == $roles[$mkey][$akey]) ? true : false;
-                        } else {
-                            $this->permissions[$row['userroleid']][$mkey][$akey] = false;
-                        }
-                    }
-                }
-            }
-        } else {
-            throw new \Exception('Configuration error, Please check your site setup');
-        }
     }
 }

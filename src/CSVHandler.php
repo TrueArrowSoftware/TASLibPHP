@@ -2,12 +2,11 @@
 
 namespace TAS\Core;
 
-class CSV
-{
+class CSV {
     public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ((isset($_SESSION[$tagname.'_orderby']) ? $_SESSION[$tagname.'_orderby'] : $SQLQuery['defaultorderby'])));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ((isset($_SESSION[$tagname.'_direction']) ? $_SESSION[$tagname.'_direction'] : $SQLQuery['defaultsortdirection'])));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -19,7 +18,7 @@ class CSV
             }
         }
         $sortstring = trim($sortstring, ',');
-        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by {$orderby} {$orderdirection} {$sortstring} ";
+        $query = $SQLQuery['basicquery'].$SQLQuery['whereconditions']." order by $orderby $orderdirection $sortstring ";
         $rs = $GLOBALS['db']->Execute($query);
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
@@ -30,12 +29,12 @@ class CSV
         if (self::ExportCSV($query, $filepath, $param['fields'])) {
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
-
             exit();
+        } else {
+            return false;
         }
-
-        return false;
     }
+
 
     /**
      * Generic function to create CSV file on disk.
@@ -57,7 +56,7 @@ class CSV
             return false;
         }
         $fh = '';
-        if ('' == $filename) {
+        if ($filename == '') {
             $fh = fopen('export.csv', 'w+');
         } else {
             $fh = fopen($filename, 'w+');
@@ -65,7 +64,7 @@ class CSV
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fields);
         }
-        if (!is_array($fields) || 0 == count($fields)) {
+        if (!is_array($fields) || count($fields) == 0) {
             $fields = \TAS\Core\DB::Columns($rs);
         }
 
@@ -77,7 +76,7 @@ class CSV
         foreach ($fields as $index => $field) {
             if (is_object($field)) {
                 $fieldname = $field->name;
-            } elseif (is_array($field)) {
+            } else if (is_array($field)) {
                 $fieldname = $field['name'];
             } else {
                 $fieldname = $field;
@@ -93,26 +92,24 @@ class CSV
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fieldindex);
         }
-        foreach ($rs as $row) {
+        foreach($rs as $row) {
             $dataline = '';
             foreach ($fieldindex as $key => $val) {
-                if ($fields[$val]) {
-                    switch ($fields[$val]['type']) {
-                        case 'globalarray':
-                            if (null != $row[$val]) {
+                if ($fields[$val]){
+                    switch ( $fields[$val]['type']){
+                        case 'globalarray': 
+                            if ($row[$val] != null) {
                                 if (isset($fields[$val]['arrayname'])) {
-                                    $dataline .= ',"'.$GLOBALS[$fields[$val]['arrayname']][$row[$val]].'" ';
+                                    $dataline .= ',"'.  $GLOBALS[$fields[$val]['arrayname']][$row[$val]] .'" ';
                                 } else {
                                     $dataline .= ',"'.$row[$val].'" ';
                                 }
                             }
-
                             break;
-
                         default:
                             $dataline .= ',"'.$row[$val].'" ';
                     }
-                } else {
+                }else {
                     $dataline .= ',"'.$row[$val].'" ';
                 }
             }
@@ -123,4 +120,5 @@ class CSV
 
         return true;
     }
+
 }

@@ -1,14 +1,14 @@
 <?php
-
 namespace TAS\Core\WebUI;
 
 /**
  * Interface for All new Element Render.
  */
-interface IElement
-{
+interface IElement {
     /**
-     * Render Final HTML.
+     * Render Final HTML
+     *
+     * @return string
      */
-    public function Render(): string;
+    public function Render(): string; 
 }

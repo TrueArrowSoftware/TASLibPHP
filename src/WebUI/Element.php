@@ -8,28 +8,32 @@ class Element implements IElement
     public $TagName = '';
     public $Attributes = [];
     public $Children = [];
-    public $MustClass = [];
+    public $MustClass=[];
 
     /**
      * Render the Element by default method.
+     *
+     * @return string
      */
     public function Render(): string
     {
-        $callback = fn (?string $k, ?string $v): string => $k.'="'.\htmlentities($v ?? '').'"';
+        $callback = fn (?string $k, ?string $v): string => $k .'="'. \htmlentities($v??"").'"';
         $attributes = array_map($callback, \array_keys($this->Attributes), \array_values($this->Attributes));
 
         $children = '';
-        if (count($this->Children) > 0) {
+        if (count($this->Children) >0) {
             $this->IsContainer = true;
             $children = implode('', $this->Children);
         }
-
-        return '<'.strtolower($this->TagName).' '.implode(' ', $attributes).($this->IsContainer ? '' : '/').'>'.$children.($this->IsContainer ? '</'.\strtolower($this->TagName).'>' : '');
+        return '<'. strtolower($this->TagName) . ' ' . implode(' ', $attributes) . ($this->IsContainer?'':'/'). '>' . $children . ($this->IsContainer?'</'. \strtolower($this->TagName) .'>':'');
     }
 
     /**
-     * Add Child HTML as container content.
-     */
+    * Add Child HTML as container content
+    *
+    * @param string $childHTML
+    * @return void
+    */
     public function AddChild(string $childHTML)
     {
         $this->Children[] = $childHTML;
@@ -37,24 +41,28 @@ class Element implements IElement
 
     /**
      * Add IElement based Class object, so we can call Render function ourselves.
+     *
+     * @param IElement $child
+     * @return void
      */
     public function AddChildElement(IElement $child)
     {
         $this->Children[] = $child->Render();
     }
 
+
     public function SetAttribute(string $key, ?string $value)
     {
-        if (null == $key) {
+        if ($key ==null) {
             return;
         }
-        $value ??= '';
+        $value = $value??'';
         $key = strtolower($key);
-        if ('class' == $key) {
-            $_tclasses = array_merge($this->MustClass, explode(' ', $value));
+        if ($key=='class'){
+            $_tclasses= array_merge($this->MustClass, explode(' ', $value));
             array_unique($_tclasses);
             $value = implode(' ', $_tclasses);
         }
-        $this->Attributes[strtolower($key)] = $value;
+        $this->Attributes[strtolower($key)]= $value;
     }
 }
