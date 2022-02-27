@@ -276,11 +276,10 @@ class Grid
                 }
 
                 $additionalClass = '';
-                if (isset($this->Options['rowconditioncallback']) && 
-                    ( (is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback'])>0) 
-                       || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback'])>0) ) 
+                if (isset($this->Options['rowconditioncallback'])
+                    && ((is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback']) > 0)
+                       || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback']) > 0))
                     ) {
-                    
                     $additionalClass = call_user_func($this->Options['rowconditioncallback'], $row, $additionalClass);
                 }
                 $listing .= "\n".'<tr data-id="'.$row[$this->QueryOptions['indexfield']].'" id="row_'.$row[$this->QueryOptions['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';

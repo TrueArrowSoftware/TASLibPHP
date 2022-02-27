@@ -178,26 +178,26 @@ class DB
      */
     public function Execute($query)
     {
-        if ($this->IsConnected()) {
-            $this->CleanError();
-            if ('' != trim($query)) {
-                $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
-                if (false === $result) {
-                    $this->SetError("<br />Error in Query {$query} is ".$this->MySqlObject->error.'::'.print_r($result, true));
+        if (!$this->IsConnected()) {
+            $this->SetError('Database is not connected');
 
-                    return false;
-                }
-                $this->MySqlObject->store_result();
-
-                return $result;
-            }
+            return false;
+        }
+        $this->CleanError();
+        if (empty(trim($query))) {
             $this->SetError('Attempt to execute blank query');
 
             return false;
         }
-        $this->SetError('Database is not connected');
+        $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
+        if (false === $result) {
+            $this->SetError("<br />Error in Query {$query} is ".$this->MySqlObject->error.'::'.print_r($result, true));
 
-        return false;
+            return false;
+        }
+        $this->MySqlObject->store_result();
+
+        return $result;
     }
 
     /**
@@ -374,88 +374,54 @@ class DB
     public function Insert($tablename, $values, $datatype = '')
     {
         $query = '';
-        if ('' != $tablename) {
-            if (is_array($values)) {
-                $keys = array_keys($values);
-
-                foreach (array_keys($values) as $k) {
-                    $refs[] = &$values[$k];
-                }
-
-                if ('' == $datatype) {
-                    $Columns = \TAS\Core\DB::GetColumns($tablename);
-                    foreach (array_keys($values) as $k) {
-                        reset($Columns);
-                        foreach ($Columns as $field) {
-                            if ($field['Field'] == $k) {
-                                $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
-
-                                switch ($field['Type']) {
-                                    case 'bigint':
-                                        $datatype .= 'i';
-
-                                        break;
-
-                                    case 'datetime':
-                                        $datatype .= 's';
-
-                                        break;
-
-                                    case 'decimal':
-                                        $datatype .= 'd';
-
-                                        break;
-
-                                    default:
-                                        $datatype .= 's';
-                                }
-                            }
-                        }
-                    }
-                }
-
-                $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
-                if ($this->Debug) {
-                    echo "\n<br>Insert Query is : ".$query;
-                }
-                $stmt = $this->MySqlObject->prepare($query);
-                if (is_bool($stmt) && false === $stmt) {
-                    $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
-
-                    \TAS\Core\Log::AddEvent([
-                        'message' => 'Database Insert Prepare Failed !!!',
-                        'query' => $query,
-                        'error' => $this->MySqlObject->error,
-                    ], 'normal');
-
-                    return false;
-                }
-                array_unshift($refs, $datatype);
-                $params = array_merge([
-                    $datatype,
-                ], $values);
-                call_user_func_array([
-                    &$stmt,
-                    'bind_param',
-                ], $refs);
-                $stmt->execute();
-                if ('' == $this->MySqlObject->error) {
-                    return true;
-                }
-                \TAS\Core\Log::AddEvent([
-                    'message' => 'Database Insert Failed !!!',
-                    'query' => $query,
-                    'error' => $this->MySqlObject->error,
-                ], 'normal');
-
-                $this->SetError($this->MySqlObject->error);
-                $this->CleanError();
-
-                return false;
-            }
-        } else {
+        if (empty($tablename)) {
             return false;
         }
+        if (!is_array($values)) {
+            return false;
+        }
+
+        $keys = array_keys($values);
+        foreach (array_keys($values) as $k) {
+            $refs[] = &$values[$k];
+        }
+
+        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+
+        $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
+        if ($this->Debug) {
+            echo "\n<br>Insert Query is : ".$query;
+        }
+        $stmt = $this->MySqlObject->prepare($query);
+        if (is_bool($stmt) && false === $stmt) {
+            $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
+
+            \TAS\Core\Log::AddEvent([
+                'message' => 'Database Insert Prepare Failed !!!',
+                'query' => $query,
+                'error' => $this->MySqlObject->error,
+            ], 'normal');
+
+            return false;
+        }
+
+        array_unshift($refs, $datatype);
+        $params = array_merge([$datatype], $values);
+        call_user_func_array([&$stmt, 'bind_param'], $refs);
+        $stmt->execute();
+        if ('' == $this->MySqlObject->error) {
+            return true;
+        }
+        \TAS\Core\Log::AddEvent([
+            'message' => 'Database Insert Failed !!!',
+            'query' => $query,
+            'error' => $this->MySqlObject->error,
+        ], 'normal');
+
+        $this->SetError($this->MySqlObject->error);
+        $this->CleanError();
+
+        return false;
     }
 
     /**
@@ -473,96 +439,58 @@ class DB
     {
         $query = '';
         $refs = [];
-        if ('' != $tablename) {
-            if (is_array($values)) {
-                $keys = array_keys($values);
+        if (empty($tablename)) {
+            return false;
+        }
+        if (!is_array($values)) {
+            return false;
+        }
+        $keys = array_keys($values);
 
-                $columnlist = [];
-                foreach (array_keys($values) as $k) {
-                    $refs[] = &$values[$k];
-                    $columnlist[] = $k.'=?';
-                }
+        $columnlist = [];
+        foreach (array_keys($values) as $k) {
+            $refs[] = &$values[$k];
+            $columnlist[] = $k.'=?';
+        }
 
-                if ('' == $datatype) {
-                    $Columns = \TAS\Core\DB::GetColumns($tablename);
-                    foreach (array_keys($values) as $k) {
-                        reset($Columns);
-                        foreach ($Columns as $field) {
-                            if ($field['Field'] == $k) {
-                                $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
+        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
 
-                                switch ($field['Type']) {
-                                    case 'bigint':
-                                        $datatype .= 'i';
+        $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
+        $refs[] = &$editid;
+        $datatype .= is_numeric($editid) ? 'i' : 's';
 
-                                        break;
-
-                                    case 'datetime':
-                                        $datatype .= 's';
-
-                                        break;
-
-                                    case 'decimal':
-                                        $datatype .= 'd';
-
-                                        break;
-
-                                    default:
-                                        $datatype .= 's';
-                                }
-                            }
-                        }
-                    }
-                }
-
-                $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
-                $refs[] = &$editid;
-                $datatype .= is_numeric($editid) ? 'i' : 's';
-
-                if ($this->Debug) {
-                    echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
-                }
-                $stmt = $this->MySqlObject->prepare($query);
-                if (is_bool($stmt) && false === $stmt) {
-                    $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
-                    \TAS\Core\Log::AddEvent([
-                        'message' => 'Database Update Prepare Failed !!!',
-                        'query' => $query,
-                        'error' => $this->MySqlObject->error,
-                    ], 'normal');
-
-                    return false;
-                }
-                array_unshift($refs, $datatype);
-
-                $params = array_merge([
-                    $datatype,
-                ], $values);
-                call_user_func_array([
-                    &$stmt,
-                    'bind_param',
-                ], $refs);
-                $stmt->execute();
-                if ('' == $this->MySqlObject->error) {
-                    return true;
-                }
-                \TAS\Core\Log::AddEvent([
-                    'message' => 'Database Update Failed !!!',
-                    'query' => $query,
-                    'error' => $this->MySqlObject->error,
-                ], 'normal');
-
-                $this->SetError($this->MySqlObject->error);
-                $this->CleanError();
-
-                return false;
-            }
-        } else {
-            $this->SetError('Invalid Table name.');
-            $this->CleanError();
+        if ($this->Debug) {
+            echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
+        }
+        $stmt = $this->MySqlObject->prepare($query);
+        if (is_bool($stmt) && false === $stmt) {
+            $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
+            \TAS\Core\Log::AddEvent([
+                'message' => 'Database Update Prepare Failed !!!',
+                'query' => $query,
+                'error' => $this->MySqlObject->error,
+            ], 'normal');
 
             return false;
         }
+        array_unshift($refs, $datatype);
+
+        $params = array_merge([$datatype], $values);
+        call_user_func_array([ &$stmt, 'bind_param'], $refs);
+        $stmt->execute();
+        if ('' == $this->MySqlObject->error) {
+            return true;
+        }
+        \TAS\Core\Log::AddEvent([
+            'message' => 'Database Update Failed !!!',
+            'query' => $query,
+            'error' => $this->MySqlObject->error,
+        ], 'normal');
+
+        $this->SetError($this->MySqlObject->error);
+        $this->CleanError();
+
+        return false;
     }
 
     public function InsertUpdate($table, $values, $datatype = '')
@@ -570,37 +498,9 @@ class DB
         if ('' != $table) {
             if (is_array($values)) {
                 $keys = array_keys($values);
-                if ('' == $datatype) {
-                    $Columns = \TAS\Core\DB::GetColumns($table);
-                    foreach (array_keys($values) as $k) {
-                        reset($Columns);
-                        foreach ($Columns as $field) {
-                            if ($field['Field'] == $k) {
-                                $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
 
-                                switch ($field['Type']) {
-                                    case 'bigint':
-                                        $datatype .= 'i';
+                $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
 
-                                        break;
-
-                                    case 'datetime':
-                                        $datatype .= 's';
-
-                                        break;
-
-                                    case 'decimal':
-                                        $datatype .= 'd';
-
-                                        break;
-
-                                    default:
-                                        $datatype .= 's';
-                                }
-                            }
-                        }
-                    }
-                }
                 if (strlen($datatype) != count($keys)) {
                     $this->SetError('Error in Preparing Query not all column founds');
                     $this->CleanError();
@@ -966,5 +866,41 @@ class DB
 
         $this->CleanError();
         $this->SQLERROR = $error;
+    }
+
+    private function GetDataString(string $tablename, array $values)
+    {
+        $datatype = '';
+        $Columns = \TAS\Core\DB::GetColumns($tablename);
+        foreach (array_keys($values) as $k) {
+            reset($Columns);
+            foreach ($Columns as $field) {
+                if ($field['Field'] == $k) {
+                    $type = preg_replace('/(\([0-9\,]*\))/i', '', $field['Type']);
+
+                    switch ($field['Type']) {
+                        case 'bigint':
+                            $datatype .= 'i';
+
+                            break;
+
+                        case 'datetime':
+                            $datatype .= 's';
+
+                            break;
+
+                        case 'decimal':
+                            $datatype .= 'd';
+
+                            break;
+
+                        default:
+                            $datatype .= 's';
+                    }
+                }
+            }
+        }
+
+        return $datatype;
     }
 }

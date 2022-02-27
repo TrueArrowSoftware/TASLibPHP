@@ -2,13 +2,14 @@
 
 namespace TAS\Core;
 
-/*
- * Collection of Static Function to valid the format of given Data.
- */
+// Collection of Static Function to valid the format of given Data.
 class DataValidate
 {
     /**
      * @description:  Valid if the phone number is $length digit valid number or not.
+     *
+     * @param mixed $phone
+     * @param mixed $length
      */
     public static function ValidatePhoneFormat($phone, $length = 10)
     {
@@ -35,12 +36,10 @@ class DataValidate
         return true;
     }
 
-    /*
-     * @Note: True for  http://example.com OR http://www.example.com OR https://example.com OR https://www.example.com OR https://example
-     */
+    // @Note: True for  http://example.com OR http://www.example.com OR https://example.com OR https://www.example.com OR https://example
     public static function ValidateURL($url)
     {
-        if ($url == null) {
+        if (null == $url) {
             return false;
         }
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
@@ -50,12 +49,10 @@ class DataValidate
         return true;
     }
 
-    /*
-     * Validate an IP Address
-     */
+    // Validate an IP Address
     public static function ValidateIP($ip)
     {
-        if ($ip == null) {
+        if (null == $ip) {
             return false;
         }
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
@@ -70,7 +67,7 @@ class DataValidate
      */
     public static function IsDate(string $date)
     {
-        if (empty($date) || $date == null || !self::ContainDigits($date)) {
+        if (empty($date) || null == $date || !self::ContainDigits($date)) {
             throw new \InvalidArgumentException('Invalid argument, date must be any parsable date. preferrably in system time format.');
         }
 
@@ -95,5 +92,34 @@ class DataValidate
         }
 
         return false;
+    }
+
+    /**
+     * Validate a password against a set of rules. Or throw an exception.
+     */
+    public static function ValidatePassword(string $password): bool
+    {
+        $uppercase = preg_match('@[A-Z]@', $password);
+        $lowercase = preg_match('@[a-z]@', $password);
+        $number = preg_match('@[0-9]@', $password);
+        $specialChars = preg_match('@[^\w]@', $password);
+
+        if (strlen($password) < 8) {
+            throw new \Exception('Password should be at least 8 characters in length.');
+        }
+        if (!$uppercase) {
+            throw new \Exception('Password must include at least upper case letter.');
+        }
+        if (!$lowercase) {
+            throw new \Exception('Password must include at least lower case letter.');
+        }
+        if (!$number) {
+            throw new \Exception('Password must include at least one number.');
+        }
+        if (!$specialChars) {
+            throw new \Exception('Password must include at least one special character.');
+        }
+
+        return true;
     }
 }
