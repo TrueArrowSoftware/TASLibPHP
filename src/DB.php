@@ -453,7 +453,7 @@ class DB
             $columnlist[] = $k.'=?';
         }
 
-        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+        $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
         $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
         $refs[] = &$editid;
@@ -476,7 +476,7 @@ class DB
         array_unshift($refs, $datatype);
 
         $params = array_merge([$datatype], $values);
-        call_user_func_array([ &$stmt, 'bind_param'], $refs);
+        call_user_func_array([&$stmt, 'bind_param'], $refs);
         $stmt->execute();
         if ('' == $this->MySqlObject->error) {
             return true;
