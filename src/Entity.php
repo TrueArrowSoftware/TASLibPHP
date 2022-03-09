@@ -97,7 +97,7 @@ class Entity
         $isvalid = true;
         foreach ($fields as $fieldname => $fieldinfo) {
             if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
-                if (isset($values[$fieldname]) && (null == $values[$fieldname] || '' == $values[$fieldname])) {
+                if (isset($values[$fieldname]) && (null === $values[$fieldname] || '' == $values[$fieldname])) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
                 } elseif (is_array($values[$fieldname]) && 0 == count($values[$fieldname])) {
