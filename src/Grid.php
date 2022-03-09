@@ -497,7 +497,7 @@ class Grid
             case 'numeric':
             case 'number':
                 $cssClass = 'gridtable-numeric';
-                if ($val['showtotal'] ?? false == true) {
+                if (($val['showtotal'] ?? false) == true) {
                     $RowValueTotal[$field] ??= 0.0;
                     $RowValueTotal[$field] += (float) $row[$field];
                 }
@@ -512,7 +512,7 @@ class Grid
 
             case 'cb':
             case 'callback':
-                if ($val['showtotal'] ?? false == true) {
+                if (($val['showtotal'] ?? false) == true) {
                     $RowValueTotal[$field] ??= 0.0;
                     $t = $RowValueTotal[$field];
                     $fielddata = call_user_func_array($val['function'], [$row, $field, &$t]);
