@@ -386,7 +386,7 @@ class DB
             $refs[] = &$values[$k];
         }
 
-        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+        $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
         $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
         if ($this->Debug) {
@@ -499,7 +499,7 @@ class DB
             if (is_array($values)) {
                 $keys = array_keys($values);
 
-                $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+                $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
                 if (strlen($datatype) != count($keys)) {
                     $this->SetError('Error in Preparing Query not all column founds');
@@ -868,6 +868,9 @@ class DB
         $this->SQLERROR = $error;
     }
 
+    /**
+     * Data Type of given column.
+     */
     private function GetDataString(string $tablename, array $values)
     {
         $datatype = '';
