@@ -697,11 +697,11 @@ class Utility
      * @param [type] $fromemail
      * @param string $fromName
      * @param string $returnpath
-     * @param [type] $attachment
+     * @param [type] $attachment 
      */
     public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName = '', $returnpath = '', $attachment = null)
     {
-        $text_body ??= '';
+        $text_body = $text_body==null?'':$text_body;
         $mailstat = true;
         $mail = new PHPMailer();
         $mail->IsMail();

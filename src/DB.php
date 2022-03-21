@@ -770,6 +770,9 @@ class DB
             $table = $GLOBALS['Tables'][$table];
         }
         $f = $GLOBALS['db']->Execute('show Columns from '.$table);
+        if (null == $f) {
+            throw new \Exception('Table '.$table.' not found');
+        }
         $fields = [];
         foreach ($f as $row) {
             $fields[] = $row;

@@ -577,7 +577,7 @@ class UI
             switch (strtolower($fieldtype)) {
                 case 'file':
                     $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
-                    if ($field['value'] > 0) {
+                    if (is_numeric($field['value']) && (int)$field['value'] > 0) {
                         $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" '.(isset($field['filesource']) ? 'data-source="'.$field['filesource'].'"' : '').' data-imageid="'.$field['value'].'">View File</a> /
                         <a href="#" class="deleteimage" data-imageid="'.$field['value'].'"'.(isset($field['filesource']) ? ' data-source="'.$field['filesource'].'"' : '').'>Delete</a></span>';
                     }
@@ -754,10 +754,13 @@ class UI
 
                     break;
             }
+            $HTMLLabel = '';
             if ($DoLabel) {
                 $HTMLLabel = \TAS\Core\HTML::Label(($field['label'] ?? $fieldname), $id, $isrequired);
-            } else {
-                $HTMLLabel = '';
+            }
+
+            if (array_key_exists('prefix', $field)){
+                $HTML ='<span class="prefixnote">'.$field['prefix'].'</span>' . $HTML;
             }
 
             if (isset($field['shortnote'])) {
