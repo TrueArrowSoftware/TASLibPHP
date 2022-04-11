@@ -1,7 +1,6 @@
 <?php
 
 namespace TAS\Core;
-use \TAS\Core\Config;
 
 class UI
 {
@@ -37,22 +36,52 @@ class UI
      */
     public static function ArrayToDropDown($sourceArray, $selectedvalue)
     {
-        if (is_array($sourceArray)) {
-            $val = '';
-            reset($sourceArray);
-            foreach ($sourceArray as $i => $v) {
-                if (is_array($selectedvalue)) {
-                    $select = in_array(\TAS\Core\DataFormat::DoSecure($i), $selectedvalue) ? true : false;
-                } else {
-                    $select = (\TAS\Core\DataFormat::DoSecure($i) == $selectedvalue) ? true : false;
-                }
-                $val .= '<option value="'.\TAS\Core\DataFormat::DoSecure($i).'"'.($select ? ' selected="selected"' : '').'>'.$v."</option>\r\n";
+        if (!is_array($sourceArray)) {
+            return '';
+        }
+        $val = '';
+        reset($sourceArray);
+        foreach ($sourceArray as $i => $v) {
+            if (is_array($selectedvalue)) {
+                $select = in_array(\TAS\Core\DataFormat::DoSecure($i), $selectedvalue) ? true : false;
+            } else {
+                $select = (\TAS\Core\DataFormat::DoSecure($i) == $selectedvalue) ? true : false;
             }
-
-            return $val;
+            $val .= '<option value="'.\TAS\Core\DataFormat::DoSecure($i).'"'.($select ? ' selected="selected"' : '').'>'.$v."</option>\r\n";
         }
 
-        return '';
+        return $val;
+    }
+
+    /**
+     * MultiArray To Dropdown.
+     *
+     * @param [type] $sourceArray
+     * @param string $val
+     * @param string $label
+     * @param [type] $selectValue
+     * @return void
+     */
+    public static function MultiArrayToDropDown($sourceArray, string $val, string $label, $selectValue)
+    {
+        if (!is_array($sourceArray)) {
+            return '';
+        }
+        reset($sourceArray);
+        foreach ($sourceArray as $v) {
+            if (!is_array($v)) {
+                continue;
+            }
+
+            if (is_array($selectedvalue)) {
+                $select = in_array(\TAS\Core\DataFormat::DoSecure($v[$val]), $selectedvalue) ? true : false;
+            } else {
+                $select = (\TAS\Core\DataFormat::DoSecure($v[$val]) == $selectedvalue) ? true : false;
+            }
+            $val .= '<option value="'.\TAS\Core\DataFormat::DoSecure($v[$val]).'"'.($select ? ' selected="selected"' : '').'>'.$v[$label]."</option>\r\n";
+        }
+
+        return $val;
     }
 
     /**
@@ -310,7 +339,7 @@ class UI
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
         $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
-        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; //'m/d/Y H:i a';
+        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; // 'm/d/Y H:i a';
         $options['norecordtext'] = 'No Record Found';
 
         $grid = new \TAS\Core\Grid($options, $queryoptions);
@@ -378,7 +407,7 @@ class UI
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
         $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
-        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; //'m/d/Y H:i a';
+        $options['datetimeformat'] = Config::$DisplayDateTimeFormat; // 'm/d/Y H:i a';
         $options['norecordtext'] = 'No Record Found';
 
         $grid = new \TAS\Core\Grid($options, $queryoptions);
@@ -577,7 +606,7 @@ class UI
             switch (strtolower($fieldtype)) {
                 case 'file':
                     $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
-                    if (is_numeric($field['value']) && (int)$field['value'] > 0) {
+                    if (is_numeric($field['value']) && (int) $field['value'] > 0) {
                         $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" '.(isset($field['filesource']) ? 'data-source="'.$field['filesource'].'"' : '').' data-imageid="'.$field['value'].'">View File</a> /
                         <a href="#" class="deleteimage" data-imageid="'.$field['value'].'"'.(isset($field['filesource']) ? ' data-source="'.$field['filesource'].'"' : '').'>Delete</a></span>';
                     }
@@ -649,6 +678,17 @@ class UI
 
                             case 'recordset':
                                 $options = self::RecordSetToDropDown($field['query'], $field['value'] ?? '', ($field['dbID'] ?? ''), ($field['dbLabelField'] ?? ''), ($field['showSelect'] ?? 'true'), 'Select', '');
+
+                                break;
+
+                            case 'multiarray':
+                                $array = $GLOBALS[($field['arrayname'] ?? '')];
+                                if (isset($field['showSelect']) && true == $field['showSelect']) {
+                                    $array = [
+                                        ' ' => 'Select',
+                                    ] + $array;
+                                }
+                                $options = self::MultiArrayToDropDown($array, $field['dbID'], $field['dbLabelField'], ($field['value'] ?? ''));
 
                                 break;
 
@@ -759,8 +799,8 @@ class UI
                 $HTMLLabel = \TAS\Core\HTML::Label(($field['label'] ?? $fieldname), $id, $isrequired);
             }
 
-            if (array_key_exists('prefix', $field)){
-                $HTML ='<span class="prefixnote">'.$field['prefix'].'</span>' . $HTML;
+            if (array_key_exists('prefix', $field)) {
+                $HTML = '<span class="prefixnote">'.$field['prefix'].'</span>'.$HTML;
             }
 
             if (isset($field['shortnote'])) {
