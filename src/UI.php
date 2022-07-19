@@ -67,21 +67,21 @@ class UI
         if (!is_array($sourceArray)) {
             return '';
         }
+        $html ='';
         reset($sourceArray);
         foreach ($sourceArray as $v) {
             if (!is_array($v)) {
                 continue;
             }
-
-            if (is_array($selectedvalue)) {
-                $select = in_array(\TAS\Core\DataFormat::DoSecure($v[$val]), $selectedvalue) ? true : false;
+            if (is_array($selectValue)) {
+                $select = in_array(\TAS\Core\DataFormat::DoSecure($v[$val]), $selectValue) ? true : false;
             } else {
-                $select = (\TAS\Core\DataFormat::DoSecure($v[$val]) == $selectedvalue) ? true : false;
+                $select = (\TAS\Core\DataFormat::DoSecure($v[$val]) == $selectValue) ? true : false;
             }
-            $val .= '<option value="'.\TAS\Core\DataFormat::DoSecure($v[$val]).'"'.($select ? ' selected="selected"' : '').'>'.$v[$label]."</option>\r\n";
+            $html .= '<option value="'.\TAS\Core\DataFormat::DoSecure($v[$val]).'"'.($select ? ' selected="selected"' : '').'>'.$v[$label]."</option>\r\n";
         }
 
-        return $val;
+        return $html;
     }
 
     /**
@@ -682,7 +682,7 @@ class UI
                                 break;
 
                             case 'multiarray':
-                                $array = $GLOBALS[($field['arrayname'] ?? '')];
+                                $array = $field['arrayname'];
                                 if (isset($field['showSelect']) && true == $field['showSelect']) {
                                     $array = [
                                         ' ' => 'Select',

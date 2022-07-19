@@ -48,6 +48,7 @@ class DB
      * @var bool
      */
     public $Debug = false;
+
     /**
      * Server IP/Name for database connection.
      *
@@ -499,8 +500,7 @@ class DB
             if (is_array($values)) {
                 $keys = array_keys($values);
 
-                $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
-
+                $datatype = empty($datatype) ? static::GetDataString($table, $values) : $datatype;
                 if (strlen($datatype) != count($keys)) {
                     $this->SetError('Error in Preparing Query not all column founds');
                     $this->CleanError();
