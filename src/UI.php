@@ -57,17 +57,14 @@ class UI
      * MultiArray To Dropdown.
      *
      * @param [type] $sourceArray
-     * @param string $val
-     * @param string $label
      * @param [type] $selectValue
-     * @return void
      */
     public static function MultiArrayToDropDown($sourceArray, string $val, string $label, $selectValue)
     {
         if (!is_array($sourceArray)) {
             return '';
         }
-        $html ='';
+        $html = '';
         reset($sourceArray);
         foreach ($sourceArray as $v) {
             if (!is_array($v)) {
@@ -361,7 +358,7 @@ class UI
             }
         }
 
-        $grid->Options['option'] = array_merge($defaulticons, ($param['extraicons'] ?? []));
+        $grid->Options['option'] = array_merge($defaulticons, $param['extraicons'] ?? []);
 
         return $grid->Render();
     }
@@ -423,7 +420,7 @@ class UI
                 }
             }
         }
-        $grid->Options['option'] = array_merge($defaulticons, ($param['extraicons'] ?? []));
+        $grid->Options['option'] = array_merge($defaulticons, $param['extraicons'] ?? []);
 
         return $grid->Render();
     }
@@ -464,86 +461,95 @@ class UI
             $DoLabel = true;
 
             switch (strtolower($fieldtype)) {
-                    case 'bigint':
-                    case 'int':
-                    case 'float':
-                    case 'numeric':
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput numeric'), ($param['Fields'][$field['Field']]['size'] ?? '10'), ($param['Fields'][$field['Field']]['maxlength'] ?? '10'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'bigint':
+                case 'int':
+                case 'float':
+                case 'numeric':
+                    $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput numeric', $param['Fields'][$field['Field']]['size'] ?? '10', $param['Fields'][$field['Field']]['maxlength'] ?? '10', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'datetime':
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput datetime'), ($param['Fields'][$field['Field']]['size'] ?? '30'), ($param['Fields'][$field['Field']]['maxlength'] ?? '30'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'datetime':
+                    $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput datetime', $param['Fields'][$field['Field']]['size'] ?? '30', $param['Fields'][$field['Field']]['maxlength'] ?? '30', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'date':
-                        $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                case 'date':
+                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'email':
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput email'), ($param['Fields'][$field['Field']]['size'] ?? '30'), ($param['Fields'][$field['Field']]['maxlength'] ?? '30'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'email':
+                    $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput email', $param['Fields'][$field['Field']]['size'] ?? '30', $param['Fields'][$field['Field']]['maxlength'] ?? '30', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'url':
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput url'), ($param['Fields'][$field['Field']]['size'] ?? '30'), ($param['Fields'][$field['Field']]['maxlength'] ?? '30'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'url':
+                    $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput url', $param['Fields'][$field['Field']]['size'] ?? '30', $param['Fields'][$field['Field']]['maxlength'] ?? '30', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'select':
-                        $options = '';
+                case 'select':
+                    $options = '';
 
-                        switch ($param['Fields'][$field['Field']]['selecttype']) {
-                            case 'query': // Run from DB;
-                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), $param['Fields'][$field['Field']]['value'] ?? '', ($param['Fields'][$field['Field']]['dbID'] ?? ''), ($param['Fields'][$field['Field']]['dbLabelField'] ?? ''), true, 'Select', '');
+                    switch ($param['Fields'][$field['Field']]['selecttype']) {
+                        case 'query': // Run from DB;
+                            $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), $param['Fields'][$field['Field']]['value'] ?? '', $param['Fields'][$field['Field']]['dbID'] ?? '', $param['Fields'][$field['Field']]['dbLabelField'] ?? '', true, 'Select', '');
 
-                                break;
+                            break;
 
-                            case 'globalarray': // run from global Array
-                                $options = self::ArrayToDropDown($GLOBALS[($param['Fields'][$field['Field']]['arrayname'] ?? '')], ($param['Fields'][$field['Field']]['value'] ?? ''));
+                        case 'globalarray': // run from global Array
+                            $options = self::ArrayToDropDown($GLOBALS[$param['Fields'][$field['Field']]['arrayname'] ?? ''], $param['Fields'][$field['Field']]['value'] ?? '');
 
-                                break;
+                            break;
 
-                            case 'array': // array pass along.
-                                $options = self::ArrayToDropDown(($param['Fields'][$field['Field']]['arrayname'] ?? []), ($param['Fields'][$field['Field']]['value'] ?? ''));
+                        case 'array': // array pass along.
+                            $options = self::ArrayToDropDown($param['Fields'][$field['Field']]['arrayname'] ?? [], $param['Fields'][$field['Field']]['value'] ?? '');
 
-                                break;
+                            break;
+                    }
+                    $multi = false;
+                    $attr= ($param['Fields'][$field['Field']]['additionalattr'] ?? '' ) . 'data-value="'.($param['Fields'][$field['Field']]['value']??'').'"';
+                    if (isset($param['Fields'][$field['Field']]['multiple']) && true == $param['Fields'][$field['Field']]['multiple']) {
+                        $multi = true;
+                        $_val = $param['Fields'][$field['Field']]['value'];
+                        if (is_array($_val)|| is_object($_val)){
+                            $attr= ($param['Fields'][$field['Field']]['additionalattr'] ?? '' ) . 'data-value="'.json_encode($param['Fields'][$field['Field']]['value']??[]).'"';
                         }
-                        $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput'), ($param['Fields'][$field['Field']]['multiple'] ?? false), ($param['Fields'][$field['Field']]['multiplesize'] ?? 5), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                    }
+                    $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput', $multi, $param['Fields'][$field['Field']]['multiplesize'] ?? 5, $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'text':
-                    case 'textarea':
-                    case 'longtext':
-                    case 'mediumtext':
-                        $HTML = \TAS\Core\HTML::InputText($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput date'), ($param['Fields'][$field['Field']]['rows'] ?? '4'), ($param['Fields'][$field['Field']]['cols'] ?? '50'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'text':
+                case 'textarea':
+                case 'longtext':
+                case 'mediumtext':
+                    $HTML = \TAS\Core\HTML::InputText($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput date', $param['Fields'][$field['Field']]['rows'] ?? '4', $param['Fields'][$field['Field']]['cols'] ?? '50', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'checkbox':
-                        $HTML = \TAS\Core\HTML::InputCheckBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'checkbox':
+                    $HTML = \TAS\Core\HTML::InputCheckBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
+                    break;
 
-                    case 'hidden':
-                        $DoLabel = false;
-                        $HTML = \TAS\Core\HTML::InputHidden($id, $param['Fields'][$field['Field']]['value'] ?? '', $id);
+                case 'hidden':
+                    $DoLabel = false;
+                    $HTML = \TAS\Core\HTML::InputHidden($id, $param['Fields'][$field['Field']]['value'] ?? '', $id);
 
-                        break;
+                    break;
 
-                    case 'inputbox':
-                    case 'varchar':
-                    default:
-                        $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, ($param['Fields'][$field['Field']]['css'] ?? 'forminput'), ($param['Fields'][$field['Field']]['size'] ?? '30'), ($param['Fields'][$field['Field']]['maxlength'] ?? '30'), ($param['Fields'][$field['Field']]['additionalattr'] ?? ''));
+                case 'inputbox':
+                case 'varchar':
+                default:
+                    $HTML = \TAS\Core\HTML::InputBox($id, $param['Fields'][$field['Field']]['value'] ?? '', $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput', $param['Fields'][$field['Field']]['size'] ?? '30', $param['Fields'][$field['Field']]['maxlength'] ?? '30', $param['Fields'][$field['Field']]['additionalattr'] ?? '');
 
-                        break;
-                }
+                    break;
+            }
 
             if ($DoLabel) {
-                $HTMLLabel = \TAS\Core\HTML::Label(($param['Fields'][$field['Field']]['label'] ?? $fieldname), $id, $isrequired);
+                $HTMLLabel = \TAS\Core\HTML::Label($param['Fields'][$field['Field']]['label'] ?? $fieldname, $id, $isrequired);
             } else {
                 $HTMLLabel = '';
             }
@@ -605,7 +611,7 @@ class UI
 
             switch (strtolower($fieldtype)) {
                 case 'file':
-                    $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file '.($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
                     if (is_numeric($field['value']) && (int) $field['value'] > 0) {
                         $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" '.(isset($field['filesource']) ? 'data-source="'.$field['filesource'].'"' : '').' data-imageid="'.$field['value'].'">View File</a> /
                         <a href="#" class="deleteimage" data-imageid="'.$field['value'].'"'.(isset($field['filesource']) ? ' data-source="'.$field['filesource'].'"' : '').'>Delete</a></span>';
@@ -614,7 +620,7 @@ class UI
                     break;
 
                 case 'readonly':
-                    $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, ($field['css'] ?? ''));
+                    $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, $field['css'] ?? '');
 
                     break;
 
@@ -623,46 +629,46 @@ class UI
                 case 'float':
                 case 'numeric':
                 case 'number':
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'number '.($field['css'] ?? 'form-control'), ($field['size'] ?? '10'), ($field['maxlength'] ?? '10'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'number '.($field['css'] ?? 'form-control'), $field['size'] ?? '10', $field['maxlength'] ?? '10', $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'datetime':
-                    $HTML = \TAS\Core\HTML::InputDateTime($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateTimeCSS.' '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputDateTime($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateTimeCSS.' '.($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'date':
-                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.' '.($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS.' '.($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'time':
-                     $inputtime = new \TAS\Core\WebUI\InputTime();
-                     $inputtime->SetAttribute('ID', $id);
-                     $inputtime->SetAttribute('Name', $id);
-                     $inputtime->SetAttribute('value', ($field['value'] ?? ''));
-                     $HTML = $inputtime->Render();
+                    $inputtime = new \TAS\Core\WebUI\InputTime();
+                    $inputtime->SetAttribute('ID', $id);
+                    $inputtime->SetAttribute('Name', $id);
+                    $inputtime->SetAttribute('value', $field['value'] ?? '');
+                    $HTML = $inputtime->Render();
 
                     break;
 
                 case 'email':
-                    $HTML = \TAS\Core\HTML::InputEmail($id, $field['value'] ?? '', $id, $isrequired, 'email '.($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '150'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputEmail($id, $field['value'] ?? '', $id, $isrequired, 'email '.($field['css'] ?? 'form-control'), $field['size'] ?? '30', $field['maxlength'] ?? '150', $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'phone':
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'phone '.($field['css'] ?? 'form-control'), ($field['size'] ?? '15'), ($field['maxlength'] ?? '15'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'phone '.($field['css'] ?? 'form-control'), $field['size'] ?? '15', $field['maxlength'] ?? '15', $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'zipcode':
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'zipcode '.($field['css'] ?? 'form-control'), ($field['size'] ?? '5'), ($field['maxlength'] ?? '5'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'zipcode '.($field['css'] ?? 'form-control'), $field['size'] ?? '5', $field['maxlength'] ?? '5', $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'url':
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'url '.($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '255'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, 'url '.($field['css'] ?? 'form-control'), $field['size'] ?? '30', $field['maxlength'] ?? '255', $field['additionalattr'] ?? '');
 
                     break;
 
@@ -672,12 +678,12 @@ class UI
                     try {
                         switch ($field['selecttype']) {
                             case 'query': // Run from DB;
-                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), $field['value'] ?? '', ($field['dbID'] ?? ''), ($field['dbLabelField'] ?? ''), ($field['showSelect'] ?? 'true'), 'Select', '');
+                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select', '');
 
                                 break;
 
                             case 'recordset':
-                                $options = self::RecordSetToDropDown($field['query'], $field['value'] ?? '', ($field['dbID'] ?? ''), ($field['dbLabelField'] ?? ''), ($field['showSelect'] ?? 'true'), 'Select', '');
+                                $options = self::RecordSetToDropDown($field['query'], $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select', '');
 
                                 break;
 
@@ -688,18 +694,18 @@ class UI
                                         ' ' => 'Select',
                                     ] + $array;
                                 }
-                                $options = self::MultiArrayToDropDown($array, $field['dbID'], $field['dbLabelField'], ($field['value'] ?? ''));
+                                $options = self::MultiArrayToDropDown($array, $field['dbID'], $field['dbLabelField'], $field['value'] ?? '');
 
                                 break;
 
                             case 'globalarray': // run from global Array
-                                $array = $GLOBALS[($field['arrayname'] ?? '')];
+                                $array = $GLOBALS[$field['arrayname'] ?? ''];
                                 if (isset($field['showSelect']) && true == $field['showSelect']) {
                                     $array = [
                                         ' ' => 'Select',
                                     ] + $array;
                                 }
-                                $options = self::ArrayToDropDown($array, ($field['value'] ?? ''));
+                                $options = self::ArrayToDropDown($array, $field['value'] ?? '');
 
                                 break;
 
@@ -710,7 +716,7 @@ class UI
                                         ' ' => 'Select',
                                     ] + $array;
                                 }
-                                $options = self::ArrayToDropDown($array, ($field['value'] ?? ''));
+                                $options = self::ArrayToDropDown($array, $field['value'] ?? '');
 
                                 break;
                         }
@@ -718,7 +724,7 @@ class UI
                         trigger_error('Unable to create Select list, argument invalid', E_USER_ERROR);
                     }
                     $multi = ($field['multiple'] ?? false);
-                    $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id.($multi ? '[]' : ''), $isrequired, ($field['css'] ?? 'form-control'), $multi, ($field['multiplesize'] ?? 5), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id.($multi ? '[]' : ''), $isrequired, $field['css'] ?? 'form-control', $multi, $field['multiplesize'] ?? 5, $field['additionalattr'] ?? '');
 
                     break;
 
@@ -726,12 +732,12 @@ class UI
                 case 'textarea':
                 case 'longtext':
                 case 'mediumtext':
-                    $HTML = \TAS\Core\HTML::InputText($id, $field['value'] ?? '', $id, $isrequired, ($field['css'] ?? 'form-control'), ($field['rows'] ?? '4'), ($field['cols'] ?? '50'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputText($id, $field['value'] ?? '', $id, $isrequired, $field['css'] ?? 'form-control', $field['rows'] ?? '4', $field['cols'] ?? '50', $field['additionalattr'] ?? '');
 
                     break;
 
                 case 'checkbox':
-                    $HTML = \TAS\Core\HTML::InputCheckBox($id, $field['value'] ?? '', $id, $isrequired, ($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputCheckBox($id, $field['value'] ?? '', $id, $isrequired, $field['css'] ?? 'form-control', $field['additionalattr'] ?? '');
 
                     break;
 
@@ -772,7 +778,7 @@ class UI
                     break;
 
                 case 'password':
-                    $HTML = \TAS\Core\HTML::InputPassword($id, $field['value'] ?? '', $id, $isrequired, ($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '30'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputPassword($id, $field['value'] ?? '', $id, $isrequired, $field['css'] ?? 'form-control', $field['size'] ?? '30', $field['maxlength'] ?? '30', $field['additionalattr'] ?? '');
 
                     break;
 
@@ -782,7 +788,7 @@ class UI
                     break;
 
                 case 'color':
-                    $HTML = \TAS\Core\HTML::InputColour($id, $field['value'] ?? '', $id, $isrequired, ($field['css'] ?? 'form-control'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputColour($id, $field['value'] ?? '', $id, $isrequired, $field['css'] ?? 'form-control', $field['additionalattr'] ?? '');
 
                     break;
 
@@ -790,13 +796,13 @@ class UI
                 case 'varchar':
                 case 'string':
                 default:
-                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, ($field['css'] ?? 'form-control'), ($field['size'] ?? '30'), ($field['maxlength'] ?? '30'), ($field['additionalattr'] ?? ''));
+                    $HTML = \TAS\Core\HTML::InputBox($id, $field['value'] ?? '', $id, $isrequired, $field['css'] ?? 'form-control', $field['size'] ?? '30', $field['maxlength'] ?? '30', $field['additionalattr'] ?? '');
 
                     break;
             }
             $HTMLLabel = '';
             if ($DoLabel) {
-                $HTMLLabel = \TAS\Core\HTML::Label(($field['label'] ?? $fieldname), $id, $isrequired);
+                $HTMLLabel = \TAS\Core\HTML::Label($field['label'] ?? $fieldname, $id, $isrequired);
             }
 
             if (array_key_exists('prefix', $field)) {
@@ -815,7 +821,7 @@ class UI
             if (isset($field['DoWrapper']) && false == $field['DoWrapper']) {
                 $fieldHTML[$groupName][$fieldname]['html'] = $HTMLLabel.$HTML;
             } else {
-                $fieldHTML[$groupName][$fieldname]['html'] = \TAS\Core\HTML::FormField($HTMLLabel, \TAS\Core\HTML::InputWrapper($HTML), ($field['wrappertag'] ?? ''));
+                $fieldHTML[$groupName][$fieldname]['html'] = \TAS\Core\HTML::FormField($HTMLLabel, \TAS\Core\HTML::InputWrapper($HTML), $field['wrappertag'] ?? '');
             }
 
             $fieldHTML[$groupName][$fieldname]['displayorder'] = ($field['displayorder'] ?? 1);
@@ -946,7 +952,7 @@ class UI
                                 break;
 
                             case 'globalarray': // run from global Array
-                                $options = $GLOBALS[($field['arrayname'] ?? '')];
+                                $options = $GLOBALS[$field['arrayname'] ?? ''];
 
                                 break;
 
@@ -1006,12 +1012,12 @@ class UI
                 case 'zipcode':
                 case 'url':
                 default:
-                        $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, ($field['css'] ?? ''));
+                    $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, $field['css'] ?? '');
 
                     break;
             }
             if ($DoLabel) {
-                $HTMLLabel = \TAS\Core\HTML::Label(($field['label'] ?? $fieldname), $id, $isrequired);
+                $HTMLLabel = \TAS\Core\HTML::Label($field['label'] ?? $fieldname, $id, $isrequired);
             } else {
                 $HTMLLabel = '';
             }
@@ -1024,7 +1030,7 @@ class UI
             if (isset($field['DoWrapper']) && false == $field['DoWrapper']) {
                 $fieldHTML[$groupName][$fieldname]['html'] = $HTMLLabel.$HTML;
             } else {
-                $fieldHTML[$groupName][$fieldname]['html'] = \TAS\Core\HTML::FormField($HTMLLabel, \TAS\Core\HTML::InputWrapper($HTML), ($field['wrappertag'] ?? ''));
+                $fieldHTML[$groupName][$fieldname]['html'] = \TAS\Core\HTML::FormField($HTMLLabel, \TAS\Core\HTML::InputWrapper($HTML), $field['wrappertag'] ?? '');
             }
 
             $fieldHTML[$groupName][$fieldname]['displayorder'] = ($field['displayorder'] ?? 1);

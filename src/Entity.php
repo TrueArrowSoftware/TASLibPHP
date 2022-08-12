@@ -94,8 +94,17 @@ class Entity
     {
         $isvalid = true;
         foreach ($fields as $fieldname => $fieldinfo) {
+            if (!isset($values[$fieldname])) {
+                if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
+                    $isvalid = false;
+                    self::SetError($fieldinfo['label'].' is required');
+                }
+
+                continue;
+            }
+
             if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
-                if (isset($values[$fieldname]) && (null === $values[$fieldname] || '' == $values[$fieldname])) {
+                if ( (null === $values[$fieldname] || '' == $values[$fieldname])) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
                 } elseif (is_array($values[$fieldname]) && 0 == count($values[$fieldname])) {
@@ -152,73 +161,73 @@ class Entity
             try {
                 if (isset($tableinfo[$i])) {
                     switch ($tableinfo[$i]['type']) {
-                    case 'int':
-                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
-                            if ('' != $v && !is_numeric($v)) {
+                        case 'int':
+                            if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                                if ('' != $v && !is_numeric($v)) {
+                                    self::SetError("For {$i}, {$v} is not numeric", 10);
+
+                                    return false;
+                                }
+                            } elseif (!is_numeric($v)) {
                                 self::SetError("For {$i}, {$v} is not numeric", 10);
 
                                 return false;
                             }
-                        } elseif (!is_numeric($v)) {
-                            self::SetError("For {$i}, {$v} is not numeric", 10);
 
-                            return false;
-                        }
+                            break;
 
-                        break;
+                        case 'float':
+                            if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                                if ('' != $v && !is_numeric($v)) {
+                                    self::SetError("For {$i}, {$v} is not numeric", 10);
 
-                    case 'float':
-                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
-                            if ('' != $v && !is_numeric($v)) {
+                                    return false;
+                                }
+                            } elseif (!is_numeric($v)) {
                                 self::SetError("For {$i}, {$v} is not numeric", 10);
 
                                 return false;
+                            } else {
+                                $v1 = floatval($v);
+                                if ($v1 != $v) {
+                                    self::SetError("For {$i},  {$v} is not numeric", 10);
+
+                                    return false;
+                                }
                             }
-                        } elseif (!is_numeric($v)) {
-                            self::SetError("For {$i}, {$v} is not numeric", 10);
 
-                            return false;
-                        } else {
-                            $v1 = floatval($v);
-                            if ($v1 != $v) {
-                                self::SetError("For {$i},  {$v} is not numeric", 10);
+                            break;
 
-                                return false;
+                        case 'date':
+                            if ('yes' == strtolower($tableinfo[$i]['Null'])) {
+                                if ('' != $v && !\TAS\Core\DataValidate::IsDate($v)) {
+                                    self::SetError("For {$i}, {$v} is not a date", 10);
+
+                                    return false;
+                                }
+                            } else {
+                                if ('' == $v || !\TAS\Core\DataValidate::IsDate($v)) {
+                                    self::SetError("For {$i}, {$v} is not a date", 10);
+
+                                    return false;
+                                }
                             }
-                        }
 
-                        break;
+                            break;
 
-                    case 'date':
-                        if ('yes' == strtolower($tableinfo[$i]['Null'])) {
-                            if ('' != $v && !\TAS\Core\DataValidate::IsDate($v)) {
-                                self::SetError("For {$i}, {$v} is not a date", 10);
+                        case 'string':
+                            if (isset($tableinfo[$i]['size']) && $tableinfo[$i]['size'] > 0) {
+                                if (strlen($v) > $tableinfo[$i]['size']) {
+                                    self::SetError("For {$i}, {$v} exceed size limit", 10);
 
-                                return false;
+                                    return false;
+                                }
                             }
-                        } else {
-                            if ('' == $v || !\TAS\Core\DataValidate::IsDate($v)) {
-                                self::SetError("For {$i}, {$v} is not a date", 10);
 
-                                return false;
-                            }
-                        }
+                            break;
 
-                        break;
-
-                    case 'string':
-                        if (isset($tableinfo[$i]['size']) && $tableinfo[$i]['size'] > 0) {
-                            if (strlen($v) > $tableinfo[$i]['size']) {
-                                self::SetError("For {$i}, {$v} exceed size limit", 10);
-
-                                return false;
-                            }
-                        }
-
-                        break;
-
-                    default: break;
-                }
+                        default: break;
+                    }
                 }
             } catch (\Exception $ex) {
                 self::SetError("For {$i},  {$v} generate Exception. ".$ex->getMessage(), 10);

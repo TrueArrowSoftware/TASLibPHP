@@ -389,7 +389,7 @@ class DB
 
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
-        $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
+        $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', count($keys) - 1).'?)';
         if ($this->Debug) {
             echo "\n<br>Insert Query is : ".$query;
         }
@@ -508,8 +508,8 @@ class DB
                     return false;
                 }
 
-                $query = "INSERT INTO {$table} (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)
-				ON DUPLICATE KEY UPDATE ';
+                $query = "INSERT INTO {$table} (".implode(',', $keys).') VALUES ('.str_repeat('?,', count($keys) - 1).'?)
+				            ON DUPLICATE KEY UPDATE ';
 
                 $refs = [];
                 $ref2 = [];
@@ -609,9 +609,7 @@ class DB
 
         // @todo: We can fetch column from DB To compare here.
         // $cName = DB::GetColumnsName($tablename);
-
         $rows = [];
-
         foreach ($values as $rowid => $rowdata) {
             if (true) { // @todo: how to validate the data here and column counts.
                 $cName = array_keys($rowdata);
@@ -623,7 +621,6 @@ class DB
                 }
             }
         }
-
         $query = 'Insert into '.$tablename.' (`'.implode('`,`', $cName).'`) VALUES '.implode(',', $rows);
 
         return $this->Execute($query);
