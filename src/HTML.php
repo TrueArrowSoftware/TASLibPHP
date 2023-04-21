@@ -11,14 +11,15 @@ class HTML
 {
     /**
      * Create Input box.
-        * @param $id
+     *
+     * @param $id
      * @param $value
      * @param $name
      * @param $isrequired
      * @param $css
      * @param $size
-     * @param $maxlength     
-     * * @param mixed $additionaattr
+     * @param $maxlength
+     * @param mixed $additionaattr
      */
     public static function InputBox($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
     {
