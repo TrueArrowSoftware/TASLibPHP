@@ -766,7 +766,7 @@ class DB
         if (isset($GLOBALS['Tables'][$table])) { // We can get either the DB base Table name or our Table Array index.
             $table = $GLOBALS['Tables'][$table];
         }
-        $f = $GLOBALS['db']->Execute('show Full Columns from '.$table);
+        $f = $GLOBALS['db']->Execute('show Columns from '.$table);
         if (null == $f) {
             throw new \Exception('Table '.$table.' not found');
         }
@@ -822,8 +822,6 @@ class DB
             }
             $TableArray[$k['Field']]['size'] = $size;
             $TableArray[$k['Field']]['Null'] = $k['Null'];
-            $TableArray[$k['Field']]['Key'] = $k['Key'];
-            $TableArray[$k['Field']]['Comment'] = $k['Comment'];
         }
 
         return $TableArray;
