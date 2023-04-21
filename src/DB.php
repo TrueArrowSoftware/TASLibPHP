@@ -48,6 +48,7 @@ class DB
      * @var bool
      */
     public $Debug = false;
+
     /**
      * Server IP/Name for database connection.
      *
@@ -386,9 +387,9 @@ class DB
             $refs[] = &$values[$k];
         }
 
-        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+        $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
-        $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)';
+        $query = "INSERT INTO `{$tablename}` (".implode(',', $keys).') VALUES ('.str_repeat('?,', count($keys) - 1).'?)';
         if ($this->Debug) {
             echo "\n<br>Insert Query is : ".$query;
         }
@@ -453,7 +454,7 @@ class DB
             $columnlist[] = $k.'=?';
         }
 
-        $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
+        $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
         $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
         $refs[] = &$editid;
@@ -476,7 +477,7 @@ class DB
         array_unshift($refs, $datatype);
 
         $params = array_merge([$datatype], $values);
-        call_user_func_array([ &$stmt, 'bind_param'], $refs);
+        call_user_func_array([&$stmt, 'bind_param'], $refs);
         $stmt->execute();
         if ('' == $this->MySqlObject->error) {
             return true;
@@ -499,8 +500,7 @@ class DB
             if (is_array($values)) {
                 $keys = array_keys($values);
 
-                $datatype = empty($datatype) ? GetDataString($tablename, $values) : $datatype;
-
+                $datatype = empty($datatype) ? static::GetDataString($table, $values) : $datatype;
                 if (strlen($datatype) != count($keys)) {
                     $this->SetError('Error in Preparing Query not all column founds');
                     $this->CleanError();
@@ -508,8 +508,8 @@ class DB
                     return false;
                 }
 
-                $query = "INSERT INTO {$table} (".implode(',', $keys).') VALUES ('.str_repeat('?,', (count($keys) - 1)).'?)
-				ON DUPLICATE KEY UPDATE ';
+                $query = "INSERT INTO {$table} (".implode(',', $keys).') VALUES ('.str_repeat('?,', count($keys) - 1).'?)
+				            ON DUPLICATE KEY UPDATE ';
 
                 $refs = [];
                 $ref2 = [];
@@ -609,9 +609,7 @@ class DB
 
         // @todo: We can fetch column from DB To compare here.
         // $cName = DB::GetColumnsName($tablename);
-
         $rows = [];
-
         foreach ($values as $rowid => $rowdata) {
             if (true) { // @todo: how to validate the data here and column counts.
                 $cName = array_keys($rowdata);
@@ -623,7 +621,6 @@ class DB
                 }
             }
         }
-
         $query = 'Insert into '.$tablename.' (`'.implode('`,`', $cName).'`) VALUES '.implode(',', $rows);
 
         return $this->Execute($query);
@@ -769,7 +766,10 @@ class DB
         if (isset($GLOBALS['Tables'][$table])) { // We can get either the DB base Table name or our Table Array index.
             $table = $GLOBALS['Tables'][$table];
         }
-        $f = $GLOBALS['db']->Execute('show Columns from '.$table);
+        $f = $GLOBALS['db']->Execute('show Full Columns from '.$table);
+        if (null == $f) {
+            throw new \Exception('Table '.$table.' not found');
+        }
         $fields = [];
         foreach ($f as $row) {
             $fields[] = $row;
@@ -822,6 +822,8 @@ class DB
             }
             $TableArray[$k['Field']]['size'] = $size;
             $TableArray[$k['Field']]['Null'] = $k['Null'];
+            $TableArray[$k['Field']]['Key'] = $k['Key'];
+            $TableArray[$k['Field']]['Comment'] = $k['Comment'];
         }
 
         return $TableArray;
@@ -868,6 +870,9 @@ class DB
         $this->SQLERROR = $error;
     }
 
+    /**
+     * Data Type of given column.
+     */
     private function GetDataString(string $tablename, array $values)
     {
         $datatype = '';

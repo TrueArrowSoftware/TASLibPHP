@@ -458,12 +458,41 @@ class ImageFile extends \TAS\Core\UserFile
             if (is_array($thumbnail)) {
                 foreach ($thumbnail as $key => $size) {
                     $image = $i->Path."/{$folder}/".$size;
-                    if (file_exists($image)) {
+                    if (\file_exists($image)) {
                         @unlink($image);
                     }
                 }
             }
         }
+    }
+
+    public static function CreateImage($imageType, $path, &$img)
+    {
+        $imageOk = true;
+
+        switch ($imageType) {
+            case 1:
+                $img = \imagecreatefromgif($path);
+
+                break;
+
+            case 2:
+                $img = \imagecreatefromjpeg($path);
+
+                break;
+
+            case 3:
+                $img = \imagecreatefrompng($path);
+
+                break;
+
+            default:
+                $imageOk = false;
+
+                break;
+        }
+
+        return $imageOk;
     }
 
     // @desc : Get the Size to be used for resize function.
@@ -476,30 +505,12 @@ class ImageFile extends \TAS\Core\UserFile
         if (!\file_exists($path)) {
             throw new \Exception('Image path not found');
         }
-        [$width_orig, $height_orig, $image_type] = getimagesize($path);
+        [$width_orig, $height_orig, $image_type] = \getimagesize($path);
         $imageOk = true;
 
-        switch ($image_type) {
-            case 1:
-                $im = imagecreatefromgif($path);
+        $im = null;
+        $imageOk = static::CreateImage($image_type, $path, $im);
 
-                break;
-
-            case 2:
-                $im = imagecreatefromjpeg($path);
-
-                break;
-
-            case 3:
-                $im = imagecreatefrompng($path);
-
-                break;
-
-            default:
-                $imageOk = false;
-
-                break;
-        }
         /**
          * * calculate the aspect ratio **.
          */
@@ -540,33 +551,14 @@ class ImageFile extends \TAS\Core\UserFile
             $resizeScript = $GLOBALS['AppConfig']['HomeURL'].'/resize.php';
         }
 
-        if (!file_exists($path)) {
+        if (!\file_exists($path)) {
             return $noImage;
         }
-        [$width_orig, $height_orig, $image_type] = @getimagesize($path);
+        [$width_orig, $height_orig, $image_type] = @\getimagesize($path);
+
         $imageOk = true;
-
-        switch ($image_type) {
-            case 1:
-                $im = imagecreatefromgif($path);
-
-                break;
-
-            case 2:
-                $im = imagecreatefromjpeg($path);
-
-                break;
-
-            case 3:
-                $im = imagecreatefrompng($path);
-
-                break;
-
-            default:
-                $imageOk = false;
-
-                break;
-        }
+        $im = null;
+        $imageOk = static::CreateImage($image_type, $path, $im);
         /**
          * * calculate the aspect ratio **.
          */
@@ -603,40 +595,23 @@ class ImageFile extends \TAS\Core\UserFile
     public function DoResize($img, $thumb_width = 0, $thumb_height = 0, $filename = 'newimage.jpg')
     {
         // Check if GD extension is loaded
-        if (!extension_loaded('gd') && !extension_loaded('gd2')) {
-            trigger_error('GD is not loaded', E_USER_WARNING);
+        if (!\extension_loaded('gd') && !\extension_loaded('gd2')) {
+            \trigger_error('GD is not loaded', E_USER_WARNING);
 
             return false;
         }
-        if (!file_exists($img)) {
+        if (!\file_exists($img)) {
             return false;
         }
 
         // Get Image size info
-        [$width_orig, $height_orig, $image_type] = getimagesize($img);
+        [$width_orig, $height_orig, $image_type] = \getimagesize($img);
 
-        switch ($image_type) {
-            case 1:
-                $im = imagecreatefromgif($img);
-
-                break;
-
-            case 2:
-                $im = imagecreatefromjpeg($img);
-
-                break;
-
-            case 3:
-                $im = imagecreatefrompng($img);
-
-                break;
-
-            default:
-                trigger_error('Unsupported filetype!', E_USER_WARNING);
-
-                return false;
-
-                break;
+        $imageOk = true;
+        $im = null;
+        $imageOk = static::CreateImage($image_type, $img, $im);
+        if (!$imageOk) {
+            trigger_error('Unsupported File Type', E_USER_WARNING);
         }
 
         if ($thumb_width > 0 && 0 == $thumb_height) {
