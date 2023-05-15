@@ -9,7 +9,7 @@ class Utility
     /**
      * Store the path for include file/classes from given path in autoload.
      *
-     * @var [array] array of Physical class paths.
+     * @var [array] array of Physical class paths
      */
     public static $IncludePath;
 
@@ -27,8 +27,8 @@ class Utility
      */
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $param['defaultsort'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder']));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname.'_direction'] ?? $param['defaultsort']));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -94,7 +94,7 @@ class Utility
             @unlink($htmlfilepath);
             readfile($pdfpath);
 
-            exit();
+            exit;
         }
 
         return false;
@@ -102,8 +102,8 @@ class Utility
 
     public static function CreateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby']));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection']));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -169,7 +169,7 @@ class Utility
             @unlink($htmlfilepath);
             readfile($pdfpath);
 
-            exit();
+            exit;
         }
 
         return false;
@@ -196,8 +196,8 @@ class Utility
      */
     public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $param['defaultsort'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname.'_orderby'] ?? $param['defaultorder']));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname.'_direction'] ?? $param['defaultsort']));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -230,7 +230,7 @@ class Utility
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
 
-            exit();
+            exit;
         }
 
         return false;
@@ -251,8 +251,8 @@ class Utility
      */
     public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : (($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby'])));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : (($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection'])));
+        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby']));
+        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection']));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -284,7 +284,7 @@ class Utility
             \TAS\Core\Web::DownloadHeader($filename);
             readfile($filepath);
 
-            exit();
+            exit;
         }
 
         return false;
@@ -436,13 +436,15 @@ class Utility
             echo 'Paging Query : '.$query."\r\n";
         }
 
-        $pageQuery = parse_url($pagename, PHP_URL_QUERY);
-        $pagename = str_replace('?'.$pageQuery, '', $pagename);
-        parse_str($querystring, $userQuery);
-        parse_str($pageQuery, $pageQuery2);
+        // $pageQuery = parse_url($pagename, PHP_URL_QUERY);
+        // $pagename = str_replace('?'.$pageQuery, '', $pagename);
+        // parse_str($querystring, $userQuery);
+        // parse_str($pageQuery, $pageQuery2);
 
-        $querystring = array_merge($userQuery, $pageQuery2);
-        $pagename = $pagename.((count($querystring) > 0) ? '?'.http_build_query($querystring) : '');
+        // $querystring = array_merge($userQuery, $pageQuery2);
+        // $pagename = $pagename.((count($querystring) > 0) ? '?'.http_build_query($querystring) : '');
+
+        $pagename = Web::AppendQueryString($pagename, $querystring);
 
         $num = $GLOBALS['db']->ExecuteScalar($query);
         $bar = [];
@@ -522,7 +524,9 @@ class Utility
 
     /**
      * Search in 2D array for value.
+     *
      * @deprecated 2.0 Use ArrayHelper::Search2DArray Instead.
+     *
      * @param unknown_type $needle
      * @param unknown_type $column
      * @param unknown_type $array
@@ -540,9 +544,10 @@ class Utility
 
     /**
      * Convert multi-dimensions array to single array.
+     *
      * @deprecated 2.0 Use ArrayHelper::SinglizeArray Instead.
+     *
      * @param [type] $a
-     * @return void
      */
     public static function SinglizeArray($a)
     {
@@ -564,7 +569,9 @@ class Utility
     /**
      * Sort an given array in given Order Array, use $key for Associative error.
      * check : https://stackoverflow.com/a/61267293/1160395.
+     *
      * @deprecated 2.0 Use ArrayHelper::SortArrayInOrder instead.
+     *
      * @param [type] $order
      * @param string $key
      */
@@ -616,7 +623,9 @@ class Utility
 
     /**
      * Contain word in array list.
+     *
      * @deprecated 2.0 Use ArrayHelper::Contain instead.
+     *
      * @param unknown $str
      *
      * @return bool
@@ -697,11 +706,11 @@ class Utility
      * @param [type] $fromemail
      * @param string $fromName
      * @param string $returnpath
-     * @param [type] $attachment 
+     * @param [type] $attachment
      */
     public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName = '', $returnpath = '', $attachment = null)
     {
-        $text_body = $text_body==null?'':$text_body;
+        $text_body = null == $text_body ? '' : $text_body;
         $mailstat = true;
         $mail = new PHPMailer();
         $mail->IsMail();
@@ -780,10 +789,10 @@ class Utility
 
     /**
      * Password validation for some rules.
+     *
      * @deprecated 1.1.0 use \TAS\Core\DataValidate::ValidatePassword instead.
      *
      * @param [type] $password
-     * @return void
      */
     public static function PasswordValidation($password)
     {

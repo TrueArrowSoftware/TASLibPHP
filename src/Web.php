@@ -1,13 +1,14 @@
 <?php
+
 namespace TAS\Core;
 
-class Web {
-    
+class Web
+{
     public static function DownloadHeader($file, $type = 'application/octet-stream')
     {
         header('Cache-Control: public');
         header('Content-Description: File Transfer');
-        header("Content-Disposition: attachment; filename=$file");
+        header("Content-Disposition: attachment; filename={$file}");
         header('Content-Type: '.$type);
         header('Content-Transfer-Encoding: binary');
     }
@@ -23,35 +24,49 @@ class Web {
     }
 
     /**
-     * Append QueryString string (ex.
-     * abc=xyz&xyz=abc) in given URL.
+     * Append QueryString string (ex. abc=xyz&xyz=abc) in given URL.
      *
      * @param unknown $url
      * @param unknown $querystring
      */
-    public static function AppendQueryString($url, $querystring)
+    public static function AppendQueryString(string $url, string $querystring)
     {
+        if ($url==null) {
+            return '';
+        }
+
+        if ($querystring==null) {
+            return $url;
+        }
+
         $fragment = parse_url($url, PHP_URL_FRAGMENT);
         $url = str_replace('#'.$fragment, '', $url); // Remove URL # Fragment
 
-        parse_str(parse_url($url, PHP_URL_QUERY), $userQuery);
+        $userQuery = [];
+        $userQuerystring = parse_url($url, PHP_URL_QUERY);
+        if (null != $userQuerystring) {
+            parse_str($userQuerystring, $userQuery);
+        }
+
+        $pageQuery = [];
         parse_str($querystring, $pageQuery);
 
         $querystring = array_merge($userQuery, $pageQuery);
 
         // $seperator = (parse_url ( $url, PHP_URL_QUERY ) == NULL) ? '?' : '&';
-        $url = str_replace('?'.parse_url($url, PHP_URL_QUERY), '', $url);
+        $url = str_replace('?'.$userQuerystring, '', $url);
 
-        return $url.'?'.http_build_query($querystring).(($fragment != null) ? '#'.$fragment : ''); // Append Fragment again.
+        return $url.'?'.http_build_query($querystring).((null != $fragment) ? '#'.$fragment : ''); // Append Fragment again.
     }
 
     public static function Redirect($url)
     {
-        if (trim($url) == '') {
+        if ('' == trim($url)) {
             return false;
         }
         header('Location: '.$url);
-        exit();
+
+        exit;
     }
 
     public static function ResetSession()
@@ -59,5 +74,4 @@ class Web {
         session_destroy();
         session_start();
     }
-
 }

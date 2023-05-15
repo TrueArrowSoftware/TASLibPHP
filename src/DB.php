@@ -276,8 +276,6 @@ class DB
 
     /**
      * Static Function as replacement of RowCount.
-     *
-     * @param $result
      */
     public static function Count($result)
     {
