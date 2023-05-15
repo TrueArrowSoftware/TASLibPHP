@@ -31,13 +31,12 @@ class Permission
 
     private function init()
     {
-        $rsUserRole = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['userrole'].' order by rolename ');
+        $rsUserRole = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['userrole'].' order by rolename');
         if (\TAS\Core\DB::Count($rsUserRole) > 0) {
+            $this->permissions = [];
             foreach ($rsUserRole as $row) {
                 $roles = json_decode($row['permission'], true);
-
                 $userroleid = $row['userroleid'];
-                $this->permissions = [];
                 $permissions = &$this->permissions[$userroleid];
 
                 foreach ($this->modules as $mkey => $mval) {
@@ -45,7 +44,7 @@ class Permission
                     $module_permissions = &$permissions[$mkey];
 
                     foreach ($this->action as $akey => $aval) {
-                        $module_permissions[$akey] = isset($roles[$mkey][$akey]) && $roles[$mkey][$akey];
+                        $module_permissions[$akey] = $roles[$mkey][$akey] ?? 0;
                     }
                 }
             }
