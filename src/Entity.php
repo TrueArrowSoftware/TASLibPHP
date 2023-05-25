@@ -39,12 +39,18 @@ class Entity
         ];
     }
 
-    public static function GetError()
+    /**
+     * Return the last Error.
+     */
+    public static function GetError(): string
     {
         return self::$Errors[count(self::$Errors) - 1];
     }
 
-    public static function GetErrors()
+    /**
+     * Return the all Errors.
+     */
+    public static function GetErrors(): array
     {
         return self::$Errors;
     }
@@ -52,7 +58,7 @@ class Entity
     /**
      * Return the Json Object from `this` operator.
      */
-    public function ToJson()
+    public function ToJson(): string
     {
         return json_encode($this);
     }
@@ -104,7 +110,7 @@ class Entity
             }
 
             if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
-                if ( (null === $values[$fieldname] || '' == $values[$fieldname])) {
+                if (null === $values[$fieldname] || '' == $values[$fieldname]) {
                     $isvalid = false;
                     self::SetError($fieldinfo['label'].' is required');
                 } elseif (is_array($values[$fieldname]) && 0 == count($values[$fieldname])) {
@@ -249,7 +255,7 @@ class Entity
         $row = $GLOBALS['db']->Fetch($rs);
         foreach ($this as $key => $value) {
             if (isset($row[strtolower($key)])) {
-                $this->{$key} = \mb_convert_encoding($row[strtolower($key)], 'utf-8');
+                $this->{$key} = \mb_convert_encoding($row[strtolower($key)] ?? '', 'utf-8');
             }
         }
         $this->_isloaded = true;
@@ -262,7 +268,7 @@ class Entity
     {
         foreach ($this as $key => $value) {
             if (array_key_exists(strtolower($key), $data)) {
-                $this->{$key} = \mb_convert_encoding($data[strtolower($key)], 'utf-8');
+                $this->{$key} = \mb_convert_encoding($data[strtolower($key)] ?? '', 'utf-8');
             }
         }
         $this->_isloaded = true;

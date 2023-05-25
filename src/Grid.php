@@ -2,10 +2,12 @@
 
 namespace TAS\Core;
 
+
 class Grid
 {
     public $QueryOptions;
     public $Options;
+    public static \TAS\Core\UI\IGridUI $UI;
 
     private $CorePage;
 
@@ -24,7 +26,7 @@ class Grid
             'gridurl' => '',
             'gridid' => 'mygrid',
             'tagname' => 'grid',
-            'useget' => true, //Not used as of now, might be used in future to disable Values from GET.
+            'useget' => true, // Not used as of now, might be used in future to disable Values from GET.
             'pagesize' => $GLOBALS['AppConfig']['PageSize'] ?? 50,
             'allowsorting' => true,
             'allowpaging' => true,
@@ -34,7 +36,7 @@ class Grid
             'allowselection' => false,
             'roworder' => false,
             'fields' => [],
-            'option' => [], //extraicons
+            'option' => [], // extraicons
             'rowconditioncallback' => [],
             'dateformat' => 'm/d/Y',
             'datetimeformat' => 'm/d/Y H:i:a',
@@ -56,7 +58,7 @@ class Grid
             'pagingqueryend' => '',
             'indexfield' => '',
             'orderby' => [],
-            'noorderby' => false, //in case your query has it.
+            'noorderby' => false, // in case your query has it.
             'recordshowlimit' => 0,
             'tablename' => '',
         ];
@@ -94,7 +96,7 @@ class Grid
         $this->QueryOptions['defaultsortdirection'] ??= '';
 
         $orderby = ($_GET['ob'] ?? ($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] ?? $this->QueryOptions['defaultorderby']));
-        $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : (($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] ?? $this->QueryOptions['defaultsortdirection'])));
+        $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : ($_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] ?? $this->QueryOptions['defaultsortdirection']));
 
         $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_d'] = $orderdirection;
         $_SESSION[$this->Options['gridid'].$this->Options['tagname'].'_ob'] = $orderby;
@@ -151,13 +153,8 @@ class Grid
         $recordText = $this->Options['totalrecordtext'] ?? '{totalrecord} records';
         $recordText = str_replace('{totalrecord}', $TotalRecordCount, $recordText);
 
-        $listing .= '<section class="content-section">
-<div class="container-fluid">
-    <div class="row">
-        <div class="content-area col-md-12 px-0">
-        <div class="col-lg-12 col-md-12 px-0">
-          <div class="card">
-            <div class="card-body">';
+        $listing .= self::$UI->GetBeforeTable();
+
         if ($this->Options['showtotalrecord']) {
             $listing .= '<h6>'.$recordText.' </h6>';
         }
@@ -165,12 +162,14 @@ class Grid
         $totalfield = 1;
 
         $allowRowSorting = ((isset($this->Options['roworder']) && true == $this->Options['roworder']) ? 'tablesort' : '');
-        $listing .= '<div class="table-responsive">
-                        <table class="table table-striped '.$allowRowSorting.'" data-url="'.$defaultpage.'" id="'.((isset($this->Options['tablename'])) ? $this->Options['tablename'] : 'usergrid').'">';
-        $listing .= '<thead>
-            <tr>';
+        $_tableID = ((isset($this->Options['tablename'])) ? $this->Options['tablename'] : 'usergrid');
+
+        $listing .= self::$UI->GetTableStart($_tableID, $allowRowSorting, $defaultpage);
+        $listing .= self::$UI->GetAtTableHeadStart();
+
         if ($this->Options['allowselection']) {
-            $listing .= '<th style="width: 20px"><input type="checkbox" name="select_'.$this->Options['tagname'].'" id="select_'.$this->Options['tagname'].'" class="checkall"></th>';
+            $listing .= '<th style="width: 20px">
+                <input type="checkbox" name="select_'.$this->Options['tagname'].'" id="select_'.$this->Options['tagname'].'" class="checkall"></th>';
             ++$totalfield;
         }
 
@@ -179,20 +178,15 @@ class Grid
             $RemoveFieldOption = true;
             --$totalfield;
         }
-
         reset($this->Options['fields']);
 
         foreach ($this->Options['fields'] as $field => $val) {
             $sorticon = '';
             if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                if ('asc' == strtolower($orderdirection)) {
-                    $sorticon = '<a class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
-                    <i class="fas fa-sort-alpha-up"></i></a>';
-                } else {
-                    $sorticon = '<a  class="ui-state-default ui-icon-gap ui-corner-all" href="'.$page.'&ob='.$field.'">
-                    <i class="fas fa-sort-alpha-down"></i></a>';
-                }
+                $sorticon = '<a class="'.self::$UI->GetCssClassForSortingIcon().'" href="'.$page.'&ob='.$field.'">
+                    <i class="fas '.(('asc' == strtolower($orderdirection)) ? 'fa-sort-alpha-up' : 'fa-sort-alpha-down').'"></i></a>';
             }
+
             $Text = (isset($val['icon']) ? $val['icon'].' ' : '').$val['name'];
             $Label = $val['label'] ?? $val['name'];
 
@@ -252,15 +246,17 @@ class Grid
                     $pquery.$this->QueryOptions['whereconditions'].($this->QueryOptions['pagingqueryend'] ?? ''),
                     $filter,
                     true,
-                    [
-                        'pagesize' => $pagesize,
-                    ]
+                    ['pagesize' => $pagesize]
                 ).'</td></tr>';
 
             $listing .= $pageingrow;
         }
 
-        $listing .= '</thead><tbody>';
+        $listing .= self::$UI->GetAtTableHeader();
+        $listing .= self::$UI->GetAtTableHeadEnd();
+        $listing .= '<tbody>';
+
+        $listing .= self::$UI->GetAtTableBody();
 
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
@@ -278,8 +274,8 @@ class Grid
                 $additionalClass = '';
                 if (isset($this->Options['rowconditioncallback'])
                     && ((is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback']) > 0)
-                       || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback']) > 0))
-                    ) {
+                        || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback']) > 0))
+                ) {
                     $additionalClass = call_user_func($this->Options['rowconditioncallback'], $row, $additionalClass);
                 }
                 $listing .= "\n".'<tr data-id="'.$row[$this->QueryOptions['indexfield']].'" id="row_'.$row[$this->QueryOptions['indexfield']].'"  class="griddatarow '.(($alt) ? 'gridrow' : 'altgridrow').' '.$additionalClass.'">';
@@ -292,12 +288,9 @@ class Grid
 
                 reset($this->Options['fields']);
                 foreach ($this->Options['fields'] as $field => $val) {
-                    $fielddata = '';
-                    $cssClass = '';
-
                     $_output = $this->ProcessColumnData($field, $val, $row);
-                    $fielddata = $_output['fielddata'];
-                    $cssClass = $_output['cssClass'];
+                    $fielddata = $_output['fielddata'] ?? '';
+                    $cssClass = $_output['cssClass'] ?? '';
 
                     $listing .= "\r\n \t";
 
@@ -314,7 +307,7 @@ class Grid
                 if (!$RemoveFieldOption) {
                     $listing .= '<td class="gridtable-optionrow"><ul class="table-ul">'.$option.'</ul></td></tr>';
                 }
-                $alt = !($alt);
+                $alt = !$alt;
             }
 
             $listing .= '</tbody>';
@@ -361,37 +354,17 @@ class Grid
             if ($this->Options['allowpaging']) {
                 $listing .= $pageingrow;
             }
-            $listing .= '</tfoot></table></div>
-                        </div>
-                    </div>
-                </div>
-                </div>
-            </div>
-            </section>';
+            $listing .= self::$UI->GetAtTableFooter();
+            $listing .= '</tfoot>';
+            $listing .= self::$UI->GetTableEnd();
+            $listing .= self::$UI->GetAfterTable();
         } else {
             if ($this->Options['showheaderfilter']) {
-                $listing .= '<tbody><tr><td colspan="'.$totalfield.'"><h6> '.$this->Options['norecordtext'].'</td></tr></tbody></table></div>
-                </div>
-            </div>
-        </div>
-        </div>
-    </div>
-    </section>';
+                $listing .= '<tbody><tr><td colspan="'.$totalfield.'"><h6> '.$this->Options['norecordtext'].'</td></tr></tbody>'.
+                    self::$UI->GetTableEnd().
+                    self::$UI->GetAfterTable();
             } else {
-                $listing = '<section class="content-section">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="content-area col-md-12 px-0">
-                                <div class="col-lg-12 col-md-12 px-0">
-                                  <div class="card">
-                                    <div class="card-body"><h6> '.$this->Options['norecordtext'].' </h6>
-                                    </div>
-                                  </div>
-                                </div>
-                            </div>
-                          </div>
-                         </div>
-                      </section>';
+                $listing = self::$UI->GetNoRecordFound($this->Options['norecordtext'] ?? 'No Record Found');
             }
         }
 
@@ -598,3 +571,5 @@ class Grid
         return $listing;
     }
 }
+
+\TAS\Core\Grid::$UI = new \TAS\Core\UI\GridBootstrap();
