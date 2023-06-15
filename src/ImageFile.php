@@ -271,6 +271,7 @@ class ImageFile extends \TAS\Core\UserFile
     public function GetImage($imageid, $orderby = 'isdefault DESC, displayorder asc')
     {
         $images = [];
+        if ((int)$imageid <=0 ) return null;
         $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid} order by {$orderby}");
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {

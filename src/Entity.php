@@ -222,12 +222,10 @@ class Entity
                             break;
 
                         case 'string':
-                            if (isset($tableinfo[$i]['size']) && $tableinfo[$i]['size'] > 0) {
-                                if (strlen($v) > $tableinfo[$i]['size']) {
-                                    self::SetError("For {$i}, {$v} exceed size limit", 10);
+                            if (isset($tableinfo[$i]['size']) && $tableinfo[$i]['size'] > 0 && null != $v && strlen($v) > $tableinfo[$i]['size']) {
+                                self::SetError("For {$i}, {$v} exceed size limit", 10);
 
-                                    return false;
-                                }
+                                return false;
                             }
 
                             break;

@@ -238,7 +238,7 @@ class Grid
 
         if ($this->Options['allowpaging']) {
             $pquery = $this->QueryOptions['pagingquery'] ?? $this->QueryOptions['basicquery'];
-            $pageingrow = '<tr><td class="pager" colspan="'.$totalfield.'">'.
+            $pageingrow = '<tr class="pagetr"><td colspan="'.$totalfield.'"><div class="pager">'.
                 \TAS\Core\Utility::Paging(
                     $this->QueryOptions['tablename'],
                     $pagingPage,
@@ -247,7 +247,7 @@ class Grid
                     $filter,
                     true,
                     ['pagesize' => $pagesize]
-                ).'</td></tr>';
+                ).'</div></td></tr>';
 
             $listing .= $pageingrow;
         }
@@ -571,5 +571,6 @@ class Grid
         return $listing;
     }
 }
+
 
 \TAS\Core\Grid::$UI = new \TAS\Core\UI\GridBootstrap();
