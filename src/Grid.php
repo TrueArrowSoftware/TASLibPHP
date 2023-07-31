@@ -70,14 +70,14 @@ class Grid
             'edit' => [
                 'link' => $this->Options['gridurl'],
                 'iconclass' => 'fa-edit',
-                'tooltip' => 'edit this record',
+                'tooltip' => 'Edit this record',
                 'tagname' => 'edit',
                 'paramname' => 'id',
             ],
             'delete' => [
                 'link' => $this->Options['gridurl'],
                 'iconclass' => 'fa-trash',
-                'tooltip' => 'delete this record',
+                'tooltip' => 'Delete this record',
                 'tagname' => 'delete btn-outline-danger',
                 'paramname' => 'delete',
             ],
