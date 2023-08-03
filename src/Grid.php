@@ -569,6 +569,7 @@ class Grid
 
                     break;
                 //Case when no filter.
+                case 'onoff':
                 case 'flag':
                         break;
                 default:
