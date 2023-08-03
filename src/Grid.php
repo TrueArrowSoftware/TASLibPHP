@@ -2,7 +2,6 @@
 
 namespace TAS\Core;
 
-
 class Grid
 {
     public $QueryOptions;
@@ -530,6 +529,8 @@ class Grid
         reset($this->Options['fields']);
 
         foreach ($this->Options['fields'] as $field => $val) {
+            $v = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'].'-filter-'.$field] ?? '')) : '';
+
             switch ($val['type']) {
                 case 'longstring':
                     $count = count($this->Options['fields']);
@@ -559,8 +560,20 @@ class Grid
 
                     break;
             }
-            $v = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'].'-filter-'.$field] ?? '')) : '';
-            $listing .= '<input type="text" class="filter-textbox" id="'.$this->Options['gridid'].'-filter-'.$field.'" name="'.$this->Options['gridid'].'-filter-'.$field.'" value="'.$v.'"></th>';
+
+            switch ($val['type']) {
+                case 'date':
+                case 'datetime':
+                    $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($v, 'Y-m-d H:i:s');
+                    $listing .= HTML::InputDate($this->Options['gridid'].'-filter-'.$field, $fielddata,$this->Options['gridid'].'-filter-'.$field, false, 'filter-textbox');
+
+                    break;
+                //Case when no filter.
+                case 'flag':
+                        break;
+                default:
+                    $listing .= '<input type="text" class="filter-textbox" id="'.$this->Options['gridid'].'-filter-'.$field.'" name="'.$this->Options['gridid'].'-filter-'.$field.'" value="'.$v.'"></th>';
+            }
         }
 
         if (!$RemoveFieldOption) {
@@ -571,6 +584,5 @@ class Grid
         return $listing;
     }
 }
-
 
 \TAS\Core\Grid::$UI = new \TAS\Core\UI\GridBootstrap();
