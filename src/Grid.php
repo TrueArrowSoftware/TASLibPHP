@@ -398,7 +398,8 @@ class Grid
                 break;
 
             case 'onoff':
-                $fielddata = ((1 === (int) $row[$field] || 'active' === strtolower($row[$field]) || true === $row[$field] || 'yes' === strtolower($row[$field])) ? 'Yes' : 'No');
+                $_fieldvalue = strtolower($row[$field]??'0');
+                $fielddata = ((1 === (int) $_fieldvalue || 'active' === $_fieldvalue || true === $_fieldvalue || 'yes' === $_fieldvalue) ? 'Yes' : 'No');
 
                 if (isset($val['mode']) && 'fa' == $val['mode']) {
                     if ('Yes' == $fielddata) {

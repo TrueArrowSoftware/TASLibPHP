@@ -125,7 +125,7 @@ class ImageFile extends \TAS\Core\UserFile
         $InsertData['isdefault'] = ($filedata['isdefault'] ?? 0);
         $InsertData['tag'] = $filedata['tag'] ?? '';
         $InsertData['settings'] = (isset($filedata['settings']) ? json_encode($filedata['settings']) : '');
-        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from '.$GLOBALS['Tables']['images'].' where linkertype="'.$this->LinkerType.'" and linkerid="'.$linkerid.'"');
+        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid='".$linkerid."'");
         if ('' == $displayOrder) {
             $displayOrder = 1;
         }
@@ -271,7 +271,9 @@ class ImageFile extends \TAS\Core\UserFile
     public function GetImage($imageid, $orderby = 'isdefault DESC, displayorder asc')
     {
         $images = [];
-        if ((int)$imageid <=0 ) return null;
+        if ((int) $imageid <= 0) {
+            return null;
+        }
         $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid} order by {$orderby}");
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
@@ -560,6 +562,7 @@ class ImageFile extends \TAS\Core\UserFile
         $imageOk = true;
         $im = null;
         $imageOk = static::CreateImage($image_type, $path, $im);
+
         /**
          * * calculate the aspect ratio **.
          */

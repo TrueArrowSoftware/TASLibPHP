@@ -276,6 +276,8 @@ class DB
 
     /**
      * Static Function as replacement of RowCount.
+     *
+     * @param mixed $result
      */
     public static function Count($result)
     {
@@ -436,6 +438,14 @@ class DB
      */
     public function Update($tablename, $values, $editid, $editfield, $datatype = '')
     {
+        return Update2($tablename, $values, [$editfield => $editid], $datatype);
+    }
+
+    /**
+     * Runs the Update query on given data on given condition.
+     */
+    public function Update2(string $tablename, array $values, array $editcondition, string $datatype = '')
+    {
         $query = '';
         $refs = [];
         if (empty($tablename)) {
@@ -444,6 +454,10 @@ class DB
         if (!is_array($values)) {
             return false;
         }
+        if (0 == count($editcondition)) {
+            return false;
+        }
+
         $keys = array_keys($values);
 
         $columnlist = [];
@@ -454,13 +468,19 @@ class DB
 
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
+        foreach (array_keys($editcondition) as $k => $v) {
+            $refs[] = &$v;
+            $datatype .= is_numeric($v) ? 'i' : 's';
+            $columnlist[] = $k.'=?';
+        }
         $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
-        $refs[] = &$editid;
-        $datatype .= is_numeric($editid) ? 'i' : 's';
+        // $refs[] = &$editid;
+        // $datatype .= is_numeric($editid) ? 'i' : 's';
 
         if ($this->Debug) {
             echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
         }
+
         $stmt = $this->MySqlObject->prepare($query);
         if (is_bool($stmt) && false === $stmt) {
             $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');

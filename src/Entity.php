@@ -392,29 +392,31 @@ class Entity
         $obj = new \TAS\Core\DataFormat();
         if ('POST' == $_SERVER['REQUEST_METHOD']) {
             $d = [];
+
             foreach ($fields as $field) {
                 if ('readonly' == $field['type']) {
                     continue;
                 }
+                $postdata = $_POST[$field['id']] ?? '';
 
                 switch ($field['type']) {
                     case 'checkbox':
-                        $d[$field['id']] = isset($_POST[$field['id']]) ? 1 : 0;
+                        $d[$field['id']] = isset($postdata) ? 1 : 0;
 
                         break;
 
                     case 'text':
-                        $d[$field['id']] = $obj->DBString($_POST[$field['id']]);
+                        $d[$field['id']] = $obj->DBString($postdata);
 
                         break;
 
                     case 'numeric':
-                        $d[$field['id']] = floatval(\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]));
+                        $d[$field['id']] = (float) \TAS\Core\DataFormat::DoSecure($postdata);
 
                         break;
 
                     case 'date':
-                        $d[$field['id']] = \TAS\Core\DataFormat::DateToDBFormat(\TAS\Core\DataFormat::DoSecure($_POST[$field['id']]));
+                        $d[$field['id']] = \TAS\Core\DataFormat::DateToDBFormat(\TAS\Core\DataFormat::DoSecure($postdata));
 
                         break;
 
@@ -423,7 +425,7 @@ class Entity
 
                     case 'select':
                         if (!isset($field['multiple']) || false == $field['multiple']) {
-                            $d[$field['id']] = array_key_exists($field['id'], $_POST) ? \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]) : '';
+                            $d[$field['id']] = array_key_exists($field['id'], $_POST) ? \TAS\Core\DataFormat::DoSecure($postdata) : '';
                         } else {
                             if (isset($_POST[$field['id']])) {
                                 foreach ($_POST[$field['id']] as $i => $val) {
@@ -438,9 +440,7 @@ class Entity
                         break;
 
                     default:
-                        if (isset($_POST[$field['id']])) {
-                            $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($_POST[$field['id']]);
-                        }
+                        $d[$field['id']] = \TAS\Core\DataFormat::DoSecure($postdata);
 
                         break;
                 }
