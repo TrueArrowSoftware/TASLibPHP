@@ -468,15 +468,14 @@ class DB
 
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
-        foreach (array_keys($editcondition) as $k => $v) {
+        $wherecondition = [];
+        foreach ($editcondition as $k => $v) {
             $refs[] = &$v;
             $datatype .= is_numeric($v) ? 'i' : 's';
-            $columnlist[] = $k.'=?';
+            $wherecondition[] = " `{$k}` = ?";
         }
-        $query = "Update `{$tablename}` set ".implode(',', $columnlist)." where `{$editfield}`=?";
-        // $refs[] = &$editid;
-        // $datatype .= is_numeric($editid) ? 'i' : 's';
-
+        $query = "Update `{$tablename}` set ".implode(', ', $columnlist)." where " . implode(' and ', $wherecondition);
+        
         if ($this->Debug) {
             echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
         }
