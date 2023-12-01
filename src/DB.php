@@ -438,7 +438,7 @@ class DB
      */
     public function Update($tablename, $values, $editid, $editfield, $datatype = '')
     {
-        return Update2($tablename, $values, [$editfield => $editid], $datatype);
+        return self::Update2($tablename, $values, [$editfield => $editid], $datatype);
     }
 
     /**
