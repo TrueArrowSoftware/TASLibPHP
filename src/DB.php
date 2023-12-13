@@ -190,7 +190,13 @@ class DB
 
             return false;
         }
-        $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
+
+        try {
+            $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
+        } catch (\Exception $ex) {
+            $this->SetError('<br />Exception In Query '.$ex->getMessage());
+            $result = false;
+        }
         if (false === $result) {
             $this->SetError("<br />Error in Query {$query} is ".$this->MySqlObject->error.'::'.print_r($result, true));
 
@@ -474,8 +480,8 @@ class DB
             $datatype .= is_numeric($v) ? 'i' : 's';
             $wherecondition[] = " `{$k}` = ?";
         }
-        $query = "Update `{$tablename}` set ".implode(', ', $columnlist)." where " . implode(' and ', $wherecondition);
-        
+        $query = "Update `{$tablename}` set ".implode(', ', $columnlist).' where '.implode(' and ', $wherecondition);
+
         if ($this->Debug) {
             echo "\n<br>Update Query is : ".$query."\r\n<br \\>".print_r($refs, true);
         }

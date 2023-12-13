@@ -92,12 +92,11 @@ class UI
      * @param mixed $SelectText
      */
     public static function RecordSetToDropDown($rs, $selectedvalue, $indexCol, $labelCol, $showSelect = true, $SelectText = 'Select')
-    {
-        global $db;
+    {        
         $list = '';
         $SelectionDone = false;
-        if ($db->RowCount($rs) > 0) {
-            $db->Reset($rs);
+        if (\TAS\Core\DB::Count($rs) > 0) {
+            \TAS\Core\DB::Reset($rs);
             $columns = explode(' ', $labelCol);
             foreach ($rs as $row) {
                 if (count($columns) > 1) {
@@ -105,11 +104,11 @@ class UI
                     $text = '';
                     foreach ($columns as $ckey => $cval) {
                         if (isset($row[$cval])) {
-                            $text .= ucwords($row[$cval]).' ';
+                            $text .= ucwords($row[$cval]??'').' ';
                         }
                     }
                 } else {
-                    $text = ucwords($row[$labelCol]);
+                    $text = ucwords($row[$labelCol]??'');
                 }
                 if ((is_array($selectedvalue) && in_array($row[$indexCol], $selectedvalue)) || $row[$indexCol] == $selectedvalue) {
                     $list .= '<option value="'.$row[$indexCol].'" selected="selected">'.$text."</option>\n";
@@ -151,11 +150,11 @@ class UI
                     $text = '';
                     foreach ($columns as $ckey => $cval) {
                         if (isset($row[$cval])) {
-                            $text .= ucwords($row[$cval]).' ';
+                            $text .= ucwords($row[$cval]??'').' ';
                         }
                     }
                 } else {
-                    $text = ucwords($row[$labelCol]);
+                    $text = ucwords($row[$labelCol]??'');
                 }
                 $list .= '<option value="'.$text.'" />';
             }
@@ -344,13 +343,13 @@ class UI
         $defaulticons = $grid->DefaultIcon();
         foreach ($defaulticons as $index => $icon) {
             if ('edit' == $index) {
-                if (false == $pages['edit'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', $GLOBALS['user']->UserRoleID)) {
+                if (false == $pages['edit'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', Config::$UserRoleID)) {
                     unset($defaulticons[$index]);
                 } else {
                     $defaulticons[$index]['link'] = $pages['edit'];
                 }
             } elseif ('delete' == $index) {
-                if (false == $pages['delete'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', $GLOBALS['user']->UserRoleID)) {
+                if (false == $pages['delete'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', Config::$UserRoleID)) {
                     unset($defaulticons[$index]);
                 } else {
                     $defaulticons[$index]['link'] = $pages['delete'];

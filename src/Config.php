@@ -11,10 +11,24 @@ class Config
     public static $WebUI_DateCSS = 'date';
     public static $WebUI_DateTimeCSS = 'datetime';
 
+    public static $UserRoleID = 0;
+
     /**
      * @var array
      */
     private static $config = [];
+
+    public static function __constructStatic()
+    {
+        try {
+            self::$UserRoleID = '0';
+            if (isset($_SESSION['user'], $_SESSION['user']->UserRoleID)) {
+                self::$UserRoleID = (int) $_SESSION['user']->UserRoleID;
+            }
+        } catch (\Exception $ex) {
+            self::$UserRoleID = '0';
+        }
+    }
 
     /**
      * @param string $key
@@ -35,3 +49,5 @@ class Config
         return self::$config[$key] ?? null;
     }
 }
+
+Config::__constructStatic();
