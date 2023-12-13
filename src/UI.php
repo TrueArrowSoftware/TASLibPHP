@@ -92,7 +92,7 @@ class UI
      * @param mixed $SelectText
      */
     public static function RecordSetToDropDown($rs, $selectedvalue, $indexCol, $labelCol, $showSelect = true, $SelectText = 'Select')
-    {        
+    {
         $list = '';
         $SelectionDone = false;
         if (\TAS\Core\DB::Count($rs) > 0) {
@@ -104,11 +104,11 @@ class UI
                     $text = '';
                     foreach ($columns as $ckey => $cval) {
                         if (isset($row[$cval])) {
-                            $text .= ucwords($row[$cval]??'').' ';
+                            $text .= ucwords($row[$cval] ?? '').' ';
                         }
                     }
                 } else {
-                    $text = ucwords($row[$labelCol]??'');
+                    $text = ucwords($row[$labelCol] ?? '');
                 }
                 if ((is_array($selectedvalue) && in_array($row[$indexCol], $selectedvalue)) || $row[$indexCol] == $selectedvalue) {
                     $list .= '<option value="'.$row[$indexCol].'" selected="selected">'.$text."</option>\n";
@@ -150,11 +150,11 @@ class UI
                     $text = '';
                     foreach ($columns as $ckey => $cval) {
                         if (isset($row[$cval])) {
-                            $text .= ucwords($row[$cval]??'').' ';
+                            $text .= ucwords($row[$cval] ?? '').' ';
                         }
                     }
                 } else {
-                    $text = ucwords($row[$labelCol]??'');
+                    $text = ucwords($row[$labelCol] ?? '');
                 }
                 $list .= '<option value="'.$text.'" />';
             }
@@ -508,12 +508,12 @@ class UI
                             break;
                     }
                     $multi = false;
-                    $attr= ($param['Fields'][$field['Field']]['additionalattr'] ?? '' ) . 'data-value="'.($param['Fields'][$field['Field']]['value']??'').'"';
+                    $attr = ($param['Fields'][$field['Field']]['additionalattr'] ?? '').'data-value="'.($param['Fields'][$field['Field']]['value'] ?? '').'"';
                     if (isset($param['Fields'][$field['Field']]['multiple']) && true == $param['Fields'][$field['Field']]['multiple']) {
                         $multi = true;
                         $_val = $param['Fields'][$field['Field']]['value'];
-                        if (is_array($_val)|| is_object($_val)){
-                            $attr= ($param['Fields'][$field['Field']]['additionalattr'] ?? '' ) . 'data-value="'.json_encode($param['Fields'][$field['Field']]['value']??[]).'"';
+                        if (is_array($_val) || is_object($_val)) {
+                            $attr = ($param['Fields'][$field['Field']]['additionalattr'] ?? '').'data-value="'.json_encode($param['Fields'][$field['Field']]['value'] ?? []).'"';
                         }
                     }
                     $HTML = \TAS\Core\HTML::InputSelect($id, $options, $id, $isrequired, $param['Fields'][$field['Field']]['css'] ?? 'forminput', $multi, $param['Fields'][$field['Field']]['multiplesize'] ?? 5, $param['Fields'][$field['Field']]['additionalattr'] ?? '');
@@ -915,6 +915,7 @@ class UI
                         $field['selecttype'] = 'recordset';
                         $field['query'] = $field['recordset'];
                     }
+
                     // no break
                 case 'select':
                     $options = [];
