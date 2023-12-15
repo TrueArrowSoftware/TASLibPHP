@@ -378,13 +378,14 @@ class DataFormat
     }
 
     /**
-     * Clean the given string $v from junk characters.
+     * Cleans junk characters from a given string.
      *
-     * @param unknown_type $v
+     * @param string $v The input string to be cleaned.
+     * @return string The cleaned string with junk characters removed.
      */
     public static function CleanJunkCharacters($v)
     {
-        $output = trim($v);
+        $input = trim($v);
         $search = str_split('ÃÂ¿½ï¿ï');
         $search2 = [
             '&Atilde;',
@@ -392,15 +393,14 @@ class DataFormat
             '&frac12;',
             '&Acirc;',
             '&iquest;',
-            '&iuml;',
+            '&iuml;'
         ];
-        $search = array_merge($search, $search2);
-        array_walk($search, function (&$v, $k) {
+        $searchfinal = array_merge($search, $search2);
+        array_walk($searchfinal, function (&$v, $k) {
             $v = '/'.$v.'/i';
         });
         $replace = '';
-        // echo $output;
-        return preg_replace($search, $replace, $output);
+        return preg_replace($searchfinal, $replace, $input);
     }
 
     /**
