@@ -1,6 +1,6 @@
 {
     "name": "truearrowsoftware/taslib",
-    "description": "a small framework to handle PHP projects",
+    "description": "a small framework to handle PHP projects. Look for more details on github at https://github.com/TrueArrowSoftware/TASLibPHP",
     "type": "library",    
     "license": "MIT",
     "authors": [
