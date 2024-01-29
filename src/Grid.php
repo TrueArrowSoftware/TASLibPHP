@@ -2,11 +2,14 @@
 
 namespace TAS\Core;
 
+use TAS\Core\UI\GridBootstrap;
+use TAS\Core\UI\IGridUI;
+
 class Grid
 {
     public $QueryOptions;
     public $Options;
-    public static \TAS\Core\UI\IGridUI $UI;
+    public static IGridUI $UI;
 
     private $CorePage;
 
@@ -133,8 +136,8 @@ class Grid
         $pagingPage = $defaultpage;
         $newdirection = ('asc' == strtolower($orderdirection)) ? 'desc' : 'asc';
 
-        $page = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage.'&d='.$newdirection);
-        $this->CorePage = \TAS\Core\Web::AppendQueryString($defaultpage, 'page='.$startpage);
+        $page = Web::AppendQueryString($defaultpage, 'page='.$startpage.'&d='.$newdirection);
+        $this->CorePage = Web::AppendQueryString($defaultpage, 'page='.$startpage);
 
         if (isset($_GET['direction'])) {
             $filter .= '&direction='.$orderdirection;
@@ -238,7 +241,7 @@ class Grid
         if ($this->Options['allowpaging']) {
             $pquery = $this->QueryOptions['pagingquery'] ?? $this->QueryOptions['basicquery'];
             $pageingrow = '<tr class="pagetr"><td colspan="'.$totalfield.'"><div class="pager">'.
-                \TAS\Core\Utility::Paging(
+                Utility::Paging(
                     $this->QueryOptions['tablename'],
                     $pagingPage,
                     $startpage,
@@ -264,7 +267,7 @@ class Grid
                 $option = '';
                 if (isset($this->Options['option']) && is_array($this->Options['option'])) {
                     foreach ($this->Options['option'] as $icon) {
-                        $link = \TAS\Core\Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'].'=' : 'id=').$row[$this->QueryOptions['indexfield']]);
+                        $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'].'=' : 'id=').$row[$this->QueryOptions['indexfield']]);
                         $target = (isset($icon['target']) ? 'target="'.$icon['target'].'"' : '');
                         $option .= '<li><a class="'.$icon['tagname'].' btn btn-icons btn-rounded btn-outline-fa-color" '.$target.' data-toggle="tooltip" title="'.$icon['tooltip'].'"  href="'.$link.'"><i class="fas '.$icon['iconclass'].'"></i></a></li>';
                     }
@@ -398,7 +401,7 @@ class Grid
                 break;
 
             case 'onoff':
-                $_fieldvalue = strtolower($row[$field]??'0');
+                $_fieldvalue = strtolower($row[$field] ?? '0');
                 $fielddata = ((1 === (int) $_fieldvalue || 'active' === $_fieldvalue || true === $_fieldvalue || 'yes' === $_fieldvalue) ? 'Yes' : 'No');
 
                 if (isset($val['mode']) && 'fa' == $val['mode']) {
@@ -434,7 +437,7 @@ class Grid
 
             case 'phone':
                 if ('' != $row[$field]) {
-                    $fielddata = \TAS\Core\DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
+                    $fielddata = DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
                 } else {
                     $fielddata = $row[$field];
                 }
@@ -443,13 +446,13 @@ class Grid
 
             case 'date':
                 $format = ($val['DateFormat'] ?? (Config::$DisplayDateFormat ?? 'm/d/Y'));
-                $fielddata = \TAS\Core\DataFormat::DBToDateFormat($row[$field], $format);
+                $fielddata = DataFormat::DBToDateFormat($row[$field], $format);
 
                 break;
 
             case 'datetime':
                 $format = ($val['DateFormat'] ?? (Config::$DisplayDateTimeFormat ?? 'm/d/Y H:i a'));
-                $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($row[$field], $format);
+                $fielddata = DataFormat::DBToDateTimeFormat($row[$field], $format);
 
                 break;
 
@@ -565,14 +568,22 @@ class Grid
             switch ($val['type']) {
                 case 'date':
                 case 'datetime':
-                    $fielddata = \TAS\Core\DataFormat::DBToDateTimeFormat($v, 'Y-m-d H:i:s');
-                    $listing .= HTML::InputDate($this->Options['gridid'].'-filter-'.$field, $fielddata,$this->Options['gridid'].'-filter-'.$field, false, 'filter-textbox');
+                    $fielddata = DataFormat::DBToDateTimeFormat($v, 'Y-m-d H:i:s');
+                    $listing .= HTML::InputDate($this->Options['gridid'].'-filter-'.$field, $fielddata, $this->Options['gridid'].'-filter-'.$field, false, 'filter-textbox');
+                    if (isset($val['filtertype']) && 'daterange' == $val['filtertype']) {
+                        $v2 = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'].'-filter-'.$field.'-end'] ?? '')) : '';
+                        $listing .= '<br />';
+                        $fielddata = DataFormat::DBToDateTimeFormat($v2, 'Y-m-d H:i:s');
+                        $listing .= HTML::InputDate($this->Options['gridid'].'-filter-'.$field.'-end', $fielddata, $this->Options['gridid'].'-filter-'.$field.'-end', false, 'filter-textbox');
+                    }
 
                     break;
-                //Case when no filter.
+
+                    // Case when no filter.
                 case 'onoff':
                 case 'flag':
-                        break;
+                    break;
+
                 default:
                     $listing .= '<input type="text" class="filter-textbox" id="'.$this->Options['gridid'].'-filter-'.$field.'" name="'.$this->Options['gridid'].'-filter-'.$field.'" value="'.$v.'"></th>';
             }
@@ -587,4 +598,4 @@ class Grid
     }
 }
 
-\TAS\Core\Grid::$UI = new \TAS\Core\UI\GridBootstrap();
+Grid::$UI = new GridBootstrap();

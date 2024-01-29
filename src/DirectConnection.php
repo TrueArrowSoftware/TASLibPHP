@@ -1,5 +1,7 @@
 <?php
+
 namespace TAS\Core;
+
 /**
  * Use to create Direction connection to third party server, it use CURL or fsockopen.
  *
@@ -21,7 +23,7 @@ class DirectConnection extends \TAS\Core\Entity
             $res = curl_exec($ch); // run the curl process (and return the result to $result
             curl_close($ch);
         } else {
-            $header .= "POST $url HTTP/1.0\r\n";
+            $header = "POST {$url} HTTP/1.0\r\n";
             $header .= "Content-Type: application/x-www-form-urlencoded\r\n";
             $header .= 'Content-Length: '.strlen($request)."\r\n";
             $header .= $headerextra."\r\n\r\n";

@@ -6,13 +6,17 @@ namespace TAS\Core;
 class DataValidate
 {
     /**
-     * @description:  Valid if the phone number is $length digit valid number or not.
+     * @description:  Valid if the phone number is $length digit valid number or not. Empty string will be treated as false.
      *
      * @param mixed $phone
      * @param mixed $length
      */
     public static function ValidatePhoneFormat($phone, $length = 10)
     {
+        if (null == $phone || empty($phone)) {
+            return false;
+        }
+
         $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
         if ($length < 5 || $length > 12) {
             throw new \Exception('Phone length should be 5 to 12 at this moment');

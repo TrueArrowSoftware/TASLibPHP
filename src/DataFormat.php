@@ -43,7 +43,7 @@ class DataFormat
         }
 
         $phone = DataFormat::CleanPhone($phone, $length);
-        if (!\TAS\Core\DataValidate::ValidatePhoneFormat($phone, $length)) {
+        if (!DataValidate::ValidatePhoneFormat($phone, $length)) {
             throw new \Exception("Phone number {$phone} is not valid.");
         }
 
@@ -170,7 +170,6 @@ class DataFormat
      * Return DB Formated Date from user input. Returns date as "Y-m-d H:i:s".
      *
      * @param string $date
-     * @param string $format     = 'm/d/Y H:i:a' Read Format
      * @param mixed  $readformat
      */
     public static function DateToDBFormat($date, $readformat = 'm/d/Y H:i a')
@@ -199,6 +198,9 @@ class DataFormat
 
     public static function RemoveWhiteSpace($value)
     {
+        if (null == $value || empty($value)) {
+            return '';
+        }
         $value = str_replace("\r", '', $value);
         $value = str_replace("\n", '', $value);
 
@@ -214,6 +216,9 @@ class DataFormat
      */
     public static function DoSecure($a_value)
     {
+        if (null == $a_value) {
+            return '';
+        }
         if (is_array($a_value)) {
             $output = $a_value;
         } elseif (is_object($a_value)) {
@@ -357,7 +362,7 @@ class DataFormat
                 $x = (int) mt_rand(0, 54);
                 $string .= $characters[$x];
             }
-        } while (!\TAS\Core\DataFormat::ValidatePassword($string));
+        } while (!DataFormat::ValidatePassword($string));
 
         return $string;
     }
@@ -378,12 +383,18 @@ class DataFormat
     }
 
     /**
-     * Clean the given string $v from junk characters.
+     * Cleans junk characters from a given string.
      *
-     * @param unknown_type $v
+     * @param string $v the input string to be cleaned
+     *
+     * @return string the cleaned string with junk characters removed
      */
     public static function CleanJunkCharacters($v)
     {
+        if (null == $v || empty($v)) {
+            return '';
+        }
+
         $output = trim($v);
         $search = str_split('ÃÂ¿½ï¿ï');
         $search2 = [
@@ -394,13 +405,13 @@ class DataFormat
             '&iquest;',
             '&iuml;',
         ];
-        $search = array_merge($search, $search2);
-        array_walk($search, function (&$v, $k) {
+        $searchfinal = array_merge($search, $search2);
+        array_walk($searchfinal, function (&$v, $k) {
             $v = '/'.$v.'/i';
         });
         $replace = '';
-        // echo $output;
-        return preg_replace($search, $replace, $output);
+
+        return preg_replace($searchfinal, $replace, $output);
     }
 
     /**
@@ -417,7 +428,7 @@ class DataFormat
             if (is_bool($return) && false == $return) {
                 return false;
             }
-            \TAS\Core\Web::Redirect($return);
+            Web::Redirect($return);
         } else {
             return (int) $_GET[$var];
         }
@@ -457,11 +468,10 @@ class DataFormat
      * @return string Reversed hex color
      *
      * @author Koncept
-     * 
      */
     public static function InverseHex($color)
     {
-        if ($color = null || empty($color)) {
+        if (null == $color || empty($color)) {
             return '';
         }
         $color = trim($color);
@@ -469,10 +479,14 @@ class DataFormat
 
         if (false !== strpos($color, '#')) {
             $prependHash = true;
-            $color = str_replace('#', null, $color);
+            $color = str_replace('#', '', $color);
+        }
+        $len = strlen($color);
+        if (3 != $len && 6 != $len) {
+            return '';
         }
 
-        switch ($len = strlen($color)) {
+        switch ($len) {
             case 3:
                 $color = preg_replace('/(.)(.)(.)/', '\\1\\1\\2\\2\\3\\3', $color);
 
@@ -482,7 +496,8 @@ class DataFormat
                 break;
 
             default:
-                // trigger_error("Invalid hex length ($len). Must be a minimum length of (3) or maxium of (6) characters", E_USER_ERROR);
+                trigger_error("Invalid hex ({$color}) length ({$len}) . Must be a minimum length of (3) or maxium of (6) characters", E_USER_ERROR);
+
                 return '';
         }
 
@@ -522,6 +537,9 @@ class DataFormat
      */
     public static function CreateSlug($string)
     {
+        if (null == $string || empty($string)) {
+            return '';
+        }
         $replace = '-';
         $string = strtolower($string);
         // replace / and . with white space
@@ -529,6 +547,7 @@ class DataFormat
         $string = preg_replace('/[^a-z0-9_\\s-]/', '', $string);
         // remove multiple dashes or whitespaces
         $string = preg_replace('/[\\s-]+/', ' ', $string);
+
         // convert whitespaces and underscore to $replace
         return preg_replace('/[\\s_]/', $replace, $string);
     }

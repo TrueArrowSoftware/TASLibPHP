@@ -2,13 +2,18 @@
 
 namespace TAS\Core\Test;
 
-use Exception;
 use PHPUnit\Framework\TestCase;
+use TAS\Core\Config;
 use TAS\Core\DataFormat;
 
-class DataFormattest extends TestCase
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
+class DataFormatTest extends TestCase
 {
-    public function testFormatString_WithValues()
+    public function testFormatStringWithValues()
     {
         $output = DataFormat::FormatString('test');
         $this->assertEquals('Test', $output);
@@ -23,14 +28,14 @@ class DataFormattest extends TestCase
         $this->assertEquals('Test 123', $output);
     }
 
-    public function testFormatString_WithoutValues()
+    public function testFormatStringWithoutValues()
     {
         $output = DataFormat::FormatString('');
         $this->assertEquals('', $output);
     }
 
     // Test Case on formatFone with values
-    public function testFormatPhone_WithValue()
+    public function testFormatPhoneWithValue()
     {
         $output = DataFormat::FormatPhone('74889', '5');
         $this->assertEquals('74889', $output);
@@ -59,12 +64,12 @@ class DataFormattest extends TestCase
 
     // Test Case on format Phone Without Value
 
-    public function testFormatPhone_WithOutValue()
+    public function testFormatPhoneWithOutValue()
     {
         $output = DataFormat::FormatPhone('', '1');
         $this->assertEquals(false, $output, 'Error');
-        
-        $output = DataFormat::FormatPhone(' ', '1');        
+
+        $output = DataFormat::FormatPhone(' ', '1');
         $this->assertEquals(' ', $output, 'Error in Empty whitespace');
 
         $output = DataFormat::FormatPhone('', '5');
@@ -90,7 +95,7 @@ class DataFormattest extends TestCase
 
         $output = DataFormat::FormatPhone('', '12');
         $this->assertEquals(false, $output);
-       
+
         // Test Case on Phone by sending invalid numbers
         try {
             $output = DataFormat::FormatPhone('74889601960147', '14');
@@ -103,7 +108,7 @@ class DataFormattest extends TestCase
             $output = DataFormat::FormatPhone('ABCDS143265', '11');
             $output = DataFormat::FormatPhone('ABCDS143276', '12');
             $output = true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $output = false;
             $this->assertEquals(false, $output, 'Error');
         }
@@ -111,7 +116,7 @@ class DataFormattest extends TestCase
 
     // Test case on validate password with value
 
-    public function testValidatePassword_withValue()
+    public function testValidatePasswordWithValue()
     {
         $output = DataFormat::ValidatePassword('Password1234');
         $this->assertEquals(true, $output);
@@ -134,7 +139,7 @@ class DataFormattest extends TestCase
 
     // Test case on Validate Password without values
 
-    public function testValidatePassword_WithoutValues()
+    public function testValidatePasswordWithoutValues()
     {
         $output = DataFormat::ValidatePassword('');
         $this->assertEquals(false, $output, 'Error');
@@ -148,7 +153,7 @@ class DataFormattest extends TestCase
 
     // Test Case on Format Bytes with values
 
-    public function testFormatByte_WithValue()
+    public function testFormatByteWithValue()
     {
         $output = DataFormat::FormatBytes(512);
         $this->assertEquals('512B', $output);
@@ -171,12 +176,12 @@ class DataFormattest extends TestCase
 
     // Test Case on DBToDateTimeFormat with value
 
-    public function testDBToDateTimeFormat_WithValue()
+    public function testDBToDateTimeFormatWithValue()
     {
-        $_temp = \TAS\Core\Config::$DisplayDateTimeFormat ;
-        \TAS\Core\Config::$DisplayDateTimeFormat =  'm/d/Y H:i a';
+        $_temp = Config::$DisplayDateTimeFormat;
+        Config::$DisplayDateTimeFormat = 'm/d/Y H:i a';
         $output = DataFormat::DBToDateTimeFormat('2019-12-16 14:27:00');
-        
+
         $this->assertEquals('12/16/2019 14:27 pm', $output);
 
         $output = DataFormat::DBToDateTimeFormat('2019/12/16');
@@ -218,12 +223,12 @@ class DataFormattest extends TestCase
         $output = DataFormat::DBToDateTimeFormat('13-32-19 00:00');
         $this->assertEquals(false, $output, 'Error');
 
-        \TAS\Core\Config::$DisplayDateTimeFormat =  $_temp;
+        Config::$DisplayDateTimeFormat = $_temp;
     }
 
     // Test Case On DBToDateTimeFormat without value
 
-    public function testDBToDateTimeFormat_WithOutValue()
+    public function testDBToDateTimeFormatWithOutValue()
     {
         $output = DataFormat::DBToDateTimeFormat('');
         $this->assertEquals(false, $output, 'Error');
@@ -240,7 +245,7 @@ class DataFormattest extends TestCase
 
     // Test Case On DBToDateFormat with value
 
-    public function testDBToDateFormat_withValue()
+    public function testDBToDateFormatWithValue()
     {
         $output = DataFormat::DBToDateFormat('2019-12-16 14:27:00');
         $this->assertEquals('12/16/2019', $output);
@@ -293,7 +298,7 @@ class DataFormattest extends TestCase
 
     // Test Case On DBToDateFormat without value
 
-    public function testDBToDateFormat_WithOutValue()
+    public function testDBToDateFormatWithOutValue()
     {
         $output = DataFormat::DBToDateFormat('');
         $this->assertEquals(false, $output, 'Error');
@@ -310,10 +315,10 @@ class DataFormattest extends TestCase
 
     // Test case On DateToDBFormat with value
 
-    public function testDateToDBFormat_WithValue()
+    public function testDateToDBFormatWithValue()
     {
-        $_temp = \TAS\Core\Config::$DisplayDateTimeFormat ;
-        \TAS\Core\Config::$DisplayDateTimeFormat =  'm/d/Y H:i a';
+        $_temp = Config::$DisplayDateTimeFormat;
+        Config::$DisplayDateTimeFormat = 'm/d/Y H:i a';
 
         $output = DataFormat::DBToDateTimeFormat('12/16/2019');
         $this->assertEquals('12/16/2019 00:00 am', $output);
@@ -327,10 +332,10 @@ class DataFormattest extends TestCase
         $output = DataFormat::DBToDateTimeFormat('2019/12/16');
         $this->assertEquals('12/16/2019 00:00 am', $output);
 
-        \TAS\Core\Config::$DisplayDateTimeFormat =  $_temp;
+        Config::$DisplayDateTimeFormat = $_temp;
     }
 
-    public function testRemoveWhiteSpace_WithValue()
+    public function testRemoveWhiteSpaceWithValue()
     {
         $obj = new DataFormat();
         $output = $obj->RemoveWhiteSpace('   My Name Is  ');
@@ -340,7 +345,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('123456', $output);
     }
 
-    public function testRemoveWhiteSpace_WithOutValue()
+    public function testRemoveWhiteSpaceWithOutValue()
     {
         $obj = new DataFormat();
         $output = $obj->RemoveWhiteSpace('');
@@ -353,47 +358,47 @@ class DataFormattest extends TestCase
         $this->assertEquals(false, $output, 'Error');
     }
 
-    public function testDoSecure_WithValue()
+    public function testDoSecureWithValue()
     {
-        $output = \TAS\Core\DataFormat::DoSecure('@<script[^>]*?>.*?</script>@si');
+        $output = DataFormat::DoSecure('@<script[^>]*?>.*?</script>@si');
         $this->assertEquals('@@si', $output, 'Error');
 
-        $output = \TAS\Core\DataFormat::DoSecure("@<[\/\!]*?[^<>]*?>@si");
+        $output = DataFormat::DoSecure('@<[\\/\\!]*?[^<>]*?>@si');
         $this->assertEquals('@&lt;[\/\!]*?[^]*?&gt;@si', $output, 'Error');
 
-        $output = \TAS\Core\DataFormat::DoSecure('<script></script>');
+        $output = DataFormat::DoSecure('<script></script>');
         $this->assertEquals('', $output, 'Error');
 
-        $output = \TAS\Core\DataFormat::DoSecure('test@123');
+        $output = DataFormat::DoSecure('test@123');
         $this->assertEquals('test@123', $output);
 
-        $output = \TAS\Core\DataFormat::DoSecure('<table></table>');
+        $output = DataFormat::DoSecure('<table></table>');
         $this->assertEquals('', $output);
     }
 
-    public function testDoSecure_WithOutValue()
+    public function testDoSecureWithOutValue()
     {
-        $output = \TAS\Core\DataFormat::DoSecure(null);
+        $output = DataFormat::DoSecure(null);
         $this->assertEquals(false, $output, 'Error');
 
-        $output = \TAS\Core\DataFormat::DoSecure('');
+        $output = DataFormat::DoSecure('');
         $this->assertEquals(false, $output, 'Error');
 
-        $output = \TAS\Core\DataFormat::DoSecure('  ');
+        $output = DataFormat::DoSecure('  ');
         $this->assertEquals(false, $output, 'Error');
     }
 
-    public function testRemoveSlashes_WithValue()
+    public function testRemoveSlashesWithValue()
     {
         $obj = new DataFormat();
-        $output = $obj->RemoveSlashes("Who\'s Peter Griffin?");
+        $output = $obj->RemoveSlashes("Who\\'s Peter Griffin?");
         $this->assertEquals("Who's Peter Griffin?", $output);
 
-        $output = $output = $obj->RemoveSlashes("my/name\is /\/t/est");
+        $output = $output = $obj->RemoveSlashes('my/name\\is /\\/t/est');
         $this->assertEquals('my/nameis //t/est', $output);
     }
 
-    public function testRemoveSlashes_WithoutValue()
+    public function testRemoveSlashesWithoutValue()
     {
         $obj = new DataFormat();
         $output = $obj->RemoveSlashes(null);
@@ -404,12 +409,12 @@ class DataFormattest extends TestCase
         $this->assertEquals(false, $output, 'Error');
     }
 
-    public function testDoSecureArray_WithValue()
+    public function testDoSecureArrayWithValue()
     {
-        $output = \TAS\Core\DataFormat::DoSecureArray(['<script><script>', '<table></table>', "@14\/\//.,.l"]);
+        $output = DataFormat::DoSecureArray(['<script><script>', '<table></table>', '@14\\/\\//.,.l']);
         $output = $output['2'];
         $this->assertEquals('@14\/\//.,.l', $output, 'Error');
-        $output = \TAS\Core\DataFormat::DoSecureArray(['@<script[^>]*?>.*?</script>@si', "@<[\/\!]*?[^<>]*?>@si", "@14\/\//.,.l"]);
+        $output = DataFormat::DoSecureArray(['@<script[^>]*?>.*?</script>@si', '@<[\\/\\!]*?[^<>]*?>@si', '@14\\/\\//.,.l']);
         $output = $output[0];
         $this->assertEquals('@@si', $output, 'Error');
     }
@@ -420,7 +425,7 @@ class DataFormattest extends TestCase
         $this->assertEquals($output, $output, 'Error');
     }
 
-    public function testCleanJunkCharacters_WithValue()
+    public function testCleanJunkCharactersWithValue()
     {
         $output = DataFormat::CleanJunkCharacters('test&Atilde;');
         $this->assertEquals('test', $output);
@@ -447,7 +452,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('1234', $output);
     }
 
-    public function testCleanJunkCharacters_WithOutValue()
+    public function testCleanJunkCharactersWithOutValue()
     {
         $output = DataFormat::CleanJunkCharacters(null);
         $this->assertEquals(false, $output, 'Error');
@@ -468,7 +473,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('just now', $output, 'Error');
 
         $date = new \DateTime('2018-01-02 16:17:26');
-        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());        
+        $output = DataFormat::HumanizeTime($date->getTimestamp(), $startdate->getTimestamp());
         $this->assertEquals('1 year ago', $output, 'Error ');
 
         $date = new \DateTime('2016/12/01');
@@ -483,7 +488,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('49 years ago', $output, 'Error');
     }
 
-    public function testGetAge_WithValue()
+    public function testGetAgeWithValue()
     {
         $date = new \DateTime(date('Y-m-d'));
         $output = DataFormat::GetAge($date->getTimestamp());
@@ -493,7 +498,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('0 yrs', $output, 'Error');
     }
 
-    public function testInverseHex_WithValue()
+    public function testInverseHexWithValue()
     {
         $output = DataFormat::InverseHex('#b327a8');
         $this->assertEquals('#4cd857', $output);
@@ -514,7 +519,7 @@ class DataFormattest extends TestCase
         $this->assertEquals(false, $output);
     }
 
-    public function testInverseHex_WithOutValue()
+    public function testInverseHexWithOutValue()
     {
         $output = DataFormat::InverseHex(null);
         $this->assertEquals(false, $output, 'Error');
@@ -526,9 +531,9 @@ class DataFormattest extends TestCase
         $this->assertEquals(false, $output, 'Error');
     }
 
-    public function testCreateSlug_WithValue()
+    public function testCreateSlugWithValue()
     {
-        $output = DataFormat::CreateSlug("testk[ra]m899te\/st");
+        $output = DataFormat::CreateSlug('testk[ra]m899te\\/st');
         $this->assertEquals('testkram899te-st', $output);
 
         $output = DataFormat::CreateSlug('[][|/.test]');
@@ -541,7 +546,7 @@ class DataFormattest extends TestCase
         $this->assertEquals('test-123-3254', $output);
     }
 
-    public function testCreateSlug_WithOutValue()
+    public function testCreateSlugWithOutValue()
     {
         $output = DataFormat::CreateSlug(null);
         $this->assertEquals(false, $output, 'Error');
