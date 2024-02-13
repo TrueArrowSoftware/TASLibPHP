@@ -216,7 +216,7 @@ class DataFormat
      */
     public static function DoSecure($a_value)
     {
-        if (null == $a_value) {
+        if (null === $a_value) {
             return '';
         }
         if (is_array($a_value)) {

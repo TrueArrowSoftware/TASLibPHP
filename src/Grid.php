@@ -290,7 +290,7 @@ class Grid
 
                 reset($this->Options['fields']);
                 foreach ($this->Options['fields'] as $field => $val) {
-                    $_output = $this->ProcessColumnData($field, $val, $row);
+                    $_output = $this->ProcessColumnData($field, $val, $row, $RowValueTotal);
                     $fielddata = $_output['fielddata'] ?? '';
                     $cssClass = $_output['cssClass'] ?? '';
 
@@ -373,7 +373,7 @@ class Grid
         return $listing;
     }
 
-    public function ProcessColumnData($field, $val, $row)
+    public function ProcessColumnData($field, $val, $row, &$RowValueTotal)
     {
         $fielddata = '';
         $cssClass = '';

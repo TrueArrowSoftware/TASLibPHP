@@ -401,7 +401,7 @@ class Entity
 
                 switch ($field['type']) {
                     case 'checkbox':
-                        $d[$field['id']] = isset($postdata) ? 1 : 0;
+                        $d[$field['id']] = isset($_POST[$field['id']]) ? 1 : 0;
 
                         break;
 
