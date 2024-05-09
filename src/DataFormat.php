@@ -391,27 +391,27 @@ class DataFormat
      */
     public static function CleanJunkCharacters($v)
     {
-        if (null == $v || empty($v)) {
+        if (empty($v)) {
             return '';
         }
 
         $output = trim($v);
-        $search = str_split('ÃÂ¿½ï¿ï');
-        $search2 = [
-            '&Atilde;',
-            '&macr;',
-            '&frac12;',
-            '&Acirc;',
-            '&iquest;',
-            '&iuml;',
-        ];
-        $searchfinal = array_merge($search, $search2);
-        array_walk($searchfinal, function (&$v, $k) {
-            $v = '/'.$v.'/i';
-        });
+        $searchChars = 'ÃÂ¿½ï¿ï';
+        $searchPatterns = array_merge(
+            array_map(function ($char) { return '/'.preg_quote($char, '/').'/i'; }, str_split($searchChars)),
+            array_map(function ($entity) { return '/'.preg_quote($entity, '/').'/i'; }, [
+                '&Atilde;',
+                '&macr;',
+                '&frac12;',
+                '&Acirc;',
+                '&iquest;',
+                '&iuml;',
+            ])
+        );
+
         $replace = '';
 
-        return preg_replace($searchfinal, $replace, $output);
+        return preg_replace($searchPatterns, $replace, $output);
     }
 
     /**
