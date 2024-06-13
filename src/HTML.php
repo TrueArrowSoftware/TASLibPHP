@@ -131,9 +131,9 @@ class HTML
         return '<div class="formfield '.$tag.'">'.$label.$wrapper.'<div class="clear"></div></div>';
     }
 
-    public static function ReadOnly($value)
+    public static function ReadOnly($value, $id, $css)
     {
-        return '<div class="formreadonlyinput form-control">'.$value.'&nbsp;</div>';
+        return '<div class="formreadonlyinput form-control '.$css.'" id="'.$id.'">'.$value.'&nbsp;</div>';
     }
 
     public static function FormButton($html)

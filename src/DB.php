@@ -241,16 +241,14 @@ class DB
         $result = $this->Execute($query);
         if ($result) {
             $this->CleanError();
-            if ($result->num_rows > 0) {
+            if (!is_bool($result) && $result->num_rows > 0) {
                 $rs = $this->FetchArray($result);
 
                 return ($rs) ? $rs : false;
             }
-            $this->SetError('Empty recordset returned');
-
-            return false;
         }
-        $this->SetError('No Record found');
+
+        $this->SetError('No Record found on your query : '.$query);
 
         return false;
     }
@@ -403,7 +401,7 @@ class DB
         if (is_bool($stmt) && false === $stmt) {
             $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
 
-            \TAS\Core\Log::AddEvent([
+            Log::AddEvent([
                 'message' => 'Database Insert Prepare Failed !!!',
                 'query' => $query,
                 'error' => $this->MySqlObject->error,
@@ -419,7 +417,7 @@ class DB
         if ('' == $this->MySqlObject->error) {
             return true;
         }
-        \TAS\Core\Log::AddEvent([
+        Log::AddEvent([
             'message' => 'Database Insert Failed !!!',
             'query' => $query,
             'error' => $this->MySqlObject->error,
@@ -489,7 +487,7 @@ class DB
         $stmt = $this->MySqlObject->prepare($query);
         if (is_bool($stmt) && false === $stmt) {
             $this->SetError('Query preparation fails possible mismatch columns (Error thrown: '.$this->MySqlObject->error.')');
-            \TAS\Core\Log::AddEvent([
+            Log::AddEvent([
                 'message' => 'Database Update Prepare Failed !!!',
                 'query' => $query,
                 'error' => $this->MySqlObject->error,
@@ -505,7 +503,7 @@ class DB
         if ('' == $this->MySqlObject->error) {
             return true;
         }
-        \TAS\Core\Log::AddEvent([
+        Log::AddEvent([
             'message' => 'Database Update Failed !!!',
             'query' => $query,
             'error' => $this->MySqlObject->error,
@@ -771,7 +769,7 @@ class DB
     public static function Columns($result)
     {
         $fields = [];
-        if ($result && \TAS\Core\DB::Count($result) >= 0) {
+        if ($result && DB::Count($result) >= 0) {
             $fields = @$result->fetch_fields();
         }
 
@@ -819,7 +817,7 @@ class DB
 
     public static function GetTableInformation($tablename)
     {
-        $x = \TAS\Core\DB::GetColumns($tablename);
+        $x = DB::GetColumns($tablename);
 
         $TableArray = [];
         foreach ($x as $i => $k) {
@@ -883,7 +881,7 @@ class DB
     private function SetError($error)
     {
         if ($this->Debug) {
-            \TAS\Core\Log::AddEvent([
+            Log::AddEvent([
                 'message' => 'Database Query Fail in '.debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'],
                 'error' => $error,
             ], 'normal');
@@ -899,7 +897,7 @@ class DB
     private function GetDataString(string $tablename, array $values)
     {
         $datatype = '';
-        $Columns = \TAS\Core\DB::GetColumns($tablename);
+        $Columns = DB::GetColumns($tablename);
         foreach (array_keys($values) as $k) {
             reset($Columns);
             foreach ($Columns as $field) {

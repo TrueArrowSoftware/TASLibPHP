@@ -2,7 +2,7 @@
 
 namespace TAS\Core;
 
-class ImageFile extends \TAS\Core\UserFile
+class ImageFile extends UserFile
 {
     public $LinkerType = '';
 
@@ -55,6 +55,9 @@ class ImageFile extends \TAS\Core\UserFile
         return false;
     }
 
+
+    
+
     // Function To Upload File from $_FILES replicated Array.
     // Also Save files if second parameter is true
     public function Upload($file, $save = true, $linkerid = 0)
@@ -68,16 +71,12 @@ class ImageFile extends \TAS\Core\UserFile
             if (!is_array($filedata)) {
                 continue;
             }
-            // Load file to given path
-            // Before that find the location
             if ($this->FindPathForNew()) {
                 $fileext = explode('.', $filedata['name']);
                 $fileext = $fileext[count($fileext) - 1];
                 if ($this->Validate($filedata)) {
-                    // Create a Random file name
                     $filenamewithoutExt = $this->getFileName('.');
                     $filename = $filenamewithoutExt.$fileext;
-                    // echo $this->FullPath . DIRECTORY_SEPARATOR . $filename;
                     if (move_uploaded_file($filedata['tmp_name'], $this->FullPath.DIRECTORY_SEPARATOR.$filename)) {
                         if ($save) {
                             $this->GenerateThumbnails($this->FullPath.DIRECTORY_SEPARATOR.$filename, $filenamewithoutExt, $fileext);
@@ -113,6 +112,14 @@ class ImageFile extends \TAS\Core\UserFile
         return $returnfile;
     }
 
+    /**
+     * Save the file.
+     *
+     * @param [type] $file
+     * @param [type] $filedata
+     * @param string $linkerid
+     * @return void
+     */
     public function Save($file, $filedata, $linkerid = '')
     {
         $InsertData['imagecaption'] = $filedata['caption'];
@@ -311,7 +318,11 @@ class ImageFile extends \TAS\Core\UserFile
         return $images;
     }
 
-    // Function to delete Image on Linker
+    /**
+     *  Function to delete Image on Linker.
+     *
+     * @param mixed $linkerid
+     */
     public function DeleteImageOnLinker($linkerid)
     {
         $images = [];
@@ -338,12 +349,13 @@ class ImageFile extends \TAS\Core\UserFile
             }
         }
 
-        // Clean From DB
         $GLOBALS['db']->Execute('Delete from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid}");
     }
 
-    // Function to delete Image on Linker
-    public function DeleteImage($imageid)
+    /**
+     *  Function to delete Image on Linker.
+     */
+    public function DeleteImage(int $imageid)
     {
         $images = [];
         $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid}");
@@ -351,7 +363,6 @@ class ImageFile extends \TAS\Core\UserFile
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
-                // echo $this->Path ."/$folder/".$rowImage['imagefile'];
                 @unlink($this->Path."/{$folder}/".$rowImage['imagefile']);
 
                 if ('' != $rowImage['thumbnailfile']) {
@@ -697,7 +708,7 @@ class ImageFile extends \TAS\Core\UserFile
         $imageFile = new ImageFile();
         $imageFile->ThumbnailSize = $GLOBALS['ThumbnailSize'];
 
-        $options = \TAS\Core\Grid::DefaultOptions();
+        $options = Grid::DefaultOptions();
         $options['gridurl'] = $parameters['gridpage'];
         $options['gridid'] = $parameters['gridid'] ?? 'mygrid';
         $options['tagname'] = $parameters['tagname'] ?? 'grid';
@@ -742,7 +753,7 @@ class ImageFile extends \TAS\Core\UserFile
             ];
         }
 
-        $queryoptions = \TAS\Core\Grid::DefaultQueryOptions();
+        $queryoptions = Grid::DefaultQueryOptions();
         $queryoptions['basicquery'] = 'select * from '.$GLOBALS['Tables']['images'];
         $queryoptions['pagingquery'] = 'select count(*) from '.$GLOBALS['Tables']['images'];
 
@@ -765,7 +776,7 @@ class ImageFile extends \TAS\Core\UserFile
         $queryoptions['recordshowlimit'] = $parameters['recordshowlimit'] ?? 0;
         $queryoptions['tablename'] = $GLOBALS['Tables']['images'];
 
-        $grid = new \TAS\Core\Grid($options, $queryoptions);
+        $grid = new Grid($options, $queryoptions);
 
         return $grid->Render();
     }
@@ -780,7 +791,7 @@ class ImageFile extends \TAS\Core\UserFile
     {
         if (isset($row['thumbnailfile'])) {
             $thumbs = json_decode($row['thumbnailfile'], true);
-            $foldercount = floor($row['imageid'] / \TAS\Core\UserFile::$MAX_FILE_PER_FOLDER);
+            $foldercount = floor($row['imageid'] / UserFile::$MAX_FILE_PER_FOLDER);
             if (isset($thumbs['w120.h90'])) {
                 return '<img src="'.$GLOBALS['AppConfig']['UploadURL'].'/image/'.$foldercount.'/'.$thumbs['w120.h90'].'" class="thumbnail"/>';
             }
