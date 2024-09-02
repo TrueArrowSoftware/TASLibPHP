@@ -382,9 +382,9 @@ class Grid
             case 'globalarray':
                 if (array_key_exists($field, $row) && null != $row[$field]) {
                     if (isset($val['arrayname'])) {
-                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]];
+                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]]??"";
                     } else {
-                        $fielddata = $GLOBALS[$field][$row[$field]];
+                        $fielddata = $GLOBALS[$field][$row[$field]]??"";
                     }
                 }
 

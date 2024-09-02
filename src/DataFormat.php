@@ -23,6 +23,7 @@ class DataFormat
 
         $phone = trim($phone);
         $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
+        $phone = preg_replace('/[a-zA-Z]/', '', $phone);
         if (strlen($phone) > $length) {
             $phone = substr($phone, 0, $length);
         }
