@@ -45,7 +45,7 @@ class ArrayHelper
         $output = [];
         foreach ($a as $i => $k) {
             if (is_array($k)) {
-                $t = \TAS\Core\Utility::SinglizeArray($k);
+                $t = \TAS\Core\ArrayHelper::SinglizeArray($k);
                 foreach ($t as $i1 => $k) {
                     $output[$i.'-'.$i1] = $k;
                 }
@@ -60,11 +60,11 @@ class ArrayHelper
     /**
      * Contain word in array list.
      *
-     * @param unknown $str
+     * @param string $str
      *
      * @return bool
      */
-    public static function Contain($str, array $arr)
+    public static function Contain(string $str, array $arr)
     {
         foreach ($arr as $a) {
             if (false !== stripos($str, $a)) {
