@@ -2,13 +2,23 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Interface\IFileSaver;
+
 class DocumentFile extends \TAS\Core\UserFile
 {
-    public $LinkerType = '';
+    public string $LinkerType = '';
+    public IFileSaver $FileSaver;
 
     public function __construct($linkertype = '')
     {
         $this->init();
+
+        $this->BaseUrl = ($GLOBALS['AppConfig']['UploadURL'] ?? $GLOBALS['AppConfig']['HomeURL']);
+        $this->Path = ($GLOBALS['AppConfig']['UploadPath'] ?? $GLOBALS['AppConfig']['PhysicalPath']);
+
+        $this->FileSaver = \TAS\Core\Config::$FileSaverDocument;
+        $this->FileSaver->SetClassObject($this);
+
         if ('' != $linkertype) {
             $this->LinkerType = $linkertype;
         }
@@ -43,15 +53,18 @@ class DocumentFile extends \TAS\Core\UserFile
                 $fileext = strtolower($fileext[count($fileext) - 1]);
                 if ($this->Validate($filedata)) {
                     // Create a Random file name
-                    $filename = $this->getFileName('.'.$fileext);
-                    if (move_uploaded_file($filedata['tmp_name'], $this->FullPath.'/'.$filename)) {
+                    $filename = $this->getFileName('.' . $fileext);
+
+                    if ($this->FileSaver->SaveFile($filedata['tmp_name'], $filename)) {
+
+                        //if (move_uploaded_file($filedata['tmp_name'], $this->FullPath . '/' . $filename)) {
                         if ($save) {
                             $idpart = $this->Save($filename, $filedata, $linkerid);
                             if (!is_bool($idpart) && (int) $idpart > 0) {
                                 $filedata['UploadStatus'] = true;
                                 $filedata['ID'] = $idpart;
                             } else {
-                                $this->SetError('Fail to save in database (File :'.$filedata['name'].')');
+                                $this->SetError('Fail to save in database (File :' . $filedata['name'] . ')');
                                 $filedata['UploadStatus'] = false;
                             }
                         } else {
@@ -59,13 +72,13 @@ class DocumentFile extends \TAS\Core\UserFile
                         }
                     } else {
                         $filedata['UploadStatus'] = false;
-                        $this->SetError('Unable to save '.$filedata['name']);
+                        $this->SetError('Unable to save ' . $filedata['name']);
 
                         continue;
                     }
                 } else {
                     $filedata['UploadStatus'] = false;
-                    $this->SetError($filedata['name'].' fails to validate security check');
+                    $this->SetError($filedata['name'] . ' fails to validate security check');
 
                     continue;
                 }
@@ -91,6 +104,7 @@ class DocumentFile extends \TAS\Core\UserFile
         $InsertData['originalname'] = $filedata['name'];
         $InsertData['updatedate'] = date('Y-m-d H:i:s');
         $InsertData['isdefault'] = ($filedata['isdefault'] ?? 0);
+        $InsertData['folderid'] = (isset($filedata['folderid']) ? (int)$filedata['folderid'] : 0);
         if (isset($filedata['recordid']) && $filedata['recordid'] > 0) {
             if ($GLOBALS['db']->Update($GLOBALS['tables']['documents'], $InsertData, $filedata['recordid'], 'documentid')) {
                 return (int) $filedata['recordid'];
@@ -112,15 +126,15 @@ class DocumentFile extends \TAS\Core\UserFile
     {
         $document = [];
         // echo "Select * from ".$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid";
-        $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['tables']['documents'].
-            " where linkertype='".$this->LinkerType."' and linkerid={$linkerid} order by adddate desc");
+        $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] .
+            " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by adddate desc");
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
             while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
                 $folder = $this->FindFolder($rowdocument['documentid']);
                 $document[$rowdocument['documentid']]['filename'] = $rowdocument['filepath'];
                 $document[$rowdocument['documentid']]['caption'] = $rowdocument['documentcaption'];
-                $document[$rowdocument['documentid']]['url'] = $this->BaseUrl."/{$folder}/".$rowdocument['filepath'];
-                $document[$rowdocument['documentid']]['physicalpath'] = $this->Path."/{$folder}/".$rowdocument['filepath'];
+                $document[$rowdocument['documentid']]['url'] = $this->BaseUrl . "/{$folder}/" . $rowdocument['filepath'];
+                $document[$rowdocument['documentid']]['physicalpath'] = $this->Path . "/{$folder}/" . $rowdocument['filepath'];
                 $document[$rowdocument['documentid']]['isdefault'] = $rowdocument['isdefault'];
                 $document[$rowdocument['documentid']]['adddate'] = $rowdocument['adddate'];
                 $document[$rowdocument['documentid']]['updatedate'] = $rowdocument['updatedate'];
@@ -154,15 +168,14 @@ class DocumentFile extends \TAS\Core\UserFile
     public function GetDocument($docid)
     {
         $document = [];
-        // echo "Select * from ".$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid";
-        $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['document']." where documentid='".$docid."' limit 1");
+        $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['document'] . " where documentid='" . $docid . "' limit 1");
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
             while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
                 $folder = $this->FindFolder($rowdocument['documentid']);
                 $document[$rowdocument['documentid']]['filename'] = $rowdocument['filepath'];
                 $document[$rowdocument['documentid']]['caption'] = $rowdocument['documentcaption'];
-                $document[$rowdocument['documentid']]['url'] = $this->BaseUrl."/{$folder}/".$rowdocument['filepath'];
-                $document[$rowdocument['documentid']]['physicalpath'] = $this->Path."/{$folder}/".$rowdocument['filepath'];
+                $document[$rowdocument['documentid']]['url'] = $this->BaseUrl . "/{$folder}/" . $rowdocument['filepath'];
+                $document[$rowdocument['documentid']]['physicalpath'] = $this->Path . "/{$folder}/" . $rowdocument['filepath'];
                 $document[$rowdocument['documentid']]['isdefault'] = $rowdocument['isdefault'];
                 $document[$rowdocument['documentid']]['adddate'] = $rowdocument['adddate'];
                 $document[$rowdocument['documentid']]['updatedate'] = $rowdocument['updatedate'];
@@ -177,24 +190,9 @@ class DocumentFile extends \TAS\Core\UserFile
 
     public static function DownloadURL($document)
     {
-        return $GLOBALS['AppConfig']['HomeURL'].'/document/'.$document['id'].'/'.$document['name'];
+        return $GLOBALS['AppConfig']['HomeURL'] . '/document/' . $document['id'] . '/' . $document['name'];
     }
 
-    // Function to delete document on Linker
-    public function DeleteDocumentOnLinker($linkerid)
-    {
-        $document = [];
-        $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid}");
-        // Remove Physical File
-        if ($GLOBALS['db']->RowCount($documentlist) > 0) {
-            while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
-                $folder = $this->FindFolder($rowdocument['documentid']);
-                @unlink($this->Path."/{$folder}/".$rowdocument['filepath']);
-            }
-        }
-        // Clean From DB
-        $GLOBALS['db']->Execute('Delete from '.$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid}");
-    }
 
     /**
      * Delete the document.
@@ -209,30 +207,38 @@ class DocumentFile extends \TAS\Core\UserFile
     }
 
     // Function to delete document on Linker
-    public function DeleteDocument($documentid)
+    public function DeleteDocumentOnLinker($linkerid)
     {
         $document = [];
-        $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['tables']['documents']." where documentid={$documentid}");
+        $documentlist = $GLOBALS['db']->Execute('Select documentid from ' . $GLOBALS['tables']['documents'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid}");
         // Remove Physical File
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
-            while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
-                $folder = $this->FindFolder($rowdocument['documentid']);
-                if (file_exists($this->Path."/{$folder}/".$rowdocument['filepath'])) {
-                    unlink($this->Path."/{$folder}/".$rowdocument['filepath']);
-                }
+            foreach ($documentlist as $rowdocument) {
+                $this->DeleteDocument((int)$rowdocument['documentid']);
             }
         }
+    }
 
+    // Function to delete document on Linker
+    public function DeleteDocument(int $documentid)
+    {
+        $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
+        if (\TAS\Core\DB::Count($documentlist) > 0) {
+            foreach ($documentlist as $rowdocument) {
+                $folder = $this->FindFolder($rowdocument['documentid']);
+                $this->FileSaver->Delete($this->Path, "{$folder}/" . $rowdocument['filepath']);
+            }
+        }
         // Clean From DB
-        return $GLOBALS['db']->Execute('Delete from '.$GLOBALS['tables']['documents']." where documentid={$documentid}");
+        return $GLOBALS['db']->Execute('Delete from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
     }
 
     public function SetFileCaption($documentid, $newCaption)
     {
         if (!empty($documentid) && $documentid > 0 && '' != $newCaption) {
-            $documentlist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['tables']['documents']." where documentid={$documentid}");
+            $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
             if ($GLOBALS['db']->RowCount($documentlist) > 0) {
-                $GLOBALS['db']->Execute('update '.$GLOBALS['tables']['documents']." set documentcaption='".$newCaption."' where documentid={$documentid}");
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['tables']['documents'] . " set documentcaption='" . $newCaption . "' where documentid={$documentid}");
 
                 return true;
             }
@@ -256,14 +262,14 @@ class DocumentFile extends \TAS\Core\UserFile
         }
 
         $form = '<div class="col-md-12 pt-3"> <div class="card card-body card-radius">
-<h2 class="borderbottom-set">'.$formtitle.'</h2>
-<form action="'.$actionURL.'" method="post" class="validate" enctype="multipart/form-data"  novalidate="novalidate">
+<h2 class="borderbottom-set">' . $formtitle . '</h2>
+<form action="' . $actionURL . '" method="post" class="validate" enctype="multipart/form-data"  novalidate="novalidate">
 	<fieldset class="generalform">
 		<legend></legend>
 		<div class="formfield">
 			<label for="title" class="formlabel requiredfield">Caption</label>
 			<div class="forminputwrapper">
-				<input type="text" name="title" id="title" size="32" maxlength="75" class="form-control required" value="'.$D.'" />
+				<input type="text" name="title" id="title" size="32" maxlength="75" class="form-control required" value="' . $D . '" />
 			</div>
 		<div class="clear"></div></div>
 				    
@@ -285,16 +291,16 @@ class DocumentFile extends \TAS\Core\UserFile
 
     public static function DocumentGrid($linkertype = 'cms', $filters = [], $parameters = [])
     {
-        $SQLQuery['basicquery'] = 'select * from '.$GLOBALS['Tables']['document'];
+        $SQLQuery['basicquery'] = 'select * from ' . $GLOBALS['Tables']['document'];
         $filter = [];
-        $filter[] = " linkertype='".$linkertype."'";
+        $filter[] = " linkertype='" . $linkertype . "'";
 
         if (is_array($filters) && count($filters) > 0) {
             $filter = array_merge($filter, $filters);
         }
 
         if (count($filter) > 0) {
-            $SQLQuery['where'] = ' where '.implode(' and ', $filter).' ';
+            $SQLQuery['where'] = ' where ' . implode(' and ', $filter) . ' ';
         } else {
             $SQLQuery['where'] = '';
         }

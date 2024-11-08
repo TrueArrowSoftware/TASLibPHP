@@ -969,7 +969,7 @@ class UI
                         if ((is_array($field['value']) && in_array($key, $field['value']))
                             || ($key == $field['value'])
                         ) {
-                            $HTML .= \TAS\Core\HTML::ReadOnly($option);
+                            $HTML .= \TAS\Core\HTML::ReadOnly($option, $id,  $field['css'] ?? '');
                         }
                     }
 

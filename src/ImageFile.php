@@ -2,9 +2,12 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Interface\IFileSaver;
+
 class ImageFile extends UserFile
 {
     public $LinkerType = '';
+    public IFileSaver $FileSaver;
 
     public $ThumbnailSize = [
         0 => [
@@ -36,6 +39,9 @@ class ImageFile extends UserFile
 
         $this->FileType = 'image';
         $this->LinkerType = 'product';
+
+        $this->FileSaver = \TAS\Core\Config::$FileSaverImage;
+        $this->FileSaver->SetClassObject($this);
     }
 
     /**
@@ -56,8 +62,6 @@ class ImageFile extends UserFile
     }
 
 
-    
-
     // Function To Upload File from $_FILES replicated Array.
     // Also Save files if second parameter is true
     public function Upload($file, $save = true, $linkerid = 0)
@@ -76,28 +80,32 @@ class ImageFile extends UserFile
                 $fileext = $fileext[count($fileext) - 1];
                 if ($this->Validate($filedata)) {
                     $filenamewithoutExt = $this->getFileName('.');
-                    $filename = $filenamewithoutExt.$fileext;
-                    if (move_uploaded_file($filedata['tmp_name'], $this->FullPath.DIRECTORY_SEPARATOR.$filename)) {
+                    $filename = $filenamewithoutExt . $fileext;
+                    $destination = $this->FullPath . DIRECTORY_SEPARATOR . $filename;
+                    if ($this->FileSaver->SaveFile($filedata['tmp_name'], $filename)) {
+                        $filedata['UploadStatus'] = true;
                         if ($save) {
-                            $this->GenerateThumbnails($this->FullPath.DIRECTORY_SEPARATOR.$filename, $filenamewithoutExt, $fileext);
-                            if ($this->Save($filename, $filedata, $linkerid)) {
+
+                            //$this->GenerateThumbnails($destination, $filenamewithoutExt, $fileext);
+                            $outID = 0;
+                            if ($this->Save($filename, $filedata, $linkerid, $outID)) {
+                                $this->FileSaver->ProcessFile($outID);
+
                                 $filedata['UploadStatus'] = true;
                             } else {
-                                $this->SetError('Fail to save in database (File :'.$filedata['name'].' ::'.print_r($GLOBALS['db']->LastErrors(), true).' )');
+                                $this->SetError('Fail to save in database (File :' . $filedata['name'] . ' ::' . print_r($GLOBALS['db']->LastErrors(), true) . ' )');
                                 $filedata['UploadStatus'] = false;
                             }
-                        } else {
-                            $filedata['UploadStatus'] = true;
                         }
                     } else {
                         $filedata['UploadStatus'] = false;
-                        $this->SetError('Unable to save '.$filedata['name']);
+                        $this->SetError('Unable to save ' . $filedata['name']);
 
                         continue;
                     }
                 } else {
                     $filedata['UploadStatus'] = false;
-                    $this->SetError($filedata['name'].' fails to validate security check');
+                    $this->SetError($filedata['name'] . ' fails to validate security check');
 
                     continue;
                 }
@@ -120,7 +128,7 @@ class ImageFile extends UserFile
      * @param string $linkerid
      * @return void
      */
-    public function Save($file, $filedata, $linkerid = '')
+    public function Save($file, $filedata, $linkerid = '', &$outID = 0)
     {
         $InsertData['imagecaption'] = $filedata['caption'];
         $InsertData['imagefile'] = $file;
@@ -132,7 +140,8 @@ class ImageFile extends UserFile
         $InsertData['isdefault'] = ($filedata['isdefault'] ?? 0);
         $InsertData['tag'] = $filedata['tag'] ?? '';
         $InsertData['settings'] = (isset($filedata['settings']) ? json_encode($filedata['settings']) : '');
-        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid='".$linkerid."'");
+        $InsertData['folderid'] = (isset($filedata['folderid']) ? (int)$filedata['folderid'] : 0);
+        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid='" . $linkerid . "'");
         if ('' == $displayOrder) {
             $displayOrder = 1;
         }
@@ -140,6 +149,7 @@ class ImageFile extends UserFile
 
         if (isset($filedata['recordid']) && $filedata['recordid'] > 0) {
             if ($GLOBALS['db']->UpdateArray($GLOBALS['Tables']['images'], $InsertData, $filedata['recordid'], 'imageid')) {
+                $outID = $filedata['recordid'];
                 return true;
             }
 
@@ -147,6 +157,7 @@ class ImageFile extends UserFile
         }
         $InsertData['adddate'] = date('Y-m-d H:i:s');
         if ($GLOBALS['db']->Insert($GLOBALS['Tables']['images'], $InsertData)) {
+            $outID = $GLOBALS['db']->GeneratedID();
             return true;
         }
 
@@ -164,9 +175,9 @@ class ImageFile extends UserFile
     {
         $images = [];
         if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid} order by {$orderby} limit 1");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by {$orderby} limit 1");
         } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid} order by {$orderby}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by {$orderby}");
         }
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
@@ -174,8 +185,8 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['ImageID'] = $rowImage['imageid'];
                 $images[$rowImage['imageid']]['filename'] = $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['caption'] = $rowImage['imagecaption'];
-                $images[$rowImage['imageid']]['url'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/'.$rowImage['imagefile'];
-                $images[$rowImage['imageid']]['physicalpath'] = $this->Path.DIRECTORY_SEPARATOR."{$folder}".DIRECTORY_SEPARATOR.$rowImage['imagefile'];
+                $images[$rowImage['imageid']]['url'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/' . $rowImage['imagefile'];
+                $images[$rowImage['imageid']]['physicalpath'] = $this->Path . DIRECTORY_SEPARATOR . "{$folder}" . DIRECTORY_SEPARATOR . $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['isdefault'] = $rowImage['isdefault'];
                 $images[$rowImage['imageid']]['adddate'] = $rowImage['adddate'];
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
@@ -184,16 +195,17 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
                 $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
-                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/';
+                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/';
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    $fileparts = explode('.', $rowImage['imagefile']);
-                    $fileext = $fileparts[count($fileparts) - 1];
-                    unset($fileparts[count($fileparts) - 1]);
-                    $filenamewithoutExt = implode('.', $fileparts);
+                    // $fileparts = explode('.', $rowImage['imagefile']);
+                    // $fileext = $fileparts[count($fileparts) - 1];
+                    // unset($fileparts[count($fileparts) - 1]);
+                    // $filenamewithoutExt = implode('.', $fileparts);
                     $this->FindFullPath($rowImage['imageid']);
-                    $this->GenerateThumbnails($this->Path."/{$folder}/".$rowImage['imagefile'], $filenamewithoutExt, $fileext);
-                    $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set thumbnailfile='".json_encode($this->ThumbnailCollection)."' where imageid=".$rowImage['imageid']);
+                    $this->FileSaver->ProcessFile($rowImage['imageid']);
+                    //                    $this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
+                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -225,9 +237,9 @@ class ImageFile extends UserFile
     {
         $images = [];
         if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by {$orderby} limit 1");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' order by {$orderby} limit 1");
         } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' order by {$orderby}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' order by {$orderby}");
         }
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
@@ -236,8 +248,8 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['ImageID'] = $rowImage['imageid'];
                 $images[$rowImage['imageid']]['filename'] = $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['caption'] = $rowImage['imagecaption'];
-                $images[$rowImage['imageid']]['url'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/'.$rowImage['imagefile'];
-                $images[$rowImage['imageid']]['physicalpath'] = $this->Path.DIRECTORY_SEPARATOR."{$folder}".DIRECTORY_SEPARATOR.$rowImage['imagefile'];
+                $images[$rowImage['imageid']]['url'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/' . $rowImage['imagefile'];
+                $images[$rowImage['imageid']]['physicalpath'] = $this->Path . DIRECTORY_SEPARATOR . "{$folder}" . DIRECTORY_SEPARATOR . $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['isdefault'] = $rowImage['isdefault'];
                 $images[$rowImage['imageid']]['adddate'] = $rowImage['adddate'];
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
@@ -246,16 +258,17 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
                 $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
-                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl.'/'.$this->FindFolder($rowImage['imageid'], true).'/';
+                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/';
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    $fileparts = explode('.', $rowImage['imagefile']);
-                    $fileext = $fileparts[count($fileparts) - 1];
-                    unset($fileparts[count($fileparts) - 1]);
-                    $filenamewithoutExt = implode('.', $fileparts);
+                    // $fileparts = explode('.', $rowImage['imagefile']);
+                    // $fileext = $fileparts[count($fileparts) - 1];
+                    // unset($fileparts[count($fileparts) - 1]);
+                    // $filenamewithoutExt = implode('.', $fileparts);
                     $this->FindFullPath($rowImage['imageid']);
-                    $this->GenerateThumbnails($this->Path."/{$folder}/".$rowImage['imagefile'], $filenamewithoutExt, $fileext);
-                    $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set thumbnailfile='".json_encode($this->ThumbnailCollection)."' where imageid=".$rowImage['imageid']);
+                    $this->FileSaver->ProcessFile($rowImage['imageid']);
+                    //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
+                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -281,16 +294,16 @@ class ImageFile extends UserFile
         if ((int) $imageid <= 0) {
             return null;
         }
-        $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid} order by {$orderby}");
+        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} order by {$orderby}");
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
                 $URLfolder = $this->FindFolder($rowImage['imageid'], true);
                 $images[$rowImage['imageid']]['filename'] = $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['caption'] = $rowImage['imagecaption'];
-                $images[$rowImage['imageid']]['url'] = $this->BaseUrl."/{$URLfolder}/".$rowImage['imagefile'];
-                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl."/{$URLfolder}/";
-                $images[$rowImage['imageid']]['physicalpath'] = $this->Path."/{$folder}/".$rowImage['imagefile'];
+                $images[$rowImage['imageid']]['url'] = $this->BaseUrl . "/{$URLfolder}/" . $rowImage['imagefile'];
+                $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl . "/{$URLfolder}/";
+                $images[$rowImage['imageid']]['physicalpath'] = $this->Path . "/{$folder}/" . $rowImage['imagefile'];
                 $images[$rowImage['imageid']]['isdefault'] = $rowImage['isdefault'];
                 $images[$rowImage['imageid']]['adddate'] = $rowImage['adddate'];
                 $images[$rowImage['imageid']]['updatedate'] = $rowImage['updatedate'];
@@ -301,13 +314,14 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    $fileparts = explode('.', $rowImage['imagefile']);
-                    $fileext = $fileparts[count($fileparts) - 1];
-                    $this->FindFullPath($rowImage['imageid']);
-                    unset($fileparts[count($fileparts) - 1]);
-                    $filenamewithoutExt = implode('.', $fileparts);
-                    $this->GenerateThumbnails($this->Path."/{$folder}/".$rowImage['imagefile'], $filenamewithoutExt, $fileext);
-                    $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set thumbnailfile='".json_encode($this->ThumbnailCollection)."' where imageid=".$rowImage['imageid']);
+                    // $fileparts = explode('.', $rowImage['imagefile']);
+                    // $fileext = $fileparts[count($fileparts) - 1];
+                    // $this->FindFullPath($rowImage['imageid']);
+                    // unset($fileparts[count($fileparts) - 1]);
+                    // $filenamewithoutExt = implode('.', $fileparts);
+                    $this->FileSaver->ProcessFile($rowImage['imageid']);
+                    //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
+                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -325,31 +339,12 @@ class ImageFile extends UserFile
      */
     public function DeleteImageOnLinker($linkerid)
     {
-        $images = [];
-        $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid}");
-        // Remove Physical File
+        $imagelist = $GLOBALS['db']->Execute('Select imageid from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid}");
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
-            while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
-                $folder = $this->FindFolder($rowImage['imageid']);
-                $image = $this->Path."/{$folder}/".$rowImage['imagefile'];
-                if (file_exists($image)) {
-                    @unlink($image);
-                }
-                if ('' != $rowImage['thumbnailfile']) {
-                    $thumbnail = json_decode($rowImage['thumbnailfile'], true);
-                    if (is_array($thumbnail)) {
-                        foreach ($thumbnail as $key => $size) {
-                            $image = $this->Path."/{$folder}/".$size;
-                            if (file_exists($image)) {
-                                @unlink($image);
-                            }
-                        }
-                    }
-                }
+            foreach ($imagelist as $row) {
+                $this->DeleteImage($row['imageid']);
             }
         }
-
-        $GLOBALS['db']->Execute('Delete from '.$GLOBALS['Tables']['images']." where linkertype='".$this->LinkerType."' and linkerid={$linkerid}");
     }
 
     /**
@@ -358,25 +353,27 @@ class ImageFile extends UserFile
     public function DeleteImage(int $imageid)
     {
         $images = [];
-        $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid}");
+        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid}");
         // Remove Physical File
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
-                @unlink($this->Path."/{$folder}/".$rowImage['imagefile']);
+                $this->FileSaver->Delete($this->Path, "{$folder}/" . $rowImage['imagefile']);
 
                 if ('' != $rowImage['thumbnailfile']) {
                     $thumbnail = json_decode($rowImage['thumbnailfile'], true);
                     if (is_array($thumbnail)) {
                         foreach ($this->ThumbnailSize as $key => $Size) {
-                            @unlink($this->Path."/{$folder}/".$thumbnail['w'.$Size['width'].'.h'.$Size['height']]);
+                            if (isset($thumbnail['w' . $Size['width'] . '.h' . $Size['height']])) {
+                                $this->FileSaver->Delete($this->Path, "{$folder}/" . $thumbnail['w' . $Size['width'] . '.h' . $Size['height']]);
+                            }
                         }
                     }
                 }
             }
         }
         // Clean From DB
-        $GLOBALS['db']->Execute('Delete from '.$GLOBALS['Tables']['images']." where imageid={$imageid}");
+        $GLOBALS['db']->Execute('Delete from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid}");
 
         return true;
     }
@@ -385,11 +382,11 @@ class ImageFile extends UserFile
     {
         if (is_numeric($imageId) && $imageId > 0 && is_numeric($linkerId) && $linkerId > 0) {
             // Unset all defaults
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageId}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageId}");
 
             if ($GLOBALS['db']->RowCount($imagelist) > 0) {
-                $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set isdefault= 0 where linkerid={$linkerId} and linkertype='".$this->LinkerType."'");
-                if ($GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set isdefault= 1 where linkerid={$linkerId} and linkertype='".$this->LinkerType."' and imageid={$imageId}")) {
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set isdefault= 0 where linkerid={$linkerId} and linkertype='" . $this->LinkerType . "'");
+                if ($GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set isdefault= 1 where linkerid={$linkerId} and linkertype='" . $this->LinkerType . "' and imageid={$imageId}")) {
                     return true;
                 }
                 $this->SetError('Invalid data to set default image ');
@@ -408,9 +405,9 @@ class ImageFile extends UserFile
     public function SetImageCaption($ImageId, $newCaption)
     {
         if (!empty($ImageId) && $ImageId > 0 && '' != $newCaption) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['images']." where imageid={$ImageId}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$ImageId}");
             if ($GLOBALS['db']->RowCount($imagelist) > 0) {
-                $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set imagecaption='".$newCaption."' where imageid={$ImageId}");
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set imagecaption='" . $newCaption . "' where imageid={$ImageId}");
 
                 return true;
             }
@@ -426,6 +423,7 @@ class ImageFile extends UserFile
         if (!is_array($this->ThumbnailSize)) {
             return false;
         }
+
         // Validate all Sizes
         foreach ($this->ThumbnailSize as $key => $Size) {
             if (!isset($Size['width']) || !isset($Size['height']) || !is_numeric($Size['width']) || !is_numeric($Size['height'])) {
@@ -437,10 +435,16 @@ class ImageFile extends UserFile
         foreach ($this->ThumbnailSize as $key => $Size) {
             try {
                 $newSize = $this->GetResizedImage($path, $Size['width'], $Size['height']);
-                $this->DoResize($path, $newSize['width'], $newSize['height'], $filename.'w'.$Size['width'].'.h'.$Size['height'].'.'.$ext);
-                $this->ThumbnailCollection['w'.$Size['width'].'.h'.$Size['height']] = $filename.'w'.$Size['width'].'.h'.$Size['height'].'.'.$ext;
+                $newFile = $filename . 'w' . $Size['width'] . '.h' . $Size['height'] . '.' . $ext;
+                $this->DoResize($path, $newSize['width'], $newSize['height'], $newFile);
+
+                if (file_exists($GLOBALS['AppConfig']['cache'] . DIRECTORY_SEPARATOR . $newFile)) {
+                    $this->FileSaver->Copy($GLOBALS['AppConfig']['cache'] . DIRECTORY_SEPARATOR . $newFile,  $this->FullPath,  $newFile);
+                }
+
+                $this->ThumbnailCollection['w' . $Size['width'] . '.h' . $Size['height']] = $filename . 'w' . $Size['width'] . '.h' . $Size['height'] . '.' . $ext;
             } catch (\Exception $e) {
-                $this->SetError('Unable to generate thumbnail. Caught Exception :'.$e->getMessage());
+                $this->SetError('Unable to generate thumbnail. Caught Exception :' . $e->getMessage());
             }
         }
     }
@@ -449,29 +453,30 @@ class ImageFile extends UserFile
     {
         ImageFile::DeleteThumbnails($imageid);
 
-        $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid} limit 1");
+        $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} limit 1");
 
-        $folder = $this->FindFolder($imageid);
+        // $folder = $this->FindFolder($imageid);
 
-        $fileparts = explode('.', $rowImage['imagefile']);
-        $fileext = $fileparts[count($fileparts) - 1];
-        $this->FindFullPath($rowImage['imageid']);
-        unset($fileparts[count($fileparts) - 1]);
-        $filenamewithoutExt = implode('.', $fileparts);
-        $this->GenerateThumbnails($this->Path."/{$folder}/".$rowImage['imagefile'], $filenamewithoutExt, $fileext);
-        $GLOBALS['db']->Execute('update '.$GLOBALS['Tables']['images']." set thumbnailfile='".json_encode($this->ThumbnailCollection)."' where imageid=".$rowImage['imageid']);
+        // $fileparts = explode('.', $rowImage['imagefile']);
+        // $fileext = $fileparts[count($fileparts) - 1];
+        // $this->FindFullPath($rowImage['imageid']);
+        // unset($fileparts[count($fileparts) - 1]);
+        // $filenamewithoutExt = implode('.', $fileparts);
+        $this->FileSaver->ProcessFile((int)$rowImage['imageid'], $this);
+        //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
+        $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
     }
 
     public static function DeleteThumbnails(int $imageid)
     {
-        $imagelist = $GLOBALS['db']->ExecuteScalarRow('Select * from '.$GLOBALS['Tables']['images']." where imageid={$imageid} limit 1");
+        $imagelist = $GLOBALS['db']->ExecuteScalarRow('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} limit 1");
         $i = new ImageFile();
         $folder = $i->FindFolder($imageid);
         if ('' != $imagelist['thumbnailfile']) {
             $thumbnail = json_decode($imagelist['thumbnailfile'], true);
             if (is_array($thumbnail)) {
                 foreach ($thumbnail as $key => $size) {
-                    $image = $i->Path."/{$folder}/".$size;
+                    $image = $i->Path . "/{$folder}/" . $size;
                     if (\file_exists($image)) {
                         @unlink($image);
                     }
@@ -562,7 +567,7 @@ class ImageFile extends UserFile
     {
         // Get Image size info
         if (empty($resizeScript)) {
-            $resizeScript = $GLOBALS['AppConfig']['HomeURL'].'/resize.php';
+            $resizeScript = $GLOBALS['AppConfig']['HomeURL'] . '/resize.php';
         }
 
         if (!\file_exists($path)) {
@@ -579,7 +584,7 @@ class ImageFile extends UserFile
          */
         $aspect_ratio = (float) $height_orig / $width_orig;
         $desireRatio = (float) $desireheight / $desirewidth;
-        $secreturl = 'img-'.substr(md5(base64_encode($path)), 0, 8);
+        $secreturl = 'img-' . substr(md5(base64_encode($path)), 0, 8);
         $_SESSION[$secreturl] = $path;
         if ((float) $aspect_ratio == (float) $desireRatio) {
             // image has perfect ratio, do we need resize?
@@ -587,7 +592,7 @@ class ImageFile extends UserFile
                 return $currenturl;
             }
             if ($width_orig > $desirewidth) {
-                return $resizeScript."?width={$desirewidth}&path=".$secreturl;
+                return $resizeScript . "?width={$desirewidth}&path=" . $secreturl;
             }
 
             return $currenturl;
@@ -597,14 +602,14 @@ class ImageFile extends UserFile
                 return $currenturl;
             }
 
-            return $resizeScript."?height={$desireheight}&path=".$secreturl;
+            return $resizeScript . "?height={$desireheight}&path=" . $secreturl;
         }
         // width of image is more than height
         if ($width_orig <= $desirewidth) { // Height is big then width, but still in our desire length
             return $currenturl;
         }
 
-        return $resizeScript."?width={$desirewidth}&path=".$secreturl;
+        return $resizeScript . "?width={$desirewidth}&path=" . $secreturl;
     }
 
     public function DoResize($img, $thumb_width = 0, $thumb_height = 0, $filename = 'newimage.jpg')
@@ -670,25 +675,23 @@ class ImageFile extends UserFile
                     imagepng($newImg);
 
                     break;
-                    // default: trigger_error('Failed resize image!', E_USER_WARNING); return false; break;
             }
         } else {
             switch ($image_type) {
                 case 1:
-                    imagegif($newImg, $this->FullPath.'/'.$filename);
+                    imagegif($newImg, $GLOBALS['AppConfig']['cache'] . DIRECTORY_SEPARATOR . $filename);
 
                     break;
 
                 case 2:
-                    imagejpeg($newImg, $this->FullPath.'/'.$filename);
+                    imagejpeg($newImg, $GLOBALS['AppConfig']['cache'] . DIRECTORY_SEPARATOR . $filename);
 
                     break;
 
                 case 3:
-                    imagepng($newImg, $this->FullPath.'/'.$filename);
+                    imagepng($newImg, $GLOBALS['AppConfig']['cache'] . DIRECTORY_SEPARATOR . $filename);
 
                     break;
-                    // default: trigger_error('Failed resize image!', E_USER_WARNING); return false; break;
             }
         }
         imagedestroy($newImg);
@@ -754,18 +757,18 @@ class ImageFile extends UserFile
         }
 
         $queryoptions = Grid::DefaultQueryOptions();
-        $queryoptions['basicquery'] = 'select * from '.$GLOBALS['Tables']['images'];
-        $queryoptions['pagingquery'] = 'select count(*) from '.$GLOBALS['Tables']['images'];
+        $queryoptions['basicquery'] = 'select * from ' . $GLOBALS['Tables']['images'];
+        $queryoptions['pagingquery'] = 'select count(*) from ' . $GLOBALS['Tables']['images'];
 
         $filter = [];
-        $filter[] = " linkertype='".$linkertype."'";
+        $filter[] = " linkertype='" . $linkertype . "'";
 
         if (is_array($filters) && count($filters) > 0) {
             $filter = array_merge($filter, $filters);
         }
 
         if (count($filter) > 0) {
-            $queryoptions['whereconditions'] = ' where '.implode(' and ', $filter).' ';
+            $queryoptions['whereconditions'] = ' where ' . implode(' and ', $filter) . ' ';
         } else {
             $queryoptions['whereconditions'] = ' ';
         }
@@ -793,10 +796,10 @@ class ImageFile extends UserFile
             $thumbs = json_decode($row['thumbnailfile'], true);
             $foldercount = floor($row['imageid'] / UserFile::$MAX_FILE_PER_FOLDER);
             if (isset($thumbs['w120.h90'])) {
-                return '<img src="'.$GLOBALS['AppConfig']['UploadURL'].'/image/'.$foldercount.'/'.$thumbs['w120.h90'].'" class="thumbnail"/>';
+                return '<img src="' . $GLOBALS['AppConfig']['UploadURL'] . '/image/' . $foldercount . '/' . $thumbs['w120.h90'] . '" class="thumbnail"/>';
             }
 
-            return '<img src="'.$GLOBALS['AppConfig']['HomeURL'].'/resize/'.$row['imagefile'].'?id='.$row['imageid'].'&w=120&h=90&crop=true" class="thumbnail"/>';
+            return '<img src="' . $GLOBALS['AppConfig']['HomeURL'] . '/resize/' . $row['imagefile'] . '?id=' . $row['imageid'] . '&w=120&h=90&crop=true" class="thumbnail"/>';
         }
 
         return '';

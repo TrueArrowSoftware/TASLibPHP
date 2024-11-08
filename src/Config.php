@@ -2,6 +2,8 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Interface\IFileSaver;
+
 class Config
 {
     public static $DateFormatDB = 'Y-m-d';
@@ -13,6 +15,9 @@ class Config
 
     public static $UserRoleID = 0;
 
+    public static IFileSaver $FileSaverImage;
+    public static IFileSaver $FileSaverDocument;
+
     /**
      * @var array
      */
@@ -20,7 +25,11 @@ class Config
 
     public static function __constructStatic()
     {
+        self::$FileSaverImage = new Default\FileSaverDefaultImage();
+        self::$FileSaverDocument = new Default\FileSaverDefaultDocument();
+        
         try {
+
             self::$UserRoleID = '0';
             if (isset($_SESSION['user'], $_SESSION['user']->UserRoleID)) {
                 self::$UserRoleID = (int) $_SESSION['user']->UserRoleID;
