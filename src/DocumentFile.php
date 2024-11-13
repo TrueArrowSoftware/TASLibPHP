@@ -141,6 +141,7 @@ class DocumentFile extends \TAS\Core\UserFile
                 $document[$rowdocument['documentid']]['status'] = $rowdocument['status'];
                 $document[$rowdocument['documentid']]['size'] = $rowdocument['size'];
                 $document[$rowdocument['documentid']]['name'] = $rowdocument['originalname'];
+                $document[$rowdocument['documentid']]['folderid'] = (isset($rowdocument['folderid']) ? (int)$rowdocument['folderid'] : 0);
             }
         }
 
@@ -182,6 +183,7 @@ class DocumentFile extends \TAS\Core\UserFile
                 $document[$rowdocument['documentid']]['status'] = $rowdocument['status'];
                 $document[$rowdocument['documentid']]['size'] = $rowdocument['size'];
                 $document[$rowdocument['documentid']]['name'] = $rowdocument['originalname'];
+                $document[$rowdocument['documentid']]['folderid'] = (isset($rowdocument['folderid']) ? (int)$rowdocument['folderid'] : 0);
             }
         }
 

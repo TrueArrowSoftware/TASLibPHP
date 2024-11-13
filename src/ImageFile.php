@@ -196,15 +196,11 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
                 $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/';
+                $images[$rowImage['imageid']]['folderid'] = (isset($rowImage['folderid']) ? (int)$rowImage['folderid'] : 0);
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    // $fileparts = explode('.', $rowImage['imagefile']);
-                    // $fileext = $fileparts[count($fileparts) - 1];
-                    // unset($fileparts[count($fileparts) - 1]);
-                    // $filenamewithoutExt = implode('.', $fileparts);
                     $this->FindFullPath($rowImage['imageid']);
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    //                    $this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
                     $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
@@ -259,15 +255,11 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
                 $images[$rowImage['imageid']]['baseurl'] = $this->BaseUrl . '/' . $this->FindFolder($rowImage['imageid'], true) . '/';
+                $images[$rowImage['imageid']]['folderid'] = (isset($rowImage['folderid']) ? (int)$rowImage['folderid'] : 0);
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    // $fileparts = explode('.', $rowImage['imagefile']);
-                    // $fileext = $fileparts[count($fileparts) - 1];
-                    // unset($fileparts[count($fileparts) - 1]);
-                    // $filenamewithoutExt = implode('.', $fileparts);
                     $this->FindFullPath($rowImage['imageid']);
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
                     $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
@@ -312,15 +304,10 @@ class ImageFile extends UserFile
                 $images[$rowImage['imageid']]['displayorder'] = $rowImage['displayorder'];
                 $images[$rowImage['imageid']]['settings'] = $rowImage['settings'];
                 $images[$rowImage['imageid']]['thumbnails'] = @json_decode($rowImage['thumbnailfile'], true);
+                $images[$rowImage['imageid']]['folderid'] = (isset($rowImage['folderid']) ? (int)$rowImage['folderid'] : 0);
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
-                    // $fileparts = explode('.', $rowImage['imagefile']);
-                    // $fileext = $fileparts[count($fileparts) - 1];
-                    // $this->FindFullPath($rowImage['imageid']);
-                    // unset($fileparts[count($fileparts) - 1]);
-                    // $filenamewithoutExt = implode('.', $fileparts);
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
                     $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
@@ -454,16 +441,7 @@ class ImageFile extends UserFile
         ImageFile::DeleteThumbnails($imageid);
 
         $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} limit 1");
-
-        // $folder = $this->FindFolder($imageid);
-
-        // $fileparts = explode('.', $rowImage['imagefile']);
-        // $fileext = $fileparts[count($fileparts) - 1];
-        // $this->FindFullPath($rowImage['imageid']);
-        // unset($fileparts[count($fileparts) - 1]);
-        // $filenamewithoutExt = implode('.', $fileparts);
         $this->FileSaver->ProcessFile((int)$rowImage['imageid'], $this);
-        //$this->GenerateThumbnails($this->Path . "/{$folder}/" . $rowImage['imagefile'], $filenamewithoutExt, $fileext);
         $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
     }
 
