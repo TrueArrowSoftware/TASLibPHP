@@ -15,7 +15,18 @@ class Config
 
     public static $UserRoleID = 0;
 
+    /**
+     * File Saving Interface for Images
+     *
+     * @var IFileSaver
+     */
     public static IFileSaver $FileSaverImage;
+    
+    /**
+     * File Saving Interface for Documents
+     *
+     * @var IFileSaver
+     */
     public static IFileSaver $FileSaverDocument;
 
     /**
