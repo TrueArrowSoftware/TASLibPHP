@@ -3,7 +3,7 @@
     "description": "a small framework to handle PHP projects. Look for more details on github at https://github.com/TrueArrowSoftware/TASLibPHP",
     "type": "library",    
     "license": "MIT",
-    "version": "1.1.72",
+    "version": "1.1.73",
     "authors": [
         {
             "name": "Sumit Gupta",

@@ -103,7 +103,7 @@ class Entity
             if (!isset($values[$fieldname])) {
                 if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
                     $isvalid = false;
-                    self::SetError($fieldinfo['label'].' is required');
+                    self::SetError($fieldinfo['label'] . ' is required');
                 }
 
                 continue;
@@ -112,10 +112,10 @@ class Entity
             if (isset($fieldinfo['required']) && true == $fieldinfo['required']) {
                 if (null === $values[$fieldname] || '' == $values[$fieldname]) {
                     $isvalid = false;
-                    self::SetError($fieldinfo['label'].' is required');
+                    self::SetError($fieldinfo['label'] . ' is required');
                 } elseif (is_array($values[$fieldname]) && 0 == count($values[$fieldname])) {
                     $isvalid = false;
-                    self::SetError($fieldinfo['label'].' is required');
+                    self::SetError($fieldinfo['label'] . ' is required');
                 }
             }
             if (!empty($values[$fieldname])) {
@@ -123,7 +123,7 @@ class Entity
                     case 'email':
                         if (!\TAS\Core\DataValidate::ValidateEmail($values[$fieldname])) {
                             $isvalid = false;
-                            self::SetError($fieldinfo['label'].' is not a valid email');
+                            self::SetError($fieldinfo['label'] . ' is not a valid email');
                         }
 
                         break;
@@ -131,7 +131,7 @@ class Entity
                     case 'url':
                         if (!\TAS\Core\DataValidate::ValidateURL($values[$fieldname])) {
                             $isvalid = false;
-                            self::SetError($fieldinfo['label'].' is not a valid url');
+                            self::SetError($fieldinfo['label'] . ' is not a valid url');
                         }
 
                         break;
@@ -139,7 +139,7 @@ class Entity
                     case 'date':
                         if (!\TAS\Core\DataValidate::IsDate($values[$fieldname])) {
                             $isvalid = false;
-                            self::SetError($fieldinfo['label'].' is not a valid date');
+                            self::SetError($fieldinfo['label'] . ' is not a valid date');
                         }
 
                         break;
@@ -230,11 +230,12 @@ class Entity
 
                             break;
 
-                        default: break;
+                        default:
+                            break;
                     }
                 }
             } catch (\Exception $ex) {
-                self::SetError("For {$i},  {$v} generate Exception. ".$ex->getMessage(), 10);
+                self::SetError("For {$i},  {$v} generate Exception. " . $ex->getMessage(), 10);
 
                 return false;
             }
@@ -258,6 +259,68 @@ class Entity
         }
         $this->_isloaded = true;
     }
+
+
+    public function LoadFromDB($rs)
+    {
+        $row = $GLOBALS['db']->Fetch($rs);
+        $reflectionClass = new \ReflectionClass($this);
+
+        foreach ($reflectionClass->getProperties() as $property) {
+            $key = $property->getName();
+            $fieldKey = strtolower($key);
+
+            if (isset($row[$fieldKey])) {
+                $fieldValue = $row[$fieldKey];
+
+                $type = $property->getType();
+                $typeName = $type ? $type->getName() : null;
+                $allowsNull = $type ? $type->allowsNull() : false;
+
+                try {
+                    switch ($typeName) {
+                        case 'string':
+                            $convertedValue = \mb_convert_encoding((string)$fieldValue, 'UTF-8');
+                            break;
+                        case 'int':
+                            $convertedValue = (int)$fieldValue;
+                            break;
+                        case 'float':
+                            $convertedValue = (float)$fieldValue;
+                            break;
+                        case 'bool':
+                            $convertedValue = (bool)$fieldValue;
+                            break;
+                        case 'DateTime':
+                        case '\DateTime':
+                            if (!empty($fieldValue)) {
+                                $convertedValue = new \DateTime($fieldValue);
+                            } elseif ($allowsNull) {
+                                $convertedValue = null;
+                            } else {
+                                throw new \Exception("Null value not allowed for property '{$key}'");
+                            }
+                            break;
+                        default:
+                            $convertedValue = $fieldValue;
+                            break;
+                    }
+
+                    $property->setAccessible(true);
+                    $property->setValue($this, $convertedValue);
+                } catch (\Exception $e) {
+                    error_log("Error processing field '{$key}': " . $e->getMessage());
+                    if ($allowsNull) {
+                        $property->setValue($this, null);
+                    } else {
+                        throw $e;
+                    }
+                }
+            }
+        }
+        $this->_isloaded = true; 
+    }
+
 
     /**
      * Load the object using Array Data. Array key must be lower case member name .
@@ -368,7 +431,7 @@ class Entity
                         if ('' == $v) {
                             $message[] = [
                                 'level' => 10,
-                                'message' => $tableinfo[$k]['label'].' is required field.',
+                                'message' => $tableinfo[$k]['label'] . ' is required field.',
                             ];
                         }
                     }
@@ -376,7 +439,7 @@ class Entity
                         if (('' != $v) && !is_numeric($v)) {
                             $message[] = [
                                 'level' => 10,
-                                'message' => $tableinfo[$k]['label'].' is not a number.',
+                                'message' => $tableinfo[$k]['label'] . ' is not a number.',
                             ];
                         }
                     }
