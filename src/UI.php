@@ -637,8 +637,9 @@ class UI
 
                     break;
 
-                case 'date':
-                    $HTML = \TAS\Core\HTML::InputDate($id, $field['value'] ?? '', $id, $isrequired, Config::$WebUI_DateCSS . ' ' . ($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
+                case 'date':                    
+                    $_val = (is_array($field['value']) ? $field['value']['date'] : ($field['value']??''));
+                    $HTML = \TAS\Core\HTML::InputDate($id, $_val, $id, $isrequired, Config::$WebUI_DateCSS . ' ' . ($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
 
                     break;
 
