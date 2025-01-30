@@ -28,6 +28,9 @@ class InputDate extends Element
     }
 
     public function SetValue($value){
+        if (is_array($value) && isset($value['date'])){
+            $value = $value['date'];
+        }
         $this->Attributes['value'] = \TAS\Core\DataFormat::DBToDateTimeFormat( $value, 'Y-m-d');
     }
 }

@@ -412,10 +412,16 @@ class UI
             if ('edit' == $index) {
                 if (false == $pages['edit']) {
                     unset($defaulticons[$index]);
+                } else {
+                    $defaulticons[$index]['link'] = $pages['edit'];
+                    $defaulticons[$index]['paramname'] = isset($param['editparamname']) ? $param['editparamname'] : 'id';
                 }
             } elseif ('delete' == $index) {
                 if (false == $pages['delete']) {
                     unset($defaulticons[$index]);
+                }else {
+                    $defaulticons[$index]['link'] = $pages['delete'];
+                    $defaulticons[$index]['paramname'] = isset($param['deleteparamname']) ? $param['deleteparamname'] : 'id';
                 }
             }
         }
@@ -637,8 +643,8 @@ class UI
 
                     break;
 
-                case 'date':                    
-                    $_val = (is_array($field['value']) ? $field['value']['date'] : ($field['value']??''));
+                case 'date':
+                    $_val = (is_array($field['value']) ? $field['value']['date'] : ($field['value'] ?? ''));
                     $HTML = \TAS\Core\HTML::InputDate($id, $_val, $id, $isrequired, Config::$WebUI_DateCSS . ' ' . ($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
 
                     break;
