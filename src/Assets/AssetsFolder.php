@@ -62,46 +62,75 @@ class AssetsFolder extends Entity
     }
 
     public function Add($values = [])
-    { 
-        if (!self::Validate($values, $this->_tablename)) { 
+    {
+        if (!self::Validate($values, $this->_tablename)) {
             return false;
         }
 
         if ($this->_db->Insert($this->_tablename, $values)) {
-            $_id = $this->_db->GeneratedID(); 
+            $_id = $this->_db->GeneratedID();
             if ($_id > 0) {
-                
-                $this->_db->Execute("UPDATE assetsfolder AS af
-                LEFT JOIN assetsfolder AS parent ON af.parentfolderid = parent.folderid
-                SET af.breadcrumb = 
-                    CASE 
-                        WHEN parent.breadcrumb IS NOT NULL THEN CONCAT(parent.breadcrumb, af.folderid, ',')
-                        ELSE CONCAT(',0,', af.folderid, ',')
-                    END
-                where af.folderid= ". $_id);
-                
+                $this->UpdateBreadcrumb($_id);
             }
             return $_id;
-        } 
+        }
         return false;
     }
 
     public function Update($values = [])
     {
         if (is_null($values) || !is_array($values) || count($values) <= 0) {
-            $tv = json_decode($this->ToJson(), true);
-            foreach ($tv as $k => $v) {
-                $values[strtolower($k)] = $v;
+            $values = [];
+            $reflectionClass = new \ReflectionClass($this);
+            foreach ($reflectionClass->getProperties() as $property) {
+                if (!$property->isPublic() || $property->isStatic()) {
+                    continue;
+                }
+                $key = $property->getName();
+                $fieldKey = strtolower($key);
+
+                $fieldValue = $this->{$key};
+                $type = $property->getType();
+                $typeName = $type ? $type->getName() : null;
+
+                try {
+                    switch ($typeName) {
+                        case 'DateTime':
+                        case '\DateTime':
+                        case '?DateTime':
+                            $values[$fieldKey] = ($fieldValue)->format("Y-m-d H:i:s");
+                            break;
+
+                        default:
+                            $values[$fieldKey] = $fieldValue;
+                            break;
+                    }
+                } catch (\Exception $ex) {
+                }
             }
         }
+
         if (!self::Validate($values, $this->_tablename) || 0 == $this->FolderID) {
             return false;
         }
         if ($this->_db->Update($this->_tablename, $values, $this->FolderID, 'folderid')) {
+            $this->UpdateBreadcrumb($this->FolderID);
             return true;
         }
 
         return false;
+    }
+
+    private function UpdateBreadcrumb(int $id)
+    {
+        $this->_db->Execute("UPDATE assetsfolder AS af
+        LEFT JOIN assetsfolder AS parent ON af.parentfolderid = parent.folderid
+        SET af.breadcrumb = 
+            CASE 
+                WHEN parent.breadcrumb IS NOT NULL THEN CONCAT(parent.breadcrumb, af.folderid, ',')
+                ELSE CONCAT(',0,', af.folderid, ',')
+            END
+        where af.folderid= " . $id);
     }
 
     public function Delete($id)
