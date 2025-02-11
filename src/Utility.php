@@ -632,13 +632,7 @@ class Utility
      */
     public static function Contain($str, array $arr)
     {
-        foreach ($arr as $a) {
-            if (false !== stripos($str, $a)) {
-                return true;
-            }
-        }
-
-        return false;
+        return ArrayHelper::Contain((string)$str, $arr);
     }
 
     /**

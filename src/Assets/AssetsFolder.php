@@ -57,7 +57,7 @@ class AssetsFolder extends Entity
         }
         $rs = $this->_db->Execute('Select * from ' . $this->_tablename . ' where folderid=' . (int) $id . ' limit 1');
         if (DB::Count($rs) > 0) {
-            $this->LoadFromRecordSet($rs);
+            $this->LoadFromDB($rs);
         }
     }
 

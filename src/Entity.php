@@ -246,7 +246,7 @@ class Entity
 
     /**
      * Generic Load of object from database recordset using column name been same as object properties.
-     *
+     * @deprecated 1.1 Use LoadFromDB instead
      * @param recordset/object $rs
      */
     public function LoadFromRecordSet($rs)
@@ -293,6 +293,7 @@ class Entity
                             break;
                         case 'DateTime':
                         case '\DateTime':
+                        case '?DateTime':                        
                             if (!empty($fieldValue)) {
                                 $convertedValue = new \DateTime($fieldValue);
                             } elseif ($allowsNull) {

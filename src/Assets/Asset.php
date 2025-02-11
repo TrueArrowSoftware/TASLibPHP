@@ -39,7 +39,7 @@ class Asset extends Entity
         $this->_isloaded = false;
         $rs = $GLOBALS['db']->Execute('Select * from ' . $this->_tablename . ' where assetid=' . (int) $id);
         if ($rs && \TAS\Core\DB::Count($rs) > 0) {
-            $this->LoadFromRecordSet($rs);
+            $this->LoadFromDB($rs);
 
             return true;
         }
