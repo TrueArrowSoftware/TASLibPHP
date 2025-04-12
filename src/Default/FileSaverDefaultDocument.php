@@ -44,18 +44,18 @@ class FileSaverDefaultDocument  implements \TAS\Core\Interface\IFileSaver
 
     public function GetContent(int $assetID)
     {
-        //Generate Thumbnail after saving a load copy.
-        $rowImage =  $GLOBALS['db']->ExecuteScalarRow("Select * From " . $GLOBALS['Tables']['images'] . " Where imageid = $assetID");
+         //Generate Thumbnail after saving a load copy.
+         $rowImage =  $GLOBALS['db']->ExecuteScalarRow("Select * From " . $GLOBALS['Tables']['document'] . " Where documentid = $assetID");
 
-        $this->docObject->FindFullPath($assetID);
-        $folder = $this->docObject->FindFolder($assetID);
-
-        $fileparts = explode('.', $rowImage['imagefile']);
-        $fileext = $fileparts[count($fileparts) - 1];
-        unset($fileparts[count($fileparts) - 1]);
-        $filenamewithoutExt = implode('.', $fileparts);
-
-        return file_get_contents($this->docObject->Path . "/{$folder}/" . $rowImage['imagefile']);
+         $this->docObject->FindFullPath($assetID);
+         $folder = $this->docObject->FindFolder($assetID);
+ 
+         $fileparts = explode('.', $rowImage['filepath']);
+         $fileext = $fileparts[count($fileparts) - 1];
+         unset($fileparts[count($fileparts) - 1]);
+         $filenamewithoutExt = implode('.', $fileparts);
+ 
+         return file_get_contents($this->docObject->Path . "/{$folder}/" . $rowImage['filepath']);
     }
 
     public function ProcessFile(int $assetID)

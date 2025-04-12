@@ -1,9 +1,9 @@
 {
     "name": "truearrowsoftware/taslib",
     "description": "a small framework to handle PHP projects. Look for more details on github at https://github.com/TrueArrowSoftware/TASLibPHP",
-    "type": "library",    
+    "type": "library",
     "license": "MIT",
-    "version": "1.1.77",
+    "version": "1.1.78",
     "authors": [
         {
             "name": "Sumit Gupta",
@@ -23,11 +23,11 @@
     "require": {
         "php": ">=8.0",
         "ext-curl": "*",
-        "ext-json" : "*",
-        "phpmailer/phpmailer" : "~6.1",
+        "ext-json": "*",
+        "phpmailer/phpmailer": "~6.1",
         "ext-filter": "*"
     },
     "require-dev": {
-        "phpunit/phpunit": "~8.0"     
+        "phpunit/phpunit": "~8.0"
     }
 }

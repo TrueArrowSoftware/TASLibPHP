@@ -473,8 +473,8 @@ class DB
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
         $wherecondition = [];
-        foreach ($editcondition as $k => $v) {
-            $refs[] = &$v;
+        foreach ($editcondition as $k => $v) {            
+            $refs[] = &$editcondition[$k];
             $datatype .= is_numeric($v) ? 'i' : 's';
             $wherecondition[] = " `{$k}` = ?";
         }
