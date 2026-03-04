@@ -2,6 +2,8 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Async\FiberRunner;
+
 /**
  * Wrapper class for PHP FTP.
  */
@@ -191,5 +193,103 @@ class FTP
         } else {
             return false;
         }
+    }
+
+    /**
+     * Upload multiple files in parallel using Fibers.
+     *
+     * Each file gets its own FTP connection for true concurrent transfer.
+     *
+     * @param array $files Array of ['local' => localPath, 'remote' => remotePath] entries
+     * @param int   $mode  FTP transfer mode (FTP_BINARY or FTP_ASCII)
+     * @return array<int, bool> Results keyed by file index. True = success, false = failure.
+     */
+    public static function PutBatch(array $files, string $server, string $username, string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        if (count($files) === 1 || !FiberRunner::isSupported()) {
+            // Sequential fallback
+            $results = [];
+            $ftp = new FTP($server, $username, $password, $path, $port);
+            $ftp->Connect();
+            foreach ($files as $key => $file) {
+                $results[$key] = $ftp->Put($file['local'], $file['remote'], $mode);
+            }
+            return $results;
+        }
+
+        $tasks = [];
+        foreach ($files as $key => $file) {
+            $tasks[$key] = function () use ($server, $username, $password, $path, $port, $file, $mode) {
+                $ftp = new FTP($server, $username, $password, $path, $port);
+                if ($ftp->Connect()) {
+                    $result = $ftp->Put($file['local'], $file['remote'], $mode);
+                    $ftp->Disconnect();
+                    return $result;
+                }
+                return false;
+            };
+        }
+
+        $outcome = FiberRunner::runSettled($tasks);
+        $results = [];
+        foreach ($files as $key => $file) {
+            $results[$key] = $outcome['results'][$key] ?? false;
+        }
+        return $results;
+    }
+
+    /**
+     * Download multiple files in parallel using Fibers.
+     *
+     * Each file gets its own FTP connection for true concurrent transfer.
+     *
+     * @param array  $files    Array of ['local' => localPath, 'remote' => remotePath] entries
+     * @param string $server   FTP server
+     * @param string $username FTP username
+     * @param string $password FTP password
+     * @param string $path     Remote base path
+     * @param string $port     FTP port
+     * @param int    $mode     FTP transfer mode
+     * @return array<int, bool> Results keyed by file index
+     */
+    public static function GetBatch(array $files, string $server, string $username, string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
+    {
+        if (empty($files)) {
+            return [];
+        }
+
+        if (count($files) === 1 || !FiberRunner::isSupported()) {
+            $results = [];
+            $ftp = new FTP($server, $username, $password, $path, $port);
+            $ftp->Connect();
+            foreach ($files as $key => $file) {
+                $results[$key] = $ftp->Get($file['local'], $file['remote'], $mode);
+            }
+            return $results;
+        }
+
+        $tasks = [];
+        foreach ($files as $key => $file) {
+            $tasks[$key] = function () use ($server, $username, $password, $path, $port, $file, $mode) {
+                $ftp = new FTP($server, $username, $password, $path, $port);
+                if ($ftp->Connect()) {
+                    $result = $ftp->Get($file['local'], $file['remote'], $mode);
+                    $ftp->Disconnect();
+                    return $result;
+                }
+                return false;
+            };
+        }
+
+        $outcome = FiberRunner::runSettled($tasks);
+        $results = [];
+        foreach ($files as $key => $file) {
+            $results[$key] = $outcome['results'][$key] ?? false;
+        }
+        return $results;
     }
 }

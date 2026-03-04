@@ -23,6 +23,7 @@ class DataFormat
 
         $phone = trim($phone);
         $phone = str_replace([' ', '-', '(', ')', '.'], '', $phone);
+        $phone = preg_replace('/[a-zA-Z]/', '', $phone);
         if (strlen($phone) > $length) {
             $phone = substr($phone, 0, $length);
         }
@@ -33,7 +34,7 @@ class DataFormat
     /**
      * Format a give Phone as (123)-123-1234 or different one based on length of number given.
      *
-     * @param string/int $phone
+     * @param string $phone
      * @param int $length Default to 10
      */
     public static function FormatPhone(string $phone, int $length = 10)
@@ -300,7 +301,7 @@ class DataFormat
      *
      * @return string humanized time
      */
-    public static function HumanizeTime(int $timestamp, int $starttime = null)
+    public static function HumanizeTime(int $timestamp, ?int $starttime = null)
     {
         if ($timestamp < 0 || empty($timestamp)) {
             throw new \InvalidArgumentException('Invalid argument, timestamp must be positive integer');
@@ -519,13 +520,13 @@ class DataFormat
     /**
      * RGB to HTML Hex.
      *
-     * @param unknown $red
-     * @param unknown $green
-     * @param unknown $blue
+     * @param int $red
+     * @param int $green
+     * @param int $blue
      *
      * @return string
      */
-    public static function RGBToHex($red, $green, $blue)
+    public static function RGBToHex(int $red, int $green, int $blue)
     {
         return '#'.str_pad(dechex($red), '2', dechex($red)).str_pad(dechex($green), '2', dechex($green)).str_pad(dechex($blue), '2', dechex($blue));
     }
@@ -533,9 +534,9 @@ class DataFormat
     /**
      * Return create slug.
      *
-     * @param unknown $string
+     * @param string $string
      */
-    public static function CreateSlug($string)
+    public static function CreateSlug(string $string)
     {
         if (null == $string || empty($string)) {
             return '';

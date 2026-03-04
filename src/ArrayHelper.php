@@ -45,9 +45,9 @@ class ArrayHelper
         $output = [];
         foreach ($a as $i => $k) {
             if (is_array($k)) {
-                $t = \TAS\Core\Utility::SinglizeArray($k);
+                $t = \TAS\Core\ArrayHelper::SinglizeArray($k);
                 foreach ($t as $i1 => $k) {
-                    $output[$i.'-'.$i1] = $k;
+                    $output[$i . '-' . $i1] = $k;
                 }
             } else {
                 $output[$i] = $k;
@@ -60,11 +60,11 @@ class ArrayHelper
     /**
      * Contain word in array list.
      *
-     * @param unknown $str
+     * @param string $str
      *
      * @return bool
      */
-    public static function Contain($str, array $arr)
+    public static function Contain(string $str, array $arr)
     {
         foreach ($arr as $a) {
             if (false !== stripos($str, $a)) {
@@ -73,5 +73,32 @@ class ArrayHelper
         }
 
         return false;
+    }
+
+
+    public static function ObjectToJsonLowercase($object)
+    {
+        // Convert object to array
+        $array = json_decode(json_encode($object), true);
+
+        // Change all keys to lowercase recursively
+        $array = self::ChangeArrayKeyCase($array);
+
+        // Convert back to JSON
+        return json_encode($array);
+    }
+
+
+    public static function ChangeArrayKeyCase($array, $case = CASE_LOWER)
+    {
+        $result = [];
+        foreach ($array as $key => $value) {
+            // Convert key to the specified case
+            $newKey = ($case == CASE_LOWER) ? strtolower($key) : strtoupper($key);
+
+            // Recursively apply to nested arrays
+            $result[$newKey] = is_array($value) ? self::ChangeArrayKeyCase($value, $case) : $value;
+        }
+        return $result;
     }
 }

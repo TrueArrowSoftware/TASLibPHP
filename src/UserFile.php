@@ -84,10 +84,7 @@ class UserFile
      * Find Path for new record to come.
      */
     public function FindPathForNew($Table = '')
-    {
-        // $count = $GLOBALS['db']->FetchArray($GLOBALS['db']->Execute("SHOW TABLE STATUS LIKE '".$GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]."'"));
-        // $count = $count['Auto_increment'];
-
+    {        
         $NextID = \TAS\Core\DB::GetAutoIncrementID($GLOBALS['Tables'][($Table == '' ? 'images' : $Table)]);
         $count = floor((int) $NextID / self::$MAX_FILE_PER_FOLDER);
 

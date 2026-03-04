@@ -2,6 +2,8 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Async\AsyncHttp;
+
 /**
  * Use to create Direction connection to third party server, it use CURL or fsockopen.
  *
@@ -58,5 +60,27 @@ class DirectConnection extends \TAS\Core\Entity
         curl_close($ch);
 
         return $res;
+    }
+
+    /**
+     * Send multiple POST requests concurrently using curl_multi via Fibers.
+     *
+     * @param array<string, array{url: string, data: string|array}> $requests Associative array of label => request config
+     * @return array<string, string|false> Responses keyed by same labels
+     */
+    public static function SendPOSTBatch(array $requests): array
+    {
+        return AsyncHttp::postBatch($requests);
+    }
+
+    /**
+     * Send multiple GET requests concurrently using curl_multi via Fibers.
+     *
+     * @param array<string, string> $urls Associative array of label => URL
+     * @return array<string, string|false> Responses keyed by same labels
+     */
+    public static function SendGETBatch(array $urls): array
+    {
+        return AsyncHttp::getBatch($urls);
     }
 }

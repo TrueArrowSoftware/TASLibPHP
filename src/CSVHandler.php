@@ -2,6 +2,10 @@
 
 namespace TAS\Core;
 
+use TAS\Core\Async\AsyncQuery;
+use TAS\Core\Async\DBPool;
+use TAS\Core\Async\FiberRunner;
+
 class CSV
 {
     public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
@@ -119,6 +123,121 @@ class CSV
             $dataline = trim($dataline, ',')."\n";
             fwrite($fh, $dataline);
         }
+        fclose($fh);
+
+        return true;
+    }
+
+    /**
+     * Export CSV using parallel chunked DB queries via Fibers.
+     *
+     * Splits the query into chunks with LIMIT/OFFSET, runs them in parallel,
+     * and writes results to a single file. Falls back to sequential ExportCSV
+     * if no DBPool is available.
+     *
+     * @param string $SQLQuery    Base SQL query (without LIMIT)
+     * @param string $filename    Physical path of csv file
+     * @param array  $fields      List of fields to put in csv
+     * @param int    $chunkSize   Rows per chunk (default 5000)
+     * @return bool
+     */
+    public static function ExportCSVAsync(string $SQLQuery, string $filename = '', array $fields = [], int $chunkSize = 5000): bool
+    {
+        if (!isset($GLOBALS['dbpool']) || !($GLOBALS['dbpool'] instanceof DBPool)) {
+            return self::ExportCSV($SQLQuery, $filename, $fields);
+        }
+
+        $pool = $GLOBALS['dbpool'];
+
+        // First get total count to determine chunks
+        $countQuery = 'SELECT COUNT(*) FROM (' . $SQLQuery . ') _csv_count';
+        $db = $pool->acquire();
+        $totalRows = (int) $db->ExecuteScalar($countQuery);
+        $pool->release($db);
+
+        if ($totalRows < 1) {
+            return false;
+        }
+
+        // If small enough, just do it sequentially
+        if ($totalRows <= $chunkSize) {
+            return self::ExportCSV($SQLQuery, $filename, $fields);
+        }
+
+        $fh = fopen($filename ?: 'export.csv', 'w+');
+
+        // Get fields from first chunk if not provided
+        if (!is_array($fields) || 0 === count($fields)) {
+            $dbTemp = $pool->acquire();
+            $rsTemp = $dbTemp->Execute($SQLQuery . ' LIMIT 1');
+            $fields = \TAS\Core\DB::Columns($rsTemp);
+            $pool->release($dbTemp);
+        }
+
+        // Write header
+        $csvHeader = '';
+        $fieldindex = [];
+        foreach ($fields as $index => $field) {
+            if (is_object($field)) {
+                $fieldname = $field->name;
+            } elseif (is_array($field)) {
+                $fieldname = $field['name'];
+            } else {
+                $fieldname = $field;
+            }
+            $fieldindex[] = $index;
+            $csvHeader .= ',"' . $fieldname . '" ';
+        }
+        $csvHeader = trim($csvHeader, ',') . "\n";
+        fwrite($fh, $csvHeader);
+
+        // Build chunked queries
+        $chunks = ceil($totalRows / $chunkSize);
+        $maxParallel = min($chunks, $pool->getMaxConnections());
+
+        // Process chunks in batches
+        for ($batch = 0; $batch < $chunks; $batch += $maxParallel) {
+            $queries = [];
+            $batchEnd = min($batch + $maxParallel, $chunks);
+
+            for ($i = $batch; $i < $batchEnd; $i++) {
+                $offset = $i * $chunkSize;
+                $queries['chunk_' . $i] = $SQLQuery . " LIMIT {$chunkSize} OFFSET {$offset}";
+            }
+
+            $chunkResults = AsyncQuery::runParallel($queries, $pool);
+
+            // Write chunks in order
+            for ($i = $batch; $i < $batchEnd; $i++) {
+                $rs = $chunkResults['chunk_' . $i] ?? null;
+                if ($rs && $rs instanceof \mysqli_result) {
+                    while ($row = $rs->fetch_array()) {
+                        $dataline = '';
+                        foreach ($fieldindex as $key => $val) {
+                            if (isset($fields[$val]) && is_array($fields[$val])) {
+                                switch ($fields[$val]['type'] ?? '') {
+                                    case 'globalarray':
+                                        if (null != $row[$val] && isset($fields[$val]['arrayname'])) {
+                                            $dataline .= ',"' . ($GLOBALS[$fields[$val]['arrayname']][$row[$val]] ?? $row[$val]) . '" ';
+                                        } else {
+                                            $dataline .= ',"' . $row[$val] . '" ';
+                                        }
+                                        break;
+                                    default:
+                                        $dataline .= ',"' . $row[$val] . '" ';
+                                }
+                            } else {
+                                $dataline .= ',"' . $row[$val] . '" ';
+                            }
+                        }
+                        $dataline = trim($dataline, ',') . "\n";
+                        fwrite($fh, $dataline);
+                    }
+                    $rs->free();
+                }
+            }
+        }
+
         fclose($fh);
 
         return true;

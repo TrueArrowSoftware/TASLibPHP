@@ -50,8 +50,7 @@ class Log
         if (is_object($msg) || is_array($msg)) {
             fwrite($fh, "\r\n[".date('m-d-Y H:i:s').']: '.print_r($msg, true));
         } else {
-            fwrite($fh, "\r\n[".date('m-d-Y H:i:s').']: '.$msg);
-            echo "\r\n[".date('m-d-Y H:i:s').']: '.$msg;
+            fwrite($fh, "\r\n[".date('m-d-Y H:i:s').']: '.$msg); 
         }
         fclose($fh);
     }
