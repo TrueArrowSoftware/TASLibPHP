@@ -14,21 +14,39 @@ class Permission
         $this->permissions = [];
     }
 
+    /**
+     * @return void
+     */
     public function Reload()
     {
         $this->init();
     }
 
+    /**
+     * @param string $module
+     * @param string $operation
+     * @param int|string $userlevel
+     * @return bool|mixed
+     */
     public function CheckOperationPermission($module, $operation, $userlevel)
     {
         return $this->permissions[strtolower($userlevel)][strtolower($module)][strtolower($operation)] ?? false;
     }
 
+    /**
+     * @param string $module
+     * @param int|string $userlevel
+     * @return bool|mixed
+     */
     public function CheckModulePermission($module, $userlevel)
     {
         return $this->CheckOperationPermission($module, 'access', $userlevel);
     }
 
+    /**
+     * @return void
+     * @throws \Exception
+     */
     private function init()
     {
         $rsUserRole = $GLOBALS['db']->Execute('Select * from '.$GLOBALS['Tables']['userrole'].' order by rolename');

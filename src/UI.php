@@ -4,6 +4,12 @@ namespace TAS\Core;
 
 class UI
 {
+    /**
+     * @param array $imageObj
+     * @param int $width
+     * @param int $height
+     * @return string
+     */
     public static function ImageURLFinder($imageObj, $width, $height)
     {
         if (null == $imageObj) {
@@ -16,6 +22,10 @@ class UI
         return ImageFile::GetResizedImageURL($imageObj['physicalpath'], $imageObj['url'], $width, $height, $GLOBALS['AppConfig']['NoImage_Listing']);
     }
 
+    /**
+     * @param int|string $EmailID
+     * @return array|bool
+     */
     public static function GetEmailContent($EmailID)
     {
         $rsEmail = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['emailcms'] . ' where id=' . (int) $EmailID);
@@ -31,8 +41,9 @@ class UI
     /**
      * Convert a give array in HTML Option Tags.
      *
-     * @param mixed $sourceArray
+     * @param array|mixed $sourceArray
      * @param mixed $selectedvalue
+     * @return string
      */
     public static function ArrayToDropDown($sourceArray, $selectedvalue)
     {
@@ -56,8 +67,11 @@ class UI
     /**
      * MultiArray To Dropdown.
      *
-     * @param [type] $sourceArray
-     * @param [type] $selectValue
+     * @param array|mixed $sourceArray
+     * @param string $val
+     * @param string $label
+     * @param mixed $selectValue
+     * @return string
      */
     public static function MultiArrayToDropDown($sourceArray, string $val, string $label, $selectValue)
     {
@@ -86,10 +100,11 @@ class UI
      *
      * @param mixed $rs
      * @param mixed $selectedvalue
-     * @param mixed $indexCol
-     * @param mixed $labelCol
-     * @param mixed $showSelect
-     * @param mixed $SelectText
+     * @param string $indexCol
+     * @param string $labelCol
+     * @param bool $showSelect
+     * @param string $SelectText
+     * @return string
      */
     public static function RecordSetToDropDown($rs, $selectedvalue, $indexCol, $labelCol, $showSelect = true, $SelectText = 'Select')
     {
@@ -135,7 +150,8 @@ class UI
      * Create a Option List for DataList HTML tag $labelCol can use space separated column name to combine them.
      *
      * @param mixed $rs
-     * @param mixed $labelCol
+     * @param string $labelCol
+     * @return string
      */
     public static function RecordSetToDataListOptions($rs, $labelCol)
     {
@@ -166,12 +182,13 @@ class UI
     /**
      * Create numeric dropdown for given range and steps.
      *
-     * @param mixed $start
-     * @param mixed $end
-     * @param mixed $step
+     * @param int|float $start
+     * @param int|float $end
+     * @param int|float $step
      * @param mixed $selectedvalue
-     * @param mixed $showSelect
-     * @param mixed $showSelectName
+     * @param bool $showSelect
+     * @param string $showSelectName
+     * @return string
      */
     public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue, $showSelect = true, $showSelectName = 'Select')
     {
@@ -193,6 +210,8 @@ class UI
 
     /**
      * Dropdown option for Months.
+     * @param string $selectedValue
+     * @return string
      */
     public static function MonthDropDown(string $selectedValue = '')
     {
@@ -217,12 +236,13 @@ class UI
     /**
      * Create HTML Checkbox using array.
      *
-     * @param mixed $array
+     * @param array $array
      * @param mixed $selectedvalues
-     * @param mixed $name
-     * @param mixed $type
-     * @param mixed $isrequired
-     * @param mixed $labelformat
+     * @param string $name
+     * @param string $type
+     * @param bool $isrequired
+     * @param string $labelformat
+     * @return string
      */
     public static function ArrayToCheckRadioList($array, $selectedvalues, $name = 'list', $type = 'checkbox', $isrequired = false, $labelformat = '{text}')
     {
@@ -258,13 +278,14 @@ class UI
     /**
      * Checklist for RecordSet.
      *
-     * @param [type] $rs
-     * @param [type] $selectedvalues
-     * @param [type] $indexCol
-     * @param [type] $labelformat
+     * @param mixed $rs
+     * @param mixed $selectedvalues
+     * @param string $indexCol
+     * @param string $labelformat
      * @param string $name
      * @param bool   $isrequired
      * @param string $type
+     * @return string
      */
     public static function RecordSetToCheckRadioList($rs, $selectedvalues, $indexCol, $labelformat, $name = 'list', $isrequired = false, $type = 'checkbox')
     {
@@ -299,10 +320,11 @@ class UI
      *
      * To create a grid based on permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
-     * @param [type] $SQLQuery
-     * @param [type] $pages
-     * @param [type] $tagname
+     * @param array $SQLQuery
+     * @param array $pages
+     * @param string $tagname
      * @param array $param
+     * @return string
      */
     public static function HTMLGridFromRecordSet($SQLQuery, $pages, $tagname, $param = [])
     {
@@ -367,10 +389,11 @@ class UI
      *
      * To create a grid without permission, Please use GRID class instead. It will be removed from TASLib 2.0
      *
-     * @param [type] $SQLQuery
-     * @param [type] $pages
-     * @param [type] $tagname
+     * @param array $SQLQuery
+     * @param array $pages
+     * @param string|mixed $tagname
      * @param array $param
+     * @return string
      */
     public static function HTMLGridForPublic($SQLQuery, $pages, $tagname, $param = [])
     {
@@ -437,8 +460,9 @@ class UI
      *
      * @todo 1. Add Grouping Option, 2. Allow Two field to same label.
      *
-     * @param mixed $table
-     * @param mixed $param
+     * @param string $table
+     * @param array $param
+     * @return string
      */
     public static function FormFromTable($table, $param = [])
     {
@@ -499,7 +523,7 @@ class UI
 
                     switch ($param['Fields'][$field['Field']]['selecttype']) {
                         case 'query': // Run from DB;
-                            $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), $param['Fields'][$field['Field']]['value'] ?? '', $param['Fields'][$field['Field']]['dbID'] ?? '', $param['Fields'][$field['Field']]['dbLabelField'] ?? '', true, 'Select', '');
+                            $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($param['Fields'][$field['Field']]['query']), $param['Fields'][$field['Field']]['value'] ?? '', $param['Fields'][$field['Field']]['dbID'] ?? '', $param['Fields'][$field['Field']]['dbLabelField'] ?? '', true, 'Select');
 
                             break;
 
@@ -596,7 +620,8 @@ class UI
      *
      * @todo 1. Add Grouping Option,
      *
-     * @param mixed $param
+     * @param array $param
+     * @return string
      */
     public static function GetFormHTML($param = [])
     {
@@ -684,12 +709,12 @@ class UI
                     try {
                         switch ($field['selecttype']) {
                             case 'query': // Run from DB;
-                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select', '');
+                                $options = self::RecordSetToDropDown($GLOBALS['db']->Execute($field['query']), $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select');
 
                                 break;
 
                             case 'recordset':
-                                $options = self::RecordSetToDropDown($field['query'], $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select', '');
+                                $options = self::RecordSetToDropDown($field['query'], $field['value'] ?? '', $field['dbID'] ?? '', $field['dbLabelField'] ?? '', $field['showSelect'] ?? 'true', 'Select');
 
                                 break;
 
@@ -1101,7 +1126,8 @@ class UI
     /**
      * Display the UI message on screen for form.
      *
-     * @param unknown_type $messages
+     * @param mixed $messages
+     * @return string
      */
     public static function UIMessageDisplay($messages)
     {

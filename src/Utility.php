@@ -19,12 +19,13 @@ class Utility
      *
      * with CreateReportPDF function
      *
-     * @param mixed $SQLQuery
-     * @param mixed $filename
-     * @param mixed $reporttitle
-     * @param mixed $param
-     * @param mixed $tagname
-     * @param mixed $template
+     * @param array $SQLQuery
+     * @param string $filename
+     * @param string $reporttitle
+     * @param array $param
+     * @param string $tagname
+     * @param string $template
+     * @return bool
      */
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
@@ -101,6 +102,15 @@ class Utility
         return false;
     }
 
+    /**
+     * @param array $SQLQuery
+     * @param string $filename
+     * @param string $reporttitle
+     * @param array $param
+     * @param string $tagname
+     * @param string $template
+     * @return bool
+     */
     public static function CreateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname . '_orderby'] ?? $SQLQuery['defaultorderby']));
@@ -177,23 +187,15 @@ class Utility
     }
 
     /**
-     * Generate CSV is compatible with HTMLGrid function's SQLQuery method.
-     * If you need more direct method use ExportCSV. Also it force download.
-     *
-     * @param unknown $SQLQuery
-     *                          HTMLGrid function comptaible SQLQuery to append sorting
-     * @param unknown $filename
-     *                          filename ex export.csv
-     * @param unknown $param
-     * @param mixed   $tagname
-     *
-     * @return bool
-     */
-
-    /**
      * @deprecated
      *
      * with CreateCSV function
+     *
+     * @param array $SQLQuery
+     * @param string $filename
+     * @param string $tagname
+     * @param array $param
+     * @return bool
      */
     public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
@@ -241,12 +243,12 @@ class Utility
      * Create CSV is compatible with HTMLGrid function's SQLQuery method.
      * If you need more direct method use ExportCSV. Also it force download.
      *
-     * @param unknown $SQLQuery
+     * @param array $SQLQuery
      *                          HTMLGrid function comptaible SQLQuery to append sorting
-     * @param unknown $filename
+     * @param string $filename
      *                          filename ex export.csv
-     * @param unknown $param
-     * @param mixed   $tagname
+     * @param string $tagname
+     * @param array  $param
      *
      * @return bool
      */
@@ -300,6 +302,7 @@ class Utility
      *                         Physical path of csv file
      * @param array  $fields
      *                         list of fields to put in csv
+     * @return bool
      */
     public static function ExportCSV($SQLQuery, $filename = '', $fields = [])
     {
@@ -362,6 +365,7 @@ class Utility
      * Auto Load implementation to enable Loading of classes from /include/classes folder.
      *
      * @param string $classname
+     * @return void
      */
     public static function AutoLoad($classname)
     {
@@ -403,13 +407,14 @@ class Utility
     /**
      * New Paging function. Replacement of incFunctions.php.
      *
-     * @param unknown_type $tablename
-     * @param unknown_type $pagename
-     * @param unknown_type $start
-     * @param unknown_type $condition
-     * @param unknown_type $querystring
-     * @param mixed        $isMultiTable
-     * @param mixed        $param
+     * @param string $tablename
+     * @param string $pagename
+     * @param int $start
+     * @param string $condition
+     * @param string $querystring
+     * @param bool $isMultiTable
+     * @param array $param
+     * @return string
      */
     public static function Paging(string $tablename, string $pagename, int $start = 0, $condition = '', $querystring = '', $isMultiTable = false, $param = [])
     {
@@ -502,6 +507,7 @@ class Utility
      *                          regular expression pattern input for preg_match function call
      * @param string $directory
      *                          Directory to look for, make sure you have read permission to directory
+     * @return array
      */
     public static function ListFiles($filter, $directory)
     {
@@ -528,9 +534,10 @@ class Utility
      *
      * @deprecated 2.0 Use ArrayHelper::Search2DArray Instead.
      *
-     * @param unknown_type $needle
-     * @param unknown_type $column
-     * @param unknown_type $array
+     * @param mixed $needle
+     * @param string|int $column
+     * @param array $array
+     * @return int|string
      */
     public static function Search2DArray($needle, $column, $array)
     {
@@ -548,7 +555,8 @@ class Utility
      *
      * @deprecated 2.0 Use ArrayHelper::SinglizeArray Instead.
      *
-     * @param [type] $a
+     * @param array $a
+     * @return array
      */
     public static function SinglizeArray($a)
     {
@@ -573,8 +581,10 @@ class Utility
      *
      * @deprecated 2.0 Use ArrayHelper::SortArrayInOrder instead.
      *
-     * @param [type] $order
-     * @param string $key
+     * @param array $array
+     * @param array $order
+     * @param string|null $key
+     * @return void
      */
     public static function SortArrayInOrder(array &$array, array $order, ?string $key = null)
     {
@@ -627,8 +637,8 @@ class Utility
      *
      * @deprecated 2.0 Use ArrayHelper::Contain instead.
      *
-     * @param unknown $str
-     *
+     * @param string $str
+     * @param array $arr
      * @return bool
      */
     public static function Contain($str, array $arr)
@@ -639,12 +649,12 @@ class Utility
     /**
      * Send email from EMAIL CMS.
      *
-     * @param unknown    $EmailID
-     * @param unknown    $keywords
-     * @param unknown    $to
-     * @param null|mixed $sender
+     * @param int        $EmailID
+     * @param array      $keywords
+     * @param string|array $to
+     * @param null|string $sender
      * @param null|mixed $attachment
-     *
+     * @param \TAS\Core\Options\EmailOptions|null $options
      * @return bool
      */
     public static function DoEmail(int $EmailID, array $keywords, $to, $sender = null, $attachment = null, ?\TAS\Core\Options\EmailOptions $options = null)
@@ -727,14 +737,15 @@ class Utility
     /**
      * Send Email using PHPMailer with or without SMTP.
      *
-     * @param [type] $to
-     * @param [type] $subject
-     * @param [type] $html_body
-     * @param [type] $text_body
-     * @param [type] $fromemail
+     * @param string|array $to
+     * @param string $subject
+     * @param string $html_body
+     * @param string $text_body
+     * @param string $fromemail
      * @param string $fromName
      * @param string $returnpath
-     * @param [type] $attachment
+     * @param mixed $attachment
+     * @return bool
      */
     public static function SendHTMLMail($to, $subject, $html_body, $text_body, $fromemail, $fromName = '', $returnpath = '', $attachment = null)
     {

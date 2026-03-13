@@ -30,7 +30,7 @@ class UserFile
     /**
      * Returns the new File Name for given Extension (ex .png, .jpg).
      *
-     * @param unknown $ext
+     * @param string $ext
      *
      * @return string
      */
@@ -39,6 +39,10 @@ class UserFile
         return $this->FileType.uniqid().$ext;
     }
 
+    /**
+     * @param string $error
+     * @return void
+     */
     public function SetError($error)
     {
         if (trim($error) != '') {
@@ -47,22 +51,35 @@ class UserFile
         $this->Error = $error;
     }
 
+    /**
+     * @return void
+     */
     public function CleanError()
     {
         $this->Errors = [];
         $this->Error = '';
     }
 
+    /**
+     * @return string
+     */
     public function LastError()
     {
         return $this->Error;
     }
 
+    /**
+     * @return array
+     */
     public function LastErrors()
     {
         return $this->Errors;
     }
 
+    /**
+     * @param mixed $file
+     * @return bool
+     */
     protected function Validate($file = '')
     {
         return true;
@@ -70,6 +87,7 @@ class UserFile
 
     /**
      * @deprecated deprecated since version 1.0.24
+     * @return mixed
      */
     public function Connect()
     {
@@ -82,6 +100,8 @@ class UserFile
 
     /**
      * Find Path for new record to come.
+     * @param string $Table
+     * @return bool
      */
     public function FindPathForNew($Table = '')
     {        
@@ -113,6 +133,9 @@ class UserFile
 
     /**
      * Calculate the folder for assets folder.
+     * @param int|string $fileid
+     * @param bool $forURL
+     * @return string
      */
     public function FindFolder($fileid, $forURL = false)
     {
@@ -124,6 +147,10 @@ class UserFile
         }
     }
 
+    /**
+     * @param int|string $fileid
+     * @return void
+     */
     public function FindFullPath($fileid)
     {
         $this->FullPath = realpath($this->Path).DIRECTORY_SEPARATOR.$this->FindFolder($fileid, false);

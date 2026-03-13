@@ -20,11 +20,11 @@ class FTP
     /**
      * Construct.
      *
-     * @param unknown_type $server
-     * @param unknown_type $username
-     * @param unknown_type $password
-     * @param unknown_type $path
-     * @param unknown_type $port
+     * @param string $server
+     * @param string $username
+     * @param string $password
+     * @param string $path
+     * @param string|int $port
      */
     public function __construct($server, $username, $password, $path = '/', $port = '21')
     {
@@ -46,11 +46,11 @@ class FTP
     /**
      * FTP Class' own Error handler to Enable Capturing FTP warning.
      *
-     * @param unknown_type $errno
-     * @param unknown_type $errstr
-     * @param unknown_type $errfile
-     * @param unknown_type $errline
-     * @param unknown_type $errcontext
+     * @param int $errno
+     * @param string $errstr
+     * @param string $errfile
+     * @param int $errline
+     * @param array $errcontext
      */
     public static function FTPErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
     {
@@ -65,6 +65,7 @@ class FTP
 
     /**
      * Connection.
+     * @return bool
      */
     public function Connect()
     {
@@ -88,6 +89,9 @@ class FTP
         //	restore_error_handler();
     }
 
+    /**
+     * @return void
+     */
     public function Disconnect()
     {
         $this->isConnected = false;
@@ -96,6 +100,12 @@ class FTP
         }
     }
 
+    /**
+     * @param string $localpath
+     * @param string $remotepath
+     * @param int $mode
+     * @return bool
+     */
     public function Put($localpath, $remotepath, $mode = FTP_BINARY)
     {
         if (!$this->isConnected) {
@@ -116,6 +126,10 @@ class FTP
         }
     }
 
+    /**
+     * @param string $remotepath
+     * @return bool
+     */
     public function Delete($remotepath)
     {
         if (!$this->isConnected) {
@@ -134,6 +148,12 @@ class FTP
         }
     }
 
+    /**
+     * @param string $localpath
+     * @param string $remotepath
+     * @param int $mode
+     * @return bool
+     */
     public function Get($localpath, $remotepath, $mode = FTP_BINARY)
     {
         if (!$this->isConnected) {
@@ -154,6 +174,11 @@ class FTP
         }
     }
 
+    /**
+     * @param string $remotedirectory
+     * @param bool $tryPassive
+     * @return mixed
+     */
     public function GetRawList($remotedirectory = '', $tryPassive = true)
     {
         if (!$this->isConnected) {
@@ -177,6 +202,11 @@ class FTP
         }
     }
 
+    /**
+     * @param string $remotedirectory
+     * @param bool $trypassive
+     * @return array|bool
+     */
     public function GetList($remotedirectory = '', $trypassive = true)
     {
         $list = $this->GetRawList($remotedirectory, $trypassive);

@@ -11,6 +11,12 @@ use TAS\Core\Async\AsyncHttp;
  */
 class DirectConnection extends \TAS\Core\Entity
 {
+    /**
+     * @param string $url
+     * @param string|array $request
+     * @param string $headerextra
+     * @return bool|string
+     */
     public static function SendPOST($url, $request, $headerextra = '')
     {
         if (function_exists('curl_init')) {
@@ -44,6 +50,11 @@ class DirectConnection extends \TAS\Core\Entity
         return $res;
     }
 
+    /**
+     * @param string $url
+     * @param string $headerextra
+     * @return bool|string
+     */
     public static function SendGET($url, $headerextra = '')
     {
         $ch = curl_init($url); // Starts the curl handler

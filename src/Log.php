@@ -9,6 +9,11 @@ namespace TAS\Core;
  */
 class Log
 {
+    /**
+     * @param string|array $message
+     * @param string $level
+     * @return true|void
+     */
     public static function AddEvent($message, $level)
     {
         $obj = new \TAS\Core\DataFormat();
@@ -35,6 +40,10 @@ class Log
         }
     }
 
+    /**
+     * @param mixed $msg
+     * @return void
+     */
     public static function cLog($msg)
     {
         $logfile = $GLOBALS['AppConfig']['PhysicalPath'].'/cache/log'.date('Ymd').'.log';

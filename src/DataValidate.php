@@ -8,8 +8,9 @@ class DataValidate
     /**
      * @description:  Valid if the phone number is $length digit valid number or not. Empty string will be treated as false.
      *
-     * @param mixed $phone
-     * @param mixed $length
+     * @param string $phone
+     * @param int $length
+     * @return bool
      */
     public static function ValidatePhoneFormat($phone, $length = 10)
     {
@@ -31,6 +32,10 @@ class DataValidate
         return true;
     }
 
+    /**
+     * @param string $email
+     * @return bool
+     */
     public static function ValidateEmail($email)
     {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -40,7 +45,11 @@ class DataValidate
         return true;
     }
 
-    // @Note: True for  http://example.com OR http://www.example.com OR https://example.com OR https://www.example.com OR https://example
+    /**
+     * @param string $url
+     * @return bool
+     * @Note: True for  http://example.com OR http://www.example.com OR https://example.com OR https://www.example.com OR https://example
+     */
     public static function ValidateURL($url)
     {
         if (null == $url) {
@@ -53,7 +62,11 @@ class DataValidate
         return true;
     }
 
-    // Validate an IP Address
+    /**
+     * Validate an IP Address
+     * @param string $ip
+     * @return bool
+     */
     public static function ValidateIP($ip)
     {
         if (null == $ip) {
@@ -68,6 +81,8 @@ class DataValidate
 
     /**
      * Verifies if provided input is validate date or not.
+     * @param string $date
+     * @return bool
      */
     public static function IsDate(string $date)
     {
@@ -86,6 +101,8 @@ class DataValidate
 
     /**
      * Checks if a string contains a number/digit in it.
+     * @param string $str
+     * @return bool
      */
     public static function ContainDigits(string $str)
     {
@@ -100,6 +117,8 @@ class DataValidate
 
     /**
      * Validate a password against a set of rules. Or throw an exception.
+     * @param string $password
+     * @return bool
      */
     public static function ValidatePassword(string $password): bool
     {

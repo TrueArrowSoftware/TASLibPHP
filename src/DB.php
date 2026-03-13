@@ -93,6 +93,12 @@ class DB
     private $_isconnected = false;
 
     // Constuctor function
+    /**
+     * @param string $server
+     * @param string $user
+     * @param string $password
+     * @param string $DBname
+     */
     public function __construct($server = 'localhost', $user = 'root', $password = '', $DBname = 'demo')
     {
         $this->Server = $server;
@@ -155,6 +161,10 @@ class DB
         unset($this->lastError);
     }
 
+    /**
+     * @param string $str
+     * @return string
+     */
     public function Escape($str)
     {
         return $this->MySqlObject->real_escape_string($str);
@@ -258,6 +268,7 @@ class DB
      * Execute Query and return first row, first column if success else it returns false.
      *
      * @param string $query
+     * @return mixed
      */
     public function ExecuteScalar($query)
     {
@@ -281,7 +292,8 @@ class DB
     /**
      * Returns first row from given query.
      *
-     * @param [type] $query
+     * @param string $query
+     * @return array|bool
      */
     public function ExecuteScalarRow($query)
     {
@@ -315,7 +327,8 @@ class DB
      *
      *  Return number of rows in give recordset. Use Static function DB::Count instead for shorter syntax.
      *
-     * @param [type] $result
+     * @param \mysqli_result|bool $result
+     * @return int
      */
     public function RowCount($result)
     {
@@ -329,6 +342,7 @@ class DB
      * Static Function as replacement of RowCount.
      *
      * @param mixed $result
+     * @return int
      */
     public static function Count($result)
     {
@@ -348,7 +362,7 @@ class DB
     /**
      * Reset the Recordset to 0th position for reiteration.
      *
-     * @param [type] $rs
+     * @param \mysqli_result $rs
      */
     public static function Reset(\mysqli_result $rs)
     {
@@ -417,11 +431,12 @@ class DB
     /**
      * function to insert record by taking array in following form
      * $value[index] = value : where $value is array name to parse,
-     * index = db column name, and value is vlaue to insert.
+     * index = db column name, and value is value to insert.
      *
-     * @param mixed $tablename
-     * @param mixed $values
-     * @param mixed $datatype
+     * @param string $tablename
+     * @param array $values
+     * @param string $datatype
+     * @return bool
      */
     public function Insert($tablename, $values, $datatype = '')
     {
@@ -479,13 +494,14 @@ class DB
     /**
      * function to update record by taking array in following form
      * $value[index] = value : where $value is array name to parse,
-     * index = db column name, and value is vlaue to insert.
+     * index = db column name, and value is value to update.
      *
-     * @param mixed $tablename
-     * @param mixed $values
+     * @param string $tablename
+     * @param array $values
      * @param mixed $editid
-     * @param mixed $editfield
-     * @param mixed $datatype
+     * @param string $editfield
+     * @param string $datatype
+     * @return bool
      */
     public function Update($tablename, $values, $editid, $editfield, $datatype = '')
     {
@@ -562,6 +578,12 @@ class DB
         return false;
     }
 
+    /**
+     * @param string $table
+     * @param array $values
+     * @param string $datatype
+     * @return bool
+     */
     public function InsertUpdate($table, $values, $datatype = '')
     {
         if ('' != $table) {
@@ -614,9 +636,14 @@ class DB
         return false;
     }
 
-    // function to REPLACE record by taking array in following form
-    // $value[index] = value : where $value is array name to parse,
-    // index = db column name, and value is vlaue to REPLACE
+    /**
+     * function to REPLACE record by taking array in following form
+     * $value[index] = value : where $value is array name to parse,
+     * index = db column name, and value is value to REPLACE
+     * @param string $tablename
+     * @param array $values
+     * @return bool
+     */
     public function ReplaceArrayById($tablename, $values)
     {
         if ('' != $tablename) {
@@ -655,12 +682,10 @@ class DB
      * Insert in Bulk Query.
      * This do not validate data. It expect you to send all column in same order.
      *
-     * @param string $tablename
-     *                            name of the table to insert into
-     * @param array  $values
-     *                            Array of data in array( array("columnname1"=> "data", "column2"=>"Data" ) )
-     * @param string $failonError
-     *                            set to true if you want to break Query if error encount or continue ignoring error row. default is false, and not in use as of now.
+     * @param string $tablename name of the table to insert into
+     * @param array  $values Array of data in array( array("columnname1"=> "data", "column2"=>"Data" ) )
+     * @param bool   $failonError set to true if you want to break Query if error encount or continue ignoring error row. default is false, and not in use as of now.
+     * @return bool
      */
     public function InsertBulk($tablename, $values, $failonError = false)
     {
@@ -693,8 +718,9 @@ class DB
     /**
      * Insert multiple array.
      *
-     * @param mixed $tablename
-     * @param mixed $values
+     * @param string $tablename
+     * @param array $values
+     * @return bool
      */
     public function InsertMultiArray($tablename, $values = [])
     {
@@ -733,8 +759,9 @@ class DB
     /**
      * Replace multiple array.
      *
-     * @param mixed $tablename
-     * @param mixed $values
+     * @param string $tablename
+     * @param array $values
+     * @return bool
      */
     public function ReplaceMultiArrayByID($tablename, $values = [])
     {
@@ -772,9 +799,10 @@ class DB
     /**
      * Returns the database Record set with given condition.
      *
-     * @param mixed $table
-     * @param mixed $orderby
-     * @param mixed $where
+     * @param string $table
+     * @param string $orderby
+     * @param string $where
+     * @return mixed
      */
     public function DBRecordSet($table, $orderby = '', $where = 'status = 1')
     {
@@ -795,9 +823,10 @@ class DB
     /**
      * Delete from given table on given ID.
      *
-     * @param mixed $table
-     * @param mixed $id
-     * @param mixed $idfield
+     * @param string $table
+     * @param int $id
+     * @param string $idfield
+     * @return bool|mixed
      */
     public function Delete($table, $id, $idfield)
     {
@@ -809,6 +838,10 @@ class DB
         return $this->Execute('Delete from ' . $table . " Where {$idfield} = {$id}");
     }
 
+    /**
+     * @param mixed $result
+     * @return array
+     */
     public static function Columns($result)
     {
         $fields = [];
@@ -822,8 +855,8 @@ class DB
     /**
      * Get all Columns of given table in form of array.
      *
-     * @param string $table
-     *                      Either DB Based Table name or Index of GLOBAL TABLE
+     * @param string $table Either DB Based Table name or Index of GLOBAL TABLE
+     * @return array
      */
     public static function GetColumns($table)
     {
@@ -842,6 +875,10 @@ class DB
         return $fields;
     }
 
+    /**
+     * @param string $query
+     * @return array
+     */
     public function FirstColumnArray($query)
     {
         $rs = $this->Execute($query);
@@ -858,6 +895,10 @@ class DB
         return [];
     }
 
+    /**
+     * @param string $tablename
+     * @return array
+     */
     public static function GetTableInformation($tablename)
     {
         $x = DB::GetColumns($tablename);
@@ -893,6 +934,10 @@ class DB
         return $TableArray;
     }
 
+    /**
+     * @param string $tablename
+     * @return mixed
+     */
     public static function GetAutoIncrementID($tablename)
     {
         if ($GLOBALS['db']->MysqlVersion >= 8) {
@@ -903,6 +948,10 @@ class DB
         return $result['Auto_increment'];
     }
 
+    /**
+     * @param \mysqli_result $recordset
+     * @return false|string
+     */
     public static function ToJSON(\mysqli_result $recordset)
     {
         if (\is_null($recordset) || is_bool($recordset)) {
@@ -936,6 +985,9 @@ class DB
 
     /**
      * Data Type of given column.
+     * @param string $tablename
+     * @param array $values
+     * @return string
      */
     private function GetDataString(string $tablename, array $values)
     {

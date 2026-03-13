@@ -33,9 +33,10 @@ class DocumentFile extends \TAS\Core\UserFile
     /**
      * Function To Upload File from $_FILES replicated Array. Also Save files if second parameter is true.
      *
-     * @param mixed $file
-     * @param mixed $save
+     * @param array $file
+     * @param bool $save
      * @param mixed $linkerid
+     * @return array|bool
      */
     public function Upload($file, $save = true, $linkerid = 0)
     {
@@ -94,6 +95,12 @@ class DocumentFile extends \TAS\Core\UserFile
         return $returnfile;
     }
 
+    /**
+     * @param string $file
+     * @param array $filedata
+     * @param mixed $linkerid
+     * @return int|bool
+     */
     public function Save($file, $filedata, $linkerid = '')
     {
         $InsertData['documentcaption'] = $filedata['caption'];
@@ -123,6 +130,10 @@ class DocumentFile extends \TAS\Core\UserFile
         return false;
     }
 
+    /**
+     * @param mixed $linkerid
+     * @return array
+     */
     public function GetDocumentOnLinker($linkerid)
     {
         $document = [];
@@ -152,7 +163,9 @@ class DocumentFile extends \TAS\Core\UserFile
     /**
      * Get Document/s for given Linker ID and Type.
      *
-     * @param mixed $linkertype
+     * @param int $linkerid
+     * @param string $linkertype
+     * @return array
      */
     public static function GetLinkerDocument(int $linkerid, $linkertype)
     {
@@ -166,6 +179,7 @@ class DocumentFile extends \TAS\Core\UserFile
      * Return the document information.
      *
      * @param string $docid
+     * @return array
      */
     public function GetDocument($docid)
     {
@@ -191,6 +205,10 @@ class DocumentFile extends \TAS\Core\UserFile
         return $document;
     }
 
+    /**
+     * @param array $document
+     * @return string
+     */
     public static function DownloadURL($document)
     {
         // Make filename web-friendly by replacing spaces with dashes and removing unsafe characters
@@ -205,7 +223,8 @@ class DocumentFile extends \TAS\Core\UserFile
     /**
      * Delete the document.
      *
-     * @param mixed $documentID
+     * @param int $documentID
+     * @return mixed
      */
     public static function Delete($documentID)
     {
@@ -214,7 +233,10 @@ class DocumentFile extends \TAS\Core\UserFile
         return $x->DeleteDocument($documentID);
     }
 
-    // Function to delete document on Linker
+    /**
+     * Function to delete document on Linker
+     * @param mixed $linkerid
+     */
     public function DeleteDocumentOnLinker($linkerid)
     {
         $document = [];
@@ -244,7 +266,11 @@ class DocumentFile extends \TAS\Core\UserFile
         }
     }
 
-    // Function to delete document on Linker
+    /**
+     * Function to delete document
+     * @param int $documentid
+     * @return mixed
+     */
     public function DeleteDocument(int $documentid)
     {
         $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
@@ -258,6 +284,11 @@ class DocumentFile extends \TAS\Core\UserFile
         return $GLOBALS['db']->Execute('Delete from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
     }
 
+    /**
+     * @param int $documentid
+     * @param string $newCaption
+     * @return bool|void
+     */
     public function SetFileCaption($documentid, $newCaption)
     {
         if (!empty($documentid) && $documentid > 0 && '' != $newCaption) {
@@ -274,6 +305,12 @@ class DocumentFile extends \TAS\Core\UserFile
         $this->SetError('Invalid data to change File caption');
     }
 
+    /**
+     * @param string $actionURL
+     * @param string $formtitle
+     * @param int $documentid
+     * @return string
+     */
     public static function DocumentForm($actionURL, $formtitle, $documentid = 0)
     {
         $D = '';
@@ -314,6 +351,12 @@ class DocumentFile extends \TAS\Core\UserFile
         return $form;
     }
 
+    /**
+     * @param string $linkertype
+     * @param array $filters
+     * @param array $parameters
+     * @return string
+     */
     public static function DocumentGrid($linkertype = 'cms', $filters = [], $parameters = [])
     {
         $SQLQuery['basicquery'] = 'select * from ' . $GLOBALS['Tables']['document'];

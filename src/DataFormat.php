@@ -10,7 +10,9 @@ class DataFormat
     /**
      * Clear the phone from given format such (111)-111-1111 to 1111111111. It remove space,- bracket and dot from phone only.
      *
-     * @param [type] $phone
+     * @param string $phone
+     * @param int $length
+     * @return string
      */
     public static function CleanPhone(string $phone, int $length = 10)
     {
@@ -36,6 +38,7 @@ class DataFormat
      *
      * @param string $phone
      * @param int $length Default to 10
+     * @return string
      */
     public static function FormatPhone(string $phone, int $length = 10)
     {
@@ -72,7 +75,8 @@ class DataFormat
     /**
      * UCWord formatting after lower a string.
      *
-     * @param [type] $str
+     * @param string $str
+     * @return string
      */
     public static function FormatString(string $str)
     {
@@ -83,6 +87,7 @@ class DataFormat
      * Validate password security.
      *
      * @param mixed $str
+     * @return bool
      */
     public static function ValidatePassword($str)
     {
@@ -104,13 +109,14 @@ class DataFormat
      *
      * @param mixed $size
      * @param mixed $precision
+     * @return string
      */
     public static function FormatBytes($size, $precision = 2)
     {
         $base = log($size) / log(1024);
         $suffixes = ['B', 'K', 'M', 'G', 'T'];
 
-        return round(pow(1024, $base - floor($base)), $precision).$suffixes[floor($base)];
+        return round(pow(1024, $base - floor($base)), $precision) . $suffixes[floor($base)];
     }
 
     /**
@@ -118,6 +124,7 @@ class DataFormat
      *
      * @param string $DBDate
      * @param mixed  $format
+     * @return string
      */
     public static function DBToDateTimeFormat($DBDate, $format = '')
     {
@@ -143,8 +150,9 @@ class DataFormat
     /**
      * Convert Database DateTime object to Date Only. Look for DBToDateTimeFormat if you need Time as well.
      *
+     * @param string $DBDate
      * @param string $format = 'm/d/Y' Default return format
-     * @param mixed  $DBDate
+     * @return string
      */
     public static function DBToDateFormat($DBDate, $format = '')
     {
@@ -172,6 +180,7 @@ class DataFormat
      *
      * @param string $date
      * @param mixed  $readformat
+     * @return bool|string
      */
     public static function DateToDBFormat($date, $readformat = 'm/d/Y H:i a')
     {
@@ -197,6 +206,10 @@ class DataFormat
         }
     }
 
+    /**
+     * @param mixed $value
+     * @return string
+     */
     public static function RemoveWhiteSpace($value)
     {
         if (null == $value || empty($value)) {
@@ -248,7 +261,8 @@ class DataFormat
     /**
      * Clean a string for Database Insert using default (mysql) database function.
      *
-     * @param [type] $a_value
+     * @param mixed $a_value
+     * @return mixed
      */
     public static function DBString($a_value)
     {
@@ -258,7 +272,8 @@ class DataFormat
     /**
      * Remove slashes added by web forms.
      *
-     * @param [type] $a_value
+     * @param mixed $a_value
+     * @return mixed
      */
     public static function RemoveSlashes($a_value)
     {
@@ -344,7 +359,7 @@ class DataFormat
         ];
         $value = floor($diff / $intervals[1][1]);
 
-        return $value.' '.$intervals[1][0].($value > 1 ? 's' : '').' ago';
+        return $value . ' ' . $intervals[1][0] . ($value > 1 ? 's' : '') . ' ago';
     }
 
     /**
@@ -353,6 +368,7 @@ class DataFormat
      *
      * @param int $length
      *                    Length of password to generate
+     * @return string
      */
     public static function GenerateRandomPassword($length = 12)
     {
@@ -399,8 +415,10 @@ class DataFormat
         $output = trim($v);
         $searchChars = 'ÃÂ¿½ï¿ï';
         $searchPatterns = array_merge(
-            array_map(function ($char) { return '/'.preg_quote($char, '/').'/i'; }, str_split($searchChars)),
-            array_map(function ($entity) { return '/'.preg_quote($entity, '/').'/i'; }, [
+            array_map(function ($char) {
+                return '/' . preg_quote($char, '/') . '/i'; }, str_split($searchChars)),
+            array_map(function ($entity) {
+                return '/' . preg_quote($entity, '/') . '/i'; }, [
                 '&Atilde;',
                 '&macr;',
                 '&frac12;',
@@ -422,6 +440,7 @@ class DataFormat
      *
      * @param string $var
      * @param mixed  $return
+     * @return int|bool
      */
     public static function ReturnNumericGet($var = 'id', $return = 'index.php')
     {
@@ -430,6 +449,7 @@ class DataFormat
                 return false;
             }
             Web::Redirect($return);
+            return false;
         } else {
             return (int) $_GET[$var];
         }
@@ -452,10 +472,10 @@ class DataFormat
         $nowObject = new \DateTime();
         $diff = $dobObject->diff($nowObject);
         if ($diff->m > 0) {
-            return $diff->y.' yrs '.$diff->m.' months';
+            return $diff->y . ' yrs ' . $diff->m . ' months';
         }
 
-        return $diff->y.' yrs';
+        return $diff->y . ' yrs';
     }
 
     /**
@@ -508,13 +528,13 @@ class DataFormat
         }
 
         $r = dechex(255 - hexdec(substr($color, 0, 2)));
-        $r = (strlen($r) > 1) ? $r : '0'.$r;
+        $r = (strlen($r) > 1) ? $r : '0' . $r;
         $g = dechex(255 - hexdec(substr($color, 2, 2)));
-        $g = (strlen($g) > 1) ? $g : '0'.$g;
+        $g = (strlen($g) > 1) ? $g : '0' . $g;
         $b = dechex(255 - hexdec(substr($color, 4, 2)));
-        $b = (strlen($b) > 1) ? $b : '0'.$b;
+        $b = (strlen($b) > 1) ? $b : '0' . $b;
 
-        return ($prependHash ? '#' : null).$r.$g.$b;
+        return ($prependHash ? '#' : null) . $r . $g . $b;
     }
 
     /**
@@ -528,13 +548,14 @@ class DataFormat
      */
     public static function RGBToHex(int $red, int $green, int $blue)
     {
-        return '#'.str_pad(dechex($red), '2', dechex($red)).str_pad(dechex($green), '2', dechex($green)).str_pad(dechex($blue), '2', dechex($blue));
+        return '#' . str_pad(dechex($red), '2', dechex($red)) . str_pad(dechex($green), '2', dechex($green)) . str_pad(dechex($blue), '2', dechex($blue));
     }
 
     /**
      * Return create slug.
      *
      * @param string $string
+     * @return string
      */
     public static function CreateSlug(string $string)
     {
@@ -553,6 +574,10 @@ class DataFormat
         return preg_replace('/[\\s_]/', $replace, $string);
     }
 
+    /**
+     * @param string $number
+     * @return float
+     */
     public static function RemoveNumberFormat(string $number)
     {
         return floatval(preg_replace('/[^\d.]/', '', $number));

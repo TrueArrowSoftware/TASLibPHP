@@ -4,6 +4,11 @@ namespace TAS\Core;
 
 class ArrayHelper
 {
+    /**
+     * @param array $arr
+     * @param $memberName
+     * @return float
+     */
     public static function ArraySum(array $arr, $memberName)
     {
         if (!is_array($arr)) {
@@ -20,9 +25,9 @@ class ArrayHelper
     /**
      * Search in 2D array for value.
      *
-     * @param unknown_type $needle
-     * @param unknown_type $column
-     * @param unknown_type $array
+     * @param $needle
+     * @param $column
+     * @param $array
      */
     public static function Search2DArray($needle, $column, $array)
     {
@@ -38,7 +43,8 @@ class ArrayHelper
     /**
      * Convert multi-dimension array to single dimension array.
      *
-     * @param [type] $a
+     * @param array $a
+     * @return array
      */
     public static function SinglizeArray(array $a): array
     {
@@ -61,7 +67,7 @@ class ArrayHelper
      * Contain word in array list.
      *
      * @param string $str
-     *
+     * @param array $arr
      * @return bool
      */
     public static function Contain(string $str, array $arr)
@@ -76,6 +82,10 @@ class ArrayHelper
     }
 
 
+    /**
+     * @param $object
+     * @return string
+     */
     public static function ObjectToJsonLowercase($object)
     {
         // Convert object to array
@@ -89,6 +99,11 @@ class ArrayHelper
     }
 
 
+    /**
+     * @param $array
+     * @param int $case
+     * @return array
+     */
     public static function ChangeArrayKeyCase($array, $case = CASE_LOWER)
     {
         $result = [];

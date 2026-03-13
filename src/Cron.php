@@ -4,6 +4,11 @@ namespace TAS\Core;
 
 class Cron
 {
+    /**
+     * @param $script
+     * @param $timer
+     * @return bool
+     */
     public static function IsScriptLocked($script, $timer = 10)
     {
         $file = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'.'.$script;
@@ -18,6 +23,10 @@ class Cron
         return false;
     }
 
+    /**
+     * @param $script
+     * @return bool
+     */
     public static function CreateScriptLock($script)
     {
         if (Cron::IsScriptLocked($script)) {
@@ -36,6 +45,10 @@ class Cron
         return false;
     }
 
+    /**
+     * @param $script
+     * @return bool|void
+     */
     public static function UnlockScript($script)
     {
         $filename = $GLOBALS['AppConfig']['PhysicalPath'].DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR.'.'.$script;

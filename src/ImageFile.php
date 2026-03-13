@@ -48,7 +48,8 @@ class ImageFile extends UserFile
     /**
      * Validate if the file is image file or application-octet-stream, all other type will fail.
      *
-     * @param string $file
+     * @param array $file
+     * @return bool
      */
     public function Validate($file = '')
     {
@@ -63,8 +64,15 @@ class ImageFile extends UserFile
     }
 
 
-    // Function To Upload File from $_FILES replicated Array.
-    // Also Save files if second parameter is true
+    /**
+     * Function To Upload File from $_FILES replicated Array.
+     * Also Save files if second parameter is true
+     *
+     * @param array $file
+     * @param bool $save
+     * @param mixed $linkerid
+     * @return array|bool
+     */
     public function Upload($file, $save = true, $linkerid = 0)
     {
         $returnfile = [];
@@ -124,10 +132,11 @@ class ImageFile extends UserFile
     /**
      * Save the file.
      *
-     * @param [type] $file
-     * @param [type] $filedata
-     * @param string $linkerid
-     * @return void
+     * @param string $file
+     * @param array $filedata
+     * @param mixed $linkerid
+     * @param int|mixed $outID
+     * @return bool
      */
     public function Save($file, $filedata, $linkerid = '', &$outID = 0)
     {
@@ -171,6 +180,7 @@ class ImageFile extends UserFile
      * @param int    $linkerid ID to which this record is associated
      * @param bool   $toponly  If we find only the first record in order
      * @param string $orderby  default ordering
+     * @return array|mixed
      */
     public function GetImageOnLinker(int $linkerid, bool $toponly = false, string $orderby = 'isdefault DESC, displayorder asc')
     {
@@ -217,6 +227,12 @@ class ImageFile extends UserFile
 
     /**
      * Overloaded function for GetImageOnLinker but with LinkerType as option.
+     *
+     * @param int $linkerID
+     * @param string $linkerType
+     * @param bool $topOnly
+     * @param string $orderby
+     * @return array|mixed
      */
     public static function GetLinkerImage(int $linkerID, string $linkerType, bool $topOnly = false, string $orderby = 'isdefault DESC, displayorder asc')
     {
@@ -229,6 +245,10 @@ class ImageFile extends UserFile
     /**
      * Return all image of object's linker type.
      * Setting TopOnly to true will return first image.
+     *
+     * @param bool $toponly
+     * @param string $orderby
+     * @return array|mixed
      */
     public function GetImageLinkerType(bool $toponly = false, string $orderby = 'isdefault DESC, displayorder asc')
     {
@@ -276,10 +296,10 @@ class ImageFile extends UserFile
     /**
      * Find image on given ImageID.
      *
-     * @param [type] $imageid
+     * @param int|string $imageid
      * @param string $orderby
      *
-     * @return array
+     * @return array|null
      */
     public function GetImage($imageid, $orderby = 'isdefault DESC, displayorder asc')
     {
@@ -324,6 +344,7 @@ class ImageFile extends UserFile
      *  Function to delete Image on Linker.
      *
      * @param mixed $linkerid
+     * @return void
      */
     public function DeleteImageOnLinker($linkerid)
     {
@@ -354,6 +375,9 @@ class ImageFile extends UserFile
 
     /**
      *  Function to delete Image on Linker.
+     *
+     * @param int $imageid
+     * @return bool
      */
     public function DeleteImage(int $imageid)
     {
@@ -383,6 +407,11 @@ class ImageFile extends UserFile
         return true;
     }
 
+    /**
+     * @param int|string $imageId
+     * @param int|string $linkerId
+     * @return bool
+     */
     public function SetDefautlImage($imageId, $linkerId)
     {
         if (is_numeric($imageId) && $imageId > 0 && is_numeric($linkerId) && $linkerId > 0) {
@@ -498,7 +527,7 @@ class ImageFile extends UserFile
         ImageFile::DeleteThumbnails($imageid);
 
         $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} limit 1");
-        $this->FileSaver->ProcessFile((int)$rowImage['imageid'], $this);
+        $this->FileSaver->ProcessFile((int)$rowImage['imageid']);
         $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
     }
 
@@ -829,8 +858,9 @@ class ImageFile extends UserFile
     /**
      * Call Back function to create Image on the fly from Thumbnail.
      *
-     * @param unknown $row
-     * @param unknown $field
+     * @param array $row
+     * @param string $field
+     * @return string
      */
     public static function CallBackImageUrl($row, $field)
     {

@@ -22,12 +22,18 @@ class Entity
 
     /**
      * ReadOnly function, Tells if object is loaded from DB yet.
+     * @return bool
      */
     public function IsLoaded()
     {
         return $this->_isloaded;
     }
 
+    /**
+     * @param string $error
+     * @param int $level
+     * @return bool|void
+     */
     public static function SetError($error, $level = 0)
     {
         if ('' == $error) {
@@ -63,6 +69,9 @@ class Entity
         return json_encode($this);
     }
 
+    /**
+     * @return array
+     */
     public function ObjectAsArray()
     {
         $t = $this->ToJson();
@@ -70,6 +79,9 @@ class Entity
         return json_decode($t, true);
     }
 
+    /**
+     * @return array
+     */
     public function EmailKeywords()
     {
         $array = $this->ObjectAsArray();
@@ -82,6 +94,9 @@ class Entity
         return $array;
     }
 
+    /**
+     * @return string
+     */
     public static function GetTableName()
     {
         $o = get_called_class();
@@ -93,8 +108,9 @@ class Entity
     /**
      * Validate the Form input against the field information.
      *
-     * @param $fields array Field information, output of GetFields() function call
-     * @param $values array Values capture from input form
+     * @param array $fields Field information, output of GetFields() function call
+     * @param array $values Values capture from input form
+     * @return bool
      */
     public static function InputValidate($fields, $values)
     {
@@ -153,8 +169,9 @@ class Entity
     /**
      * Validate the values array against the database table column.
      *
-     * @param mixed $values
-     * @param mixed $tablename
+     * @param array $values
+     * @param string $tablename
+     * @return bool
      */
     public static function Validate($values, $tablename)
     {
@@ -247,7 +264,7 @@ class Entity
     /**
      * Generic Load of object from database recordset using column name been same as object properties.
      * @deprecated 1.1 Use LoadFromDB instead
-     * @param recordset/object $rs
+     * @param mixed $rs
      */
     public function LoadFromRecordSet($rs)
     {
@@ -261,6 +278,9 @@ class Entity
     }
 
 
+    /**
+     * @param mixed $rs
+     */
     public function LoadFromDB($rs)
     {
         $row = $GLOBALS['db']->Fetch($rs);
@@ -336,6 +356,11 @@ class Entity
         $this->_isloaded = true;
     }
 
+    /**
+     * @param string $tablename
+     * @param array $param
+     * @return array
+     */
     public static function GetFieldsGeneric($tablename = '', $param = [])
     {
         $tableinfo = \TAS\Core\DB::GetTableInformation($tablename);
@@ -404,9 +429,10 @@ class Entity
      *
      * @deprecated 1.1 Use InputValidate instead
      *
-     * @param mixed      $postdata
-     * @param mixed      $table
-     * @param null|mixed $callback
+     * @param array      $postdata
+     * @param string     $table
+     * @param callable|null $callback
+     * @return array
      */
     public static function ValidateAgainstTable($postdata, $table, $callback = null)
     {
@@ -451,6 +477,10 @@ class Entity
         return $message;
     }
 
+    /**
+     * @param array $fields
+     * @return array
+     */
     public static function ParsePostToArray($fields)
     {
         $obj = new \TAS\Core\DataFormat();

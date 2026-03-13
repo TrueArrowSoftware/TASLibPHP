@@ -21,8 +21,9 @@ class TemplateHandler
      * Iterate and replace keywords in given Content.
      * It also replace AppConfig common variable.
      *
-     * @param unknown $content
-     * @param unknown $keywords
+     * @param string $content
+     * @param array $keywords
+     * @return string
      */
     public static function PrepareContent(string $content, array $keywords)
     {
@@ -52,6 +53,9 @@ class TemplateHandler
 
     /**
      * Select template to use based on Template ID provided.
+     * @param string $pagetemplate
+     * @return string
+     * @throws \Exception
      */
     public static function TemplateChooser(string $pagetemplate)
     {
@@ -65,8 +69,9 @@ class TemplateHandler
     /**
      * Insert Template Content.
      *
-     * @param mixed $Templatefile
+     * @param string $Templatefile
      * @param mixed $content_keyword
+     * @return string
      */
     public static function InsertTemplateContent($Templatefile, $content_keyword)
     {
@@ -84,7 +89,8 @@ class TemplateHandler
     /**
      * Using DOMNode, find inner HTML.
      *
-     * @param DOMNode $element
+     * @param \DOMNode $element
+     * @return string
      */
     public static function DOMInnerHTML(\DOMNode $element)
     {
@@ -97,7 +103,13 @@ class TemplateHandler
         return $innerHTML;
     }
 
-    // Navigation with permission
+    /**
+     * Navigation with permission
+     * @param array $arrNavigation
+     * @param string $class
+     * @param bool $returnLiOnly
+     * @return string|null
+     */
     public static function GenerateNavigationMenu($arrNavigation = [], $class = '', $returnLiOnly = false)
     {
         if (!is_array($arrNavigation)) {
@@ -159,7 +171,13 @@ class TemplateHandler
         return $output;
     }
 
-    // Navigation without permission
+    /**
+     * Navigation without permission
+     * @param array $arrNavigation
+     * @param string $class
+     * @param bool $returnLiOnly
+     * @return string|null
+     */
     public static function GenerateNavigationMenuWithoutPermission($arrNavigation = [], $class = '', $returnLiOnly = false)
     {
         if (!is_array($arrNavigation)) {

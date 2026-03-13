@@ -15,6 +15,10 @@ class Grid
 
     private $CorePage;
 
+    /**
+     * @param array|null $options
+     * @param array|null $queryoptions
+     */
     public function __construct($options = null, $queryoptions = null)
     {
         $this->QueryOptions = (null == $queryoptions ? Grid::DefaultQueryOptions() : $queryoptions);
@@ -68,6 +72,9 @@ class Grid
         ];
     }
 
+    /**
+     * @return array
+     */
     public function DefaultIcon(): array
     {
         return [
@@ -88,6 +95,9 @@ class Grid
         ];
     }
 
+    /**
+     * @return string
+     */
     public function Render(): string
     {
         $listing = '';
@@ -279,55 +289,81 @@ class Grid
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
             $RowValueTotal = [];
+            
+            $optionTemplate = '';
+            if (isset($this->Options['option']) && is_array($this->Options['option'])) {
+                foreach ($this->Options['option'] as $icon) {
+                    $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'] . '=' : 'id=') . '{_row_id_}');
+                    $target = (isset($icon['target']) ? 'target="' . $icon['target'] . '"' : '');
+                    $optionTemplate .= '<li><a class="' . $icon['tagname'] . ' btn btn-icons btn-rounded btn-outline-fa-color" ' . $target . ' data-toggle="tooltip" title="' . $icon['tooltip'] . '"  href="' . $link . '"><i class="fas ' . $icon['iconclass'] . '"></i></a></li>';
+                }
+            }
+
+            $hasRowConditionCallback = false;
+            if (
+                isset($this->Options['rowconditioncallback'])
+                && ((is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback']) > 0)
+                    || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback']) > 0))
+            ) {
+                $hasRowConditionCallback = true;
+            }
+
+            $allowSelection = $this->Options['allowselection'];
+            $tagName = $this->Options['tagname'];
+            $indexField = $this->QueryOptions['indexfield'];
+            
+            $fieldsCache = [];
+            foreach ($this->Options['fields'] as $field => $val) {
+                $fieldsCache[$field] = [
+                    'val' => $val,
+                    'hasLink' => isset($val['link']),
+                    'link' => $val['link'] ?? '',
+                    'linkfield' => $val['linkfield'] ?? '',
+                ];
+            }
+
+            $rowsHtml = [];
             foreach ($rs as $row) {
+                $rowHtml = '';
+                $rowId = $row[$indexField] ?? '';
                 $option = '';
-                if (isset($this->Options['option']) && is_array($this->Options['option'])) {
-                    foreach ($this->Options['option'] as $icon) {
-                        $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'] . '=' : 'id=') . $row[$this->QueryOptions['indexfield']]);
-                        $target = (isset($icon['target']) ? 'target="' . $icon['target'] . '"' : '');
-                        $option .= '<li><a class="' . $icon['tagname'] . ' btn btn-icons btn-rounded btn-outline-fa-color" ' . $target . ' data-toggle="tooltip" title="' . $icon['tooltip'] . '"  href="' . $link . '"><i class="fas ' . $icon['iconclass'] . '"></i></a></li>';
-                    }
+                if ($optionTemplate !== '') {
+                    $option = str_replace('{_row_id_}', $rowId, $optionTemplate);
                 }
 
                 $additionalClass = '';
-                if (
-                    isset($this->Options['rowconditioncallback'])
-                    && ((is_array($this->Options['rowconditioncallback']) && count($this->Options['rowconditioncallback']) > 0)
-                        || (is_string($this->Options['rowconditioncallback']) && strlen($this->Options['rowconditioncallback']) > 0))
-                ) {
+                if ($hasRowConditionCallback) {
                     $additionalClass = call_user_func($this->Options['rowconditioncallback'], $row, $additionalClass);
                 }
-                $listing .= "\n" . '<tr data-id="' . $row[$this->QueryOptions['indexfield']] . '" id="row_' . $row[$this->QueryOptions['indexfield']] . '"  class="griddatarow ' . (($alt) ? 'gridrow' : 'altgridrow') . ' ' . $additionalClass . '">';
+                $rowHtml .= "\n" . '<tr data-id="' . $rowId . '" id="row_' . $rowId . '"  class="griddatarow ' . (($alt) ? 'gridrow' : 'altgridrow') . ' ' . $additionalClass . '">';
 
-                if ($this->Options['allowselection']) {
-                    $listing .= '<td><input type="checkbox" name="select_' . $this->Options['tagname'] . '[' . $row[$this->QueryOptions['indexfield']] . ']" id="select_' . $this->Options['tagname'] . '_' . $row[$this->QueryOptions['indexfield']] . '" class="checkall_child"></td>';
+                if ($allowSelection) {
+                    $rowHtml .= '<td><input type="checkbox" name="select_' . $tagName . '[' . $rowId . ']" id="select_' . $tagName . '_' . $rowId . '" class="checkall_child"></td>';
                 }
 
-                $fieldCounter = 0;
-
-                reset($this->Options['fields']);
-                foreach ($this->Options['fields'] as $field => $val) {
-                    $_output = $this->ProcessColumnData($field, $val, $row, $RowValueTotal);
+                foreach ($fieldsCache as $field => $fc) {
+                    $_output = $this->ProcessColumnData($field, $fc['val'], $row, $RowValueTotal);
                     $fielddata = $_output['fielddata'] ?? '';
                     $cssClass = $_output['cssClass'] ?? '';
 
-                    $listing .= "\r\n \t";
+                    $rowHtml .= "\r\n \t";
 
-                    if (isset($val['link'])) {
-                        $linkColumn = str_replace('{1}', $row[$val['linkfield']], $val['link']);
-                        $listing .= '<td class="' . $cssClass . '"><a href="' . $linkColumn . '">' . $fielddata . '</a></td>';
+                    if ($fc['hasLink']) {
+                        $linkColumn = str_replace('{1}', $row[$fc['linkfield']], $fc['link']);
+                        $rowHtml .= '<td class="' . $cssClass . '"><a href="' . $linkColumn . '">' . $fielddata . '</a></td>';
                     } else {
-                        $listing .= '<td class="' . $cssClass . '">' . $fielddata . '</td>';
+                        $rowHtml .= '<td class="' . $cssClass . '">' . $fielddata . '</td>';
                     }
-
-                    ++$fieldCounter;
                 }
 
                 if (!$RemoveFieldOption) {
-                    $listing .= '<td class="gridtable-optionrow"><ul class="table-ul">' . $option . '</ul></td></tr>';
+                    $rowHtml .= '<td class="gridtable-optionrow"><ul class="table-ul">' . $option . '</ul></td></tr>';
                 }
+                
+                $rowsHtml[] = $rowHtml;
                 $alt = !$alt;
             }
+            $listing .= implode('', $rowsHtml);
 
             $listing .= '</tbody>';
             $listing .= '<tfoot>';
@@ -390,6 +426,13 @@ class Grid
         return $listing;
     }
 
+    /**
+     * @param string $field
+     * @param array $val
+     * @param array $row
+     * @param array $RowValueTotal
+     * @return array
+     */
     public function ProcessColumnData($field, $val, $row, &$RowValueTotal)
     {
         $fielddata = '';
@@ -535,6 +578,9 @@ class Grid
         return ['fielddata' => $fielddata, 'cssClass' => $cssClass];
     }
 
+    /**
+     * @return string
+     */
     private function ShowFilter()
     {
         $listing = '<tr>';

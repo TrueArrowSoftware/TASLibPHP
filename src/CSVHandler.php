@@ -8,7 +8,14 @@ use TAS\Core\Async\FiberRunner;
 
 class CSV
 {
-    public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
+    /**
+     * @param $SQLQuery
+     * @param $filename
+     * @param $tagname
+     * @param array $param
+     * @return bool
+     */
+    public static function CreateCSV($SQLQuery, $filename, $tagname, array $param = [])
     {
         $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname.'_orderby'] ?? $SQLQuery['defaultorderby']));
         $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname.'_direction'] ?? $SQLQuery['defaultsortdirection']));
@@ -50,8 +57,9 @@ class CSV
      *                         Physical path of csv file
      * @param array  $fields
      *                         list of fields to put in csv
+     * @return bool
      */
-    public static function ExportCSV($SQLQuery, $filename = '', $fields = [])
+    public static function ExportCSV($SQLQuery, $filename = '', array $fields = [])
     {
         $rs = $GLOBALS['db']->Execute($SQLQuery);
         if ($GLOBALS['AppConfig']['DebugMode']) {

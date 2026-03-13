@@ -59,6 +59,10 @@ class Web
         return $url . '?' . http_build_query($querystring) . ((null != $fragment) ? '#' . $fragment : ''); // Append Fragment again.
     }
 
+    /**
+     * @param string $url
+     * @return bool
+     */
     public static function Redirect($url): bool
     {
         if ('' == trim($url)) {
