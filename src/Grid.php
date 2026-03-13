@@ -289,11 +289,12 @@ class Grid
         if ($GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
             $RowValueTotal = [];
-            
+
             $optionTemplate = '';
             if (isset($this->Options['option']) && is_array($this->Options['option'])) {
                 foreach ($this->Options['option'] as $icon) {
-                    $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'] . '=' : 'id=') . '{_row_id_}');
+                    $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'] . '=' : 'id=') . 'ROW_ID_TPL');
+                    $link = str_replace('ROW_ID_TPL', '{_row_id_}', $link);
                     $target = (isset($icon['target']) ? 'target="' . $icon['target'] . '"' : '');
                     $optionTemplate .= '<li><a class="' . $icon['tagname'] . ' btn btn-icons btn-rounded btn-outline-fa-color" ' . $target . ' data-toggle="tooltip" title="' . $icon['tooltip'] . '"  href="' . $link . '"><i class="fas ' . $icon['iconclass'] . '"></i></a></li>';
                 }
@@ -311,7 +312,7 @@ class Grid
             $allowSelection = $this->Options['allowselection'];
             $tagName = $this->Options['tagname'];
             $indexField = $this->QueryOptions['indexfield'];
-            
+
             $fieldsCache = [];
             foreach ($this->Options['fields'] as $field => $val) {
                 $fieldsCache[$field] = [
@@ -359,7 +360,7 @@ class Grid
                 if (!$RemoveFieldOption) {
                     $rowHtml .= '<td class="gridtable-optionrow"><ul class="table-ul">' . $option . '</ul></td></tr>';
                 }
-                
+
                 $rowsHtml[] = $rowHtml;
                 $alt = !$alt;
             }
@@ -642,7 +643,7 @@ class Grid
 
                     break;
 
-                    // Case when no filter.
+                // Case when no filter.
                 case 'onoff':
                 case 'flag':
                     break;
