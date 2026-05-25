@@ -270,9 +270,9 @@ class DB
      * @param string $query
      * @return mixed
      */
-    public function ExecuteScalar($query)
+    public function ExecuteScalar($query, ?array $values = null)
     {
-        $result = $this->Execute($query);
+        $result = $this->Execute($query, $values);
         if ($result) {
             $this->CleanError();
             if ($result->num_rows > 0) {
@@ -295,9 +295,9 @@ class DB
      * @param string $query
      * @return array|bool
      */
-    public function ExecuteScalarRow($query)
+    public function ExecuteScalarRow($query, ?array $values = null)
     {
-        $result = $this->Execute($query);
+        $result = $this->Execute($query, $values);
         if ($result) {
             $this->CleanError();
             if (!is_bool($result) && $result->num_rows > 0) {
@@ -315,15 +315,15 @@ class DB
     /**
      * Shorthand function to comvert a recordset to array.
      */
-    public function ExecuteAll(string $query): array
+    public function ExecuteAll(string $query, ?array $values = null): array
     {
-        $result = $this->Execute($query);
+        $result = $this->Execute($query, $values);
 
         return (false !== $result && static::Count($result) > 0) ? $result->fetch_all(MYSQLI_ASSOC) : [];
     }
 
     /**
-     * @deprecated 2.0.0
+     * @deprecated 2.0.0 use static DB:Count instead
      *
      *  Return number of rows in give recordset. Use Static function DB::Count instead for shorter syntax.
      *
