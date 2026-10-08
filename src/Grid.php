@@ -4,6 +4,10 @@ namespace TAS\Core;
 
 use TAS\Core\Async\AsyncQuery;
 use TAS\Core\Async\DBPool;
+use TAS\Core\GridFilter\DateFilter;
+use TAS\Core\GridFilter\IGridFilter;
+use TAS\Core\GridFilter\SelectFilter;
+use TAS\Core\GridFilter\TextFilter;
 use TAS\Core\UI\GridBootstrap;
 use TAS\Core\UI\IGridUI;
 
@@ -161,10 +165,24 @@ class Grid
 
         // Run data query and count query in parallel when a connection pool is available
         if (isset($GLOBALS['dbpool']) && $GLOBALS['dbpool'] instanceof DBPool) {
-            $parallelResults = AsyncQuery::runParallel([
-                'data'  => $query,
-                'count' => $countQuery,
-            ], $GLOBALS['dbpool']);
+            $parallelQueries = ['data' => $query, 'count' => $countQuery];
+
+            // Dropdown filter source queries join the same parallel batch.
+            $selectFilters = [];
+            if ($this->Options['showheaderfilter']) {
+                foreach ($this->Options['fields'] as $field => $val) {
+                    $f = $val['filter'] ?? null;
+                    if ($f instanceof SelectFilter && is_string($f->source) && null === $f->rs) {
+                        $selectFilters['filter_' . $field] = $f;
+                        $parallelQueries['filter_' . $field] = $f->source;
+                    }
+                }
+            }
+
+            $parallelResults = AsyncQuery::runParallel($parallelQueries, $GLOBALS['dbpool']);
+            foreach ($selectFilters as $key => $f) {
+                $f->rs = $parallelResults[$key];
+            }
             $rs = $parallelResults['data'];
             $countResult = $parallelResults['count'];
             $TotalRecordCount = ($countResult instanceof \mysqli_result && $countResult->num_rows > 0)
@@ -596,9 +614,9 @@ class Grid
 
         reset($this->Options['fields']);
 
-        foreach ($this->Options['fields'] as $field => $val) {
-            $v = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'] . '-filter-' . $field] ?? '')) : '';
+        $filterdata = $this->Options['filterdata'] ?? [];
 
+        foreach ($this->Options['fields'] as $field => $val) {
             switch ($val['type']) {
                 case 'longstring':
                     $count = count($this->Options['fields']);
@@ -629,28 +647,11 @@ class Grid
                     break;
             }
 
-            switch ($val['type']) {
-                case 'date':
-                case 'datetime':
-                    $fielddata = DataFormat::DBToDateTimeFormat($v, 'Y-m-d H:i:s');
-                    $listing .= HTML::InputDate($this->Options['gridid'] . '-filter-' . $field, $fielddata, $this->Options['gridid'] . '-filter-' . $field, false, 'filter-textbox');
-                    if (isset($val['filtertype']) && 'daterange' == $val['filtertype']) {
-                        $v2 = isset($this->Options['filterdata']) ? (DataFormat::DoSecure($this->Options['filterdata'][$this->Options['gridid'] . '-filter-' . $field . '-end'] ?? '')) : '';
-                        $listing .= '<br />';
-                        $fielddata = DataFormat::DBToDateTimeFormat($v2, 'Y-m-d H:i:s');
-                        $listing .= HTML::InputDate($this->Options['gridid'] . '-filter-' . $field . '-end', $fielddata, $this->Options['gridid'] . '-filter-' . $field . '-end', false, 'filter-textbox');
-                    }
-
-                    break;
-
-                // Case when no filter.
-                case 'onoff':
-                case 'flag':
-                    break;
-
-                default:
-                    $listing .= '<input type="text" class="filter-textbox" id="' . $this->Options['gridid'] . '-filter-' . $field . '" name="' . $this->Options['gridid'] . '-filter-' . $field . '" value="' . $v . '"></th>';
+            $filter = $this->GetColumnFilter($val);
+            if (null !== $filter) {
+                $listing .= $filter->Render($this->Options['gridid'] . '-filter-' . $field, $filterdata);
             }
+            $listing .= '</th>';
         }
 
         if (!$RemoveFieldOption) {
@@ -659,6 +660,22 @@ class Grid
         $listing .= '</tr>';
 
         return $listing;
+    }
+
+    /**
+     * Column's 'filter' (IGridFilter) wins; otherwise the legacy choice by column type.
+     */
+    private function GetColumnFilter(array $val): ?IGridFilter
+    {
+        if (($val['filter'] ?? null) instanceof IGridFilter) {
+            return $val['filter'];
+        }
+
+        return match ($val['type']) {
+            'date', 'datetime' => new DateFilter('daterange' == ($val['filtertype'] ?? '')),
+            'onoff', 'flag' => null,
+            default => new TextFilter(),
+        };
     }
 }
 

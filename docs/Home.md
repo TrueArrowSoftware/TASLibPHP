@@ -6,7 +6,7 @@
 
 TASLibPHP (TrueArrow Software Library for PHP) is an open-source PHP library that provides a collection of reusable components and helpers for common web development tasks. It is designed for developers who want the power and convenience of utility classes without being locked into a heavy framework.
 
-Current version: **1.2.83** | Requires: **PHP >= 8.0**
+Current version: **1.2.84** | Requires: **PHP >= 8.2**
 
 ## Features
 
@@ -75,7 +75,7 @@ For local overrides (e.g. on your development machine) create a `configure.local
 
 ## Requirements
 
-- PHP 8.0 or higher
+- PHP 8.2 or higher
 - Extensions: `curl`, `json`, `filter`
 - [PHPMailer](https://github.com/PHPMailer/PHPMailer) ~6.1 (installed automatically via Composer)
 
