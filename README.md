@@ -6,7 +6,7 @@
 
 **TASLibPHP** (True Arrow Software Library for PHP) is a lightweight toolkit for building PHP web applications quickly, without the weight of a full framework. It gives you database access, data grids, validation, file handling, templating, email and async helpers under a single `TAS\Core` namespace.
 
-**Current version:** `1.2.84`
+**Current version:** `1.2.85`
 
 ---
 
@@ -22,7 +22,7 @@
   - [Grid Header Filters](#grid-header-filters)
   - [Parallel Queries](#parallel-queries)
 - [Configuration](#configuration)
-- [What's New in 1.2.84](#whats-new-in-1284)
+- [What's New in 1.2.85](#whats-new-in-1285)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
 - [License](#license)
@@ -61,7 +61,7 @@ composer require truearrowsoftware/taslib
 To pin this release:
 
 ```bash
-composer require truearrowsoftware/taslib:1.2.84
+composer require truearrowsoftware/taslib:1.2.85
 ```
 
 ## Quick Start
@@ -194,7 +194,12 @@ Key settings in `configure.php` / `configure.local.php`:
 
 A reference database schema is available in [`database/db.sql`](database/db.sql).
 
-## What's New in 1.2.84
+## What's New in 1.2.85
+
+- **Seek paging for grids:** pass `'pagingmode' => 'seek'` to `UI::Grid`/`UI::GridBoxed` to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`); non-seekable shapes or stale tokens fall back to offset paging, so every URL still returns the right page.
+- Grid sort column (`ob`) is now validated against the grid's own columns.
+
+### 1.2.84
 
 - **PHP 8.2+** is now required.
 - **Prepared statements everywhere:** `Execute`, `ExecuteScalar`, `ExecuteScalarRow` and `ExecuteAll` accept a values array.

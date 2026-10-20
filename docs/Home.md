@@ -6,7 +6,7 @@
 
 TASLibPHP (TrueArrow Software Library for PHP) is an open-source PHP library that provides a collection of reusable components and helpers for common web development tasks. It is designed for developers who want the power and convenience of utility classes without being locked into a heavy framework.
 
-Current version: **1.2.84** | Requires: **PHP >= 8.2**
+Current version: **1.2.85** | Requires: **PHP >= 8.2**
 
 ## Features
 
