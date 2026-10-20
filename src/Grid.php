@@ -13,6 +13,9 @@ use TAS\Core\UI\IGridUI;
 
 class Grid
 {
+    // Seek mode only: a page number from the URL is capped so skip arithmetic can't overflow into a float.
+    private const MAX_PAGE = 1000000000;
+
     public $QueryOptions;
     public $Options;
     public static IGridUI $UI;
@@ -56,6 +59,9 @@ class Grid
             'currentpage' => 1,
             'showheaderfilter' => false,
             'filterdata' => [],
+            // 'offset' = limit x,y paging. 'seek' = anchor row + short skip (see KeysetPager), fast on deep pages of big tables.
+            // Seek needs queryoptions 'indexfield' and a 'seek' key on every sortable field, else that sort pages by offset.
+            'pagingmode' => 'offset',
         ];
     }
 
@@ -69,6 +75,7 @@ class Grid
             'pagingquery' => '',
             'pagingqueryend' => '',
             'indexfield' => '',
+            'indexexpr' => '', // seek mode only: SQL expression of indexfield when the name alone is ambiguous in a join.
             'orderby' => [],
             'noorderby' => false, // in case your query has it.
             'recordshowlimit' => 0,
@@ -113,8 +120,16 @@ class Grid
         $this->QueryOptions['defaultorderby'] ??= '';
         $this->QueryOptions['defaultsortdirection'] ??= '';
 
-        $orderby = ($_GET['ob'] ?? ($_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_ob'] ?? $this->QueryOptions['defaultorderby']));
-        $orderdirection = ((isset($_GET['d'])) ? $_GET['d'] : ($_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_d'] ?? $this->QueryOptions['defaultsortdirection']));
+        // ob and d go straight into the order by, so only accept a known column and asc/desc,
+        // from the URL and from the session (which an older version may have filled with anything).
+        $sessionKey = $this->Options['gridid'] . $this->Options['tagname'];
+        $sessionOrder = $_SESSION[$sessionKey . '_ob'] ?? null;
+        $sessionDirection = $_SESSION[$sessionKey . '_d'] ?? null;
+
+        $orderby = $this->IsSortColumn($_GET['ob'] ?? null) ? $_GET['ob']
+            : ($this->IsSortColumn($sessionOrder) ? $sessionOrder : $this->QueryOptions['defaultorderby']);
+        $orderdirection = self::IsDirection($_GET['d'] ?? null) ? $_GET['d']
+            : (self::IsDirection($sessionDirection) ? $sessionDirection : $this->QueryOptions['defaultsortdirection']);
 
         $_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_d'] = $orderdirection;
         $_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_ob'] = $orderby;
@@ -137,11 +152,41 @@ class Grid
             $orderLine = " order by {$orderby} {$orderdirection} {$sortstring} ";
         }
 
+        $TotalRecordCount = null;
+        $seek = null;
+        $plan = null;
+        $cursor = null;
+        $hash = '';
+        $seekRequested = (!isset($this->Options['allowpaging']) || false !== $this->Options['allowpaging']) && 'seek' === ($this->Options['pagingmode'] ?? 'offset');
+        $seekWhyNot = null;
+        if ($seekRequested) {
+            $seek = $this->BuildSeek((string) $orderby, (string) $orderdirection, $seekWhyNot);
+        }
+
         if (isset($this->Options['allowpaging']) && false === $this->Options['allowpaging']) {
             $query = $this->QueryOptions['basicquery'] . $this->QueryOptions['whereconditions'] . $orderLine;
             if (isset($this->QueryOptions['recordshowlimit']) && is_numeric($this->QueryOptions['recordshowlimit']) && (int) $this->QueryOptions['recordshowlimit'] > 0) {
                 $query .= ' limit ' . (int) $this->QueryOptions['recordshowlimit'];
             }
+        } elseif (null !== $seek) {
+            $pagesize = max(1, (int) $pagesize);
+            $startpage = min(max(1, $startpage), self::MAX_PAGE);
+            $hash = $seek->Hash($this->QueryOptions['whereconditions'] . '|' . $pagesize);
+            $cursor = $seek->Decode(is_string($_GET['cur'] ?? null) ? $_GET['cur'] : '', $hash);
+
+            if (!empty($_GET['last'])) {
+                // Last page is read backwards from the end, which needs the total first.
+                $TotalRecordCount = (int) $GLOBALS['db']->ExecuteScalar($this->SeekCountQuery());
+                $startpage = max(1, (int) ceil($TotalRecordCount / $pagesize));
+            }
+            $plan = $seek->Plan($startpage, $pagesize, $cursor, $TotalRecordCount);
+
+            $condition = ('after' === $plan['mode'] || 'before' === $plan['mode'])
+                ? $seek->Seek($plan['values'], 'after' === $plan['mode'], $plan['inclusive'], [$GLOBALS['db'], 'Escape'])
+                : '';
+            $reverse = ('before' === $plan['mode'] || 'last' === $plan['mode']);
+            $query = $this->QueryOptions['basicquery'] . KeysetPager::Where($this->QueryOptions['whereconditions'], $condition)
+                . ' order by ' . $seek->OrderBy($reverse) . " limit {$plan['skip']}, {$plan['limit']}";
         } else {
             $query = $this->QueryOptions['basicquery'] . $this->QueryOptions['whereconditions'] . $orderLine . " limit {$start}, " . $pagesize;
         }
@@ -152,7 +197,8 @@ class Grid
         $pagingPage = $defaultpage;
         $newdirection = ('asc' == strtolower($orderdirection)) ? 'desc' : 'asc';
 
-        $page = Web::AppendQueryString($defaultpage, 'page=' . $startpage . '&d=' . $newdirection);
+        // A new sort starts at page 1 in seek mode, the same page number would need a deep offset.
+        $page = Web::AppendQueryString($defaultpage, 'page=' . (null !== $seek ? 1 : $startpage) . '&d=' . $newdirection);
         $this->CorePage = Web::AppendQueryString($defaultpage, 'page=' . $startpage);
 
         if (isset($_GET['direction'])) {
@@ -161,11 +207,22 @@ class Grid
         if (isset($_GET['orderby'])) {
             $filter .= '&orderby=' . $orderby;
         }
-        $countQuery = 'Select count(*) from (' . $this->QueryOptions['basicquery'] . $this->QueryOptions['whereconditions'] . ') t';
+        // Seek mode counts once, with the query the pager always used. Offset mode keeps counting twice.
+        $countQuery = (null !== $seek)
+            ? $this->SeekCountQuery()
+            : 'Select count(*) from (' . $this->QueryOptions['basicquery'] . $this->QueryOptions['whereconditions'] . ') t';
+
+        // Seek mode prints before running, so a query that fails or throws is still visible.
+        if ($seekRequested && $GLOBALS['AppConfig']['DebugMode']) {
+            echo $this->SeekDebugText($query, $countQuery, $plan, $cursor, $seekWhyNot);
+        }
 
         // Run data query and count query in parallel when a connection pool is available
         if (isset($GLOBALS['dbpool']) && $GLOBALS['dbpool'] instanceof DBPool) {
-            $parallelQueries = ['data' => $query, 'count' => $countQuery];
+            $parallelQueries = ['data' => $query];
+            if (null === $TotalRecordCount) {
+                $parallelQueries['count'] = $countQuery;
+            }
 
             // Dropdown filter source queries join the same parallel batch.
             $selectFilters = [];
@@ -184,15 +241,30 @@ class Grid
                 $f->rs = $parallelResults[$key];
             }
             $rs = $parallelResults['data'];
-            $countResult = $parallelResults['count'];
-            $TotalRecordCount = ($countResult instanceof \mysqli_result && $countResult->num_rows > 0)
-                ? $countResult->fetch_row()[0] : 0;
+            if (null === $TotalRecordCount) {
+                $countResult = $parallelResults['count'];
+                $TotalRecordCount = ($countResult instanceof \mysqli_result && $countResult->num_rows > 0)
+                    ? $countResult->fetch_row()[0] : 0;
+            }
         } else {
             $rs = $GLOBALS['db']->Execute($query);
-            $TotalRecordCount = $GLOBALS['db']->ExecuteScalar($countQuery);
+            $TotalRecordCount ??= $GLOBALS['db']->ExecuteScalar($countQuery);
         }
 
-        if ($GLOBALS['AppConfig']['DebugMode']) {
+        // Seek mode reads backwards for before/last, so the page is put back in display order here.
+        $rows = $rs;
+        $cursorToken = null;
+        if (null !== $seek) {
+            $rows = ($rs instanceof \Traversable) ? iterator_to_array($rs, false) : [];
+            if ('before' === $plan['mode'] || 'last' === $plan['mode']) {
+                $rows = array_reverse($rows);
+            }
+            if (count($rows) > 0) {
+                $cursorToken = $seek->Encode($startpage, $rows[0], $rows[count($rows) - 1], $hash);
+            }
+        }
+
+        if ($GLOBALS['AppConfig']['DebugMode'] && !$seekRequested) {
             echo $query;
         }
 
@@ -283,9 +355,11 @@ class Grid
         }
 
         if ($this->Options['allowpaging']) {
-            $pquery = $this->QueryOptions['pagingquery'] ?? $this->QueryOptions['basicquery'];
-            $pageingrow = '<tr class="pagetr"><td colspan="' . $totalfield . '"><div class="pager">' .
-                Utility::Paging(
+            if (null !== $seek) {
+                $pager = KeysetPager::Links($pagingPage, $startpage, (int) $TotalRecordCount, $pagesize, $cursorToken, $filter);
+            } else {
+                $pquery = $this->QueryOptions['pagingquery'] ?? $this->QueryOptions['basicquery'];
+                $pager = Utility::Paging(
                     $this->QueryOptions['tablename'],
                     $pagingPage,
                     $startpage,
@@ -293,7 +367,9 @@ class Grid
                     $filter,
                     true,
                     ['pagesize' => $pagesize]
-                ) . '</div></td></tr>';
+                );
+            }
+            $pageingrow = '<tr class="pagetr"><td colspan="' . $totalfield . '"><div class="pager">' . $pager . '</div></td></tr>';
 
             $listing .= $pageingrow;
         }
@@ -304,7 +380,7 @@ class Grid
 
         $listing .= self::$UI->GetAtTableBody();
 
-        if ($GLOBALS['db']->RowCount($rs) > 0) {
+        if ((null !== $seek) ? count($rows) > 0 : $GLOBALS['db']->RowCount($rs) > 0) {
             $alt = true;
             $RowValueTotal = [];
 
@@ -342,7 +418,7 @@ class Grid
             }
 
             $rowsHtml = [];
-            foreach ($rs as $row) {
+            foreach ($rows as $row) {
                 $rowHtml = '';
                 $rowId = $row[$indexField] ?? '';
                 $option = '';
@@ -595,6 +671,102 @@ class Grid
         }
 
         return ['fielddata' => $fielddata, 'cssClass' => $cssClass];
+    }
+
+    private static function IsDirection($d): bool
+    {
+        return is_string($d) && in_array(strtolower($d), ['asc', 'desc'], true);
+    }
+
+    /**
+     * ob is only a sort column when the grid itself offers it, anything else would be SQL from the URL.
+     */
+    private function IsSortColumn($ob): bool
+    {
+        if (!is_string($ob) || '' === $ob) {
+            return false;
+        }
+        if ($ob === ($this->QueryOptions['defaultorderby'] ?? '')) {
+            return true;
+        }
+        foreach ($this->Options['fields'] as $field => $val) {
+            if ((string) $field === $ob || (is_array($val) && ($val['sortstring'] ?? null) === $ob)) {
+                return true;
+            }
+        }
+        foreach ((array) ($this->QueryOptions['orderby'] ?? []) as $extra) {
+            if (preg_split('/\s+/', trim((string) $extra))[0] === $ob) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Seek paging is only used for a plain "basicquery + where" shape, anything else pages by offset.
+     */
+    private function BuildSeek(string $orderby, string $direction, ?string &$whyNot = null): ?KeysetPager
+    {
+        if (!empty($this->Options['noorderby']) || !empty($this->QueryOptions['noorderby'])) {
+            $whyNot = "'noorderby' is set";
+
+            return null;
+        }
+
+        $where = trim($this->QueryOptions['whereconditions'] ?? '');
+        if ('' === $where) {
+            // A where inside basicquery can't be told from a subquery's, so we don't append to it.
+            if (preg_match('/\bwhere\b/i', $this->QueryOptions['basicquery'])) {
+                $whyNot = "'whereconditions' is blank but 'basicquery' has its own where, move it into 'whereconditions'";
+
+                return null;
+            }
+        } elseif (0 !== stripos($where, 'where') || preg_match('/\b(group\s+by|having|order\s+by|limit|union)\b|;|--|#|\/\*/i', $where)) {
+            // Anything that could end or comment out the condition we append (or the parenthesis around the where) is not safe to extend.
+            $whyNot = "'whereconditions' is not a plain \"where ...\" clause (group by/having/order by/limit/union/;/--/#//* are not allowed)";
+
+            return null;
+        }
+
+        $extra = is_array($this->QueryOptions['orderby'] ?? null) ? $this->QueryOptions['orderby'] : [];
+        $indexField = (string) ($this->QueryOptions['indexfield'] ?? '');
+        $seek = KeysetPager::Build($orderby, $direction, $extra, $this->Options['fields'], $indexField, (string) ($this->QueryOptions['indexexpr'] ?? ''));
+        if (null === $seek) {
+            $whyNot = ('' === $indexField)
+                ? "'indexfield' is empty"
+                : "sort column '{$orderby}' (or an extra 'orderby' column) has no 'seek' in its field definition";
+        }
+
+        return $seek;
+    }
+
+    /**
+     * DebugMode text for seek paging: the queries about to run and whether seek is in use.
+     */
+    private function SeekDebugText(string $query, string $countQuery, ?array $plan, ?array $cursor, ?string $whyNot): string
+    {
+        if (null !== $plan) {
+            $cursorState = !isset($_GET['cur']) ? 'none' : (null !== $cursor ? 'valid' : 'ignored, made for another sort/filter');
+            $mode = "seek, mode {$plan['mode']}, skip {$plan['skip']}, limit {$plan['limit']}, cursor {$cursorState}";
+        } else {
+            $mode = 'offset (seek not used: ' . ($whyNot ?? 'allowpaging is off') . ')';
+        }
+
+        return "Paging Mode : {$mode}\r\nData Query : {$query}\r\nPaging Query : {$countQuery}\r\n";
+    }
+
+    /**
+     * Count of the whole filtered set: the lean pagingquery when given (what the pager always counted).
+     */
+    private function SeekCountQuery(): string
+    {
+        $q = $this->QueryOptions;
+        if ('' !== trim((string) ($q['pagingquery'] ?? ''))) {
+            return $q['pagingquery'] . $q['whereconditions'] . ($q['pagingqueryend'] ?? '');
+        }
+
+        return 'Select count(*) from (' . $q['basicquery'] . $q['whereconditions'] . ') t';
     }
 
     /**

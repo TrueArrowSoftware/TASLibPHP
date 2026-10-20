@@ -354,6 +354,7 @@ class UI
         $options['allowselection'] = $param['allowselection'];
         $options['roworder'] = ($param['AllowRowSort'] ?? false);
         $options['fields'] = $param['fields'];
+        $options['pagingmode'] = $param['pagingmode'] ?? 'offset';
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
         $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
@@ -423,6 +424,7 @@ class UI
         $options['allowselection'] = $param['allowselection'];
         $options['roworder'] = ($param['AllowRowSort'] ?? false);
         $options['fields'] = $param['fields'];
+        $options['pagingmode'] = $param['pagingmode'] ?? 'offset';
 
         $options['rowconditioncallback'] = ($param['rowconditioncb'] ?? null);
         $options['dateformat'] = Config::$DisplayDateFormat; //  'm/d/Y';
