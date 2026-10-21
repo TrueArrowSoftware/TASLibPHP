@@ -25,6 +25,7 @@
 - [What's New in 1.2.85](#whats-new-in-1285)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
+- [Security](#security)
 - [License](#license)
 
 ---
@@ -197,7 +198,9 @@ A reference database schema is available in [`database/db.sql`](database/db.sql)
 ## What's New in 1.2.85
 
 - **Seek paging for grids:** pass `'pagingmode' => 'seek'` to `UI::Grid`/`UI::GridBoxed` to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`); non-seekable shapes or stale tokens fall back to offset paging, so every URL still returns the right page.
-- Grid sort column (`ob`) is now validated against the grid's own columns.
+- **Security:** grid sort column (`ob`) and direction (`d`) are now validated, closing an SQL injection through the sort URL parameters. Upgrade if you use `Grid` with request-driven sorting.
+
+Full history: [CHANGELOG.md](CHANGELOG.md).
 
 ### 1.2.84
 
@@ -217,7 +220,11 @@ php ./vendor/bin/phpunit --bootstrap ./test/bootstrap.php ./test
 
 ## Contributing
 
-Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/TrueArrowSoftware/TASLibPHP/issues). Please include a short description, the PHP version and steps to reproduce for bugs.
+Bug reports, feature requests and pull requests are welcome on [GitHub](https://github.com/TrueArrowSoftware/TASLibPHP/issues). See [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, send patches and the test and style requirements (new features need a PHPUnit test).
+
+## Security
+
+Please report vulnerabilities privately, as described in [SECURITY.md](SECURITY.md). Fixes are listed under the Security heading of each release in the [CHANGELOG](CHANGELOG.md).
 
 ## License
 
