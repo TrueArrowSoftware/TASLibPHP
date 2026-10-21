@@ -112,6 +112,8 @@ $db->Delete('orders', $newId, 'OrderID');
 ```php
 use TAS\Core\Grid;
 
+$GLOBALS['Tables']['orders'] = 'orders';   // offset paging looks the grid's tablename up here
+
 $options = Grid::DefaultOptions();
 $options['gridid'] = 'orders';
 $options['gridurl'] = 'orders.php';
@@ -197,7 +199,7 @@ A reference database schema is available in [`database/db.sql`](database/db.sql)
 
 ## What's New in 1.2.85
 
-- **Seek paging for grids:** pass `'pagingmode' => 'seek'` to `UI::Grid`/`UI::GridBoxed` to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`); non-seekable shapes or stale tokens fall back to offset paging, so every URL still returns the right page.
+- **Seek paging for grids:** set `'pagingmode' => 'seek'` in the `Grid` options (or in the `$param` of `UI::HTMLGridFromRecordSet`/`UI::HTMLGridForPublic`) to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`); non-seekable shapes or stale tokens fall back to offset paging, so every URL still returns the right page.
 - **Security:** grid sort column (`ob`) and direction (`d`) are now validated, closing an SQL injection through the sort URL parameters. Upgrade if you use `Grid` with request-driven sorting.
 
 Full history: [CHANGELOG.md](CHANGELOG.md).
@@ -230,4 +232,4 @@ Please report vulnerabilities privately, as described in [SECURITY.md](SECURITY.
 
 Released under the [MIT License](LICENSE). © True Arrow Software.
 
-> **Note:** TASLibPHP is under active development. Some components are not yet fully covered by tests. Check the [docs](docs/Home.md) and release notes when upgrading.
+> **Note:** TASLibPHP is under active development. Some components are not yet fully covered by tests. Read the [documentation](docs/Home.md) and the [API reference](docs/API-Reference.md), and check the [changelog](CHANGELOG.md) when upgrading.

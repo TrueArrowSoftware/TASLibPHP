@@ -14,7 +14,7 @@ Every release has a **Security** heading listing the vulnerabilities fixed in it
 
 ### Added
 
-- Seek paging for grids: pass `'pagingmode' => 'seek'` to `UI::Grid`/`UI::GridBoxed` to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`). Non-seekable shapes and stale tokens fall back to offset paging.
+- Seek paging for grids: set `'pagingmode' => 'seek'` in the `Grid` options (or in the `$param` of `UI::HTMLGridFromRecordSet`/`UI::HTMLGridForPublic`) to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`). Non-seekable shapes and stale tokens fall back to offset paging.
 
 ### Security
 
