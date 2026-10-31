@@ -29,8 +29,7 @@ class Utility
      */
     public static function GenerateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname . '_orderby'] ?? $param['defaultorder']));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname . '_direction'] ?? $param['defaultsort']));
+        [$orderby, $orderdirection] = DataFormat::ReturnSortOrder($tagname, (string) ($param['defaultorder'] ?? ''), (string) ($param['defaultsort'] ?? ''), $param['fields'] ?? [], (array) ($SQLQuery['orderby'] ?? []));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -44,62 +43,7 @@ class Utility
         $sortstring = trim($sortstring, ',');
 
         $query = $SQLQuery['basicquery'] . $SQLQuery['where'] . " order by {$orderby} {$orderdirection} {$sortstring} ";
-        $rs = $GLOBALS['db']->Execute($query);
-
-        $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . uniqid() . '.html';
-        $filecreated = false;
-
-        $reportContent['ReportTitle'] = $reporttitle;
-        $reportContent['PageTitle'] = $reporttitle;
-        $reportContent['Content'] = ''; // $query . "\r\n : :: ". \TAS\Core\DB::Count($rs);
-        if (\TAS\Core\DB::Count($rs) > 0) {
-            $reportContent['Content'] .= '<table width="100%"><tr>';
-            foreach ($param['fields'] as $key => $val) {
-                $reportContent['Content'] .= '<td>' . $val['name'] . '</td>';
-            }
-            $reportContent['Content'] .= '</tr>';
-
-            while ($row = $GLOBALS['db']->Fetch($rs)) {
-                if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
-                    if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
-                        $additionalClass = $param['rowcondition']['cssclass'];
-                    } else {
-                        $additionalClass = '';
-                    }
-                } else {
-                    $additionalClass = '';
-                }
-
-                $reportContent['Content'] .= '<tr class="' . $additionalClass . ' datarow">';
-                foreach ($param['fields'] as $key => $val) {
-                    $reportContent['Content'] .= '<td>' . $row[$key] . '</td>';
-                }
-                $reportContent['Content'] .= '</tr>';
-            }
-            $reportContent['Content'] .= '</table>';
-        }
-
-        $reportContent['MetaExtra'] = '';
-        $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'] . DIRECTORY_SEPARATOR . $template, $reportContent);
-        file_put_contents($htmlfilepath, $content);
-        $pdfpath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . $filename;
-        $out = 1;
-        if (file_exists($htmlfilepath)) {
-            $cmd = 'xvfb-run wkhtmltopdf';
-            if ('localhost' == $_SERVER['HTTP_HOST']) {
-                $cmd = 'wkhtmltopdf';
-            }
-            exec($cmd . " --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"{$htmlfilepath}\" \"{$pdfpath}\"", $output, $out);
-        }
-        if (0 == $out) {
-            \TAS\Core\Web::DownloadHeader($filename);
-            @unlink($htmlfilepath);
-            readfile($pdfpath);
-
-            exit;
-        }
-
-        return false;
+        return self::DownloadReportPDF($query, $filename, $reporttitle, $param, $template);
     }
 
     /**
@@ -113,8 +57,7 @@ class Utility
      */
     public static function CreateReportPDF($SQLQuery, $filename, $reporttitle, $param, $tagname, $template)
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname . '_orderby'] ?? $SQLQuery['defaultorderby']));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname . '_direction'] ?? $SQLQuery['defaultsortdirection']));
+        [$orderby, $orderdirection] = DataFormat::ReturnSortOrder($tagname, (string) ($SQLQuery['defaultorderby'] ?? ''), (string) ($SQLQuery['defaultsortdirection'] ?? ''), $param['fields'] ?? [], (array) ($SQLQuery['orderby'] ?? []));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -128,62 +71,7 @@ class Utility
         $sortstring = trim($sortstring, ',');
 
         $query = $SQLQuery['basicquery'] . $SQLQuery['whereconditions'] . " order by {$orderby} {$orderdirection} {$sortstring} ";
-        $rs = $GLOBALS['db']->Execute($query);
-
-        $htmlfilepath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . uniqid() . '.html';
-        $filecreated = false;
-
-        $reportContent['ReportTitle'] = $reporttitle;
-        $reportContent['PageTitle'] = $reporttitle;
-        $reportContent['Content'] = ''; // $query . "\r\n : :: ". \TAS\Core\DB::Count($rs);
-        if (\TAS\Core\DB::Count($rs) > 0) {
-            $reportContent['Content'] .= '<table width="100%"><tr>';
-            foreach ($param['fields'] as $key => $val) {
-                $reportContent['Content'] .= '<td>' . $val['name'] . '</td>';
-            }
-            $reportContent['Content'] .= '</tr>';
-
-            while ($row = $GLOBALS['db']->Fetch($rs)) {
-                if (isset($param['rowcondition']) && is_array($param['rowcondition'])) {
-                    if ($row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
-                        $additionalClass = $param['rowcondition']['cssclass'];
-                    } else {
-                        $additionalClass = '';
-                    }
-                } else {
-                    $additionalClass = '';
-                }
-
-                $reportContent['Content'] .= '<tr class="' . $additionalClass . ' datarow">';
-                foreach ($param['fields'] as $key => $val) {
-                    $reportContent['Content'] .= '<td>' . $row[$key] . '</td>';
-                }
-                $reportContent['Content'] .= '</tr>';
-            }
-            $reportContent['Content'] .= '</table>';
-        }
-
-        $reportContent['MetaExtra'] = '';
-        $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'] . DIRECTORY_SEPARATOR . $template, $reportContent);
-        file_put_contents($htmlfilepath, $content);
-        $pdfpath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . $filename;
-        $out = 1;
-        if (file_exists($htmlfilepath)) {
-            $cmd = 'xvfb-run wkhtmltopdf';
-            if ('localhost' == $_SERVER['HTTP_HOST']) {
-                $cmd = 'wkhtmltopdf';
-            }
-            exec($cmd . " --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0 \"{$htmlfilepath}\" \"{$pdfpath}\"", $output, $out);
-        }
-        if (0 == $out) {
-            \TAS\Core\Web::DownloadHeader($filename);
-            @unlink($htmlfilepath);
-            readfile($pdfpath);
-
-            exit;
-        }
-
-        return false;
+        return self::DownloadReportPDF($query, $filename, $reporttitle, $param, $template);
     }
 
     /**
@@ -199,8 +87,7 @@ class Utility
      */
     public static function GenerateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname . '_orderby'] ?? $param['defaultorder']));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname . '_direction'] ?? $param['defaultsort']));
+        [$orderby, $orderdirection] = DataFormat::ReturnSortOrder($tagname, (string) ($param['defaultorder'] ?? ''), (string) ($param['defaultsort'] ?? ''), $param['fields'] ?? [], (array) ($SQLQuery['orderby'] ?? []));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -214,29 +101,7 @@ class Utility
         $sortstring = trim($sortstring, ',');
 
         $query = $SQLQuery['basicquery'] . $SQLQuery['where'] . " order by {$orderby} {$orderdirection} {$sortstring} ";
-        $rs = $GLOBALS['db']->Execute($query);
-        if ($GLOBALS['AppConfig']['DebugMode']) {
-            echo $query;
-        }
-
-        $header = [];
-        foreach ($param['fields'] as $field => $val) {
-            $header[$field] = $val['name'];
-        }
-        $filepath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . $filename;
-        if ($GLOBALS['AppConfig']['DebugMode']) {
-            echo 'header';
-            print_r($header);
-        }
-
-        if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
-            \TAS\Core\Web::DownloadHeader($filename);
-            readfile($filepath);
-
-            exit;
-        }
-
-        return false;
+        return self::DownloadCSV($query, $filename, $param);
     }
 
     /**
@@ -254,8 +119,7 @@ class Utility
      */
     public static function CreateCSV($SQLQuery, $filename, $tagname, $param = [])
     {
-        $orderby = ((isset($_GET['orderby'])) ? $_GET['orderby'] : ($_SESSION[$tagname . '_orderby'] ?? $SQLQuery['defaultorderby']));
-        $orderdirection = ((isset($_GET['direction'])) ? $_GET['direction'] : ($_SESSION[$tagname . '_direction'] ?? $SQLQuery['defaultsortdirection']));
+        [$orderby, $orderdirection] = DataFormat::ReturnSortOrder($tagname, (string) ($SQLQuery['defaultorderby'] ?? ''), (string) ($SQLQuery['defaultsortdirection'] ?? ''), $param['fields'] ?? [], (array) ($SQLQuery['orderby'] ?? []));
 
         $sortstring = '';
         if (isset($SQLQuery['orderby']) && is_array($SQLQuery['orderby'])) {
@@ -268,7 +132,15 @@ class Utility
         }
         $sortstring = trim($sortstring, ',');
         $query = $SQLQuery['basicquery'] . $SQLQuery['whereconditions'] . " order by {$orderby} {$orderdirection} {$sortstring} ";
-        $rs = $GLOBALS['db']->Execute($query);
+        return self::DownloadCSV($query, $filename, $param);
+    }
+
+    /**
+     * CSV of $query sent as a download. The file only lives in cache/ while it is sent, under a name nobody chose:
+     * $filename is just the name the browser gets (it used to be a path under cache/, so "../x.php" wrote anywhere).
+     */
+    private static function DownloadCSV(string $query, $filename, $param)
+    {
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo $query;
         }
@@ -277,16 +149,83 @@ class Utility
         foreach ($param['fields'] as $field => $val) {
             $header[$field] = $val['name'];
         }
-        $filepath = $GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . $filename;
         if ($GLOBALS['AppConfig']['DebugMode']) {
             echo 'header';
             print_r($header);
         }
 
-        if (\TAS\Core\Utility::ExportCSV($query, $filepath, $header)) {
-            \TAS\Core\Web::DownloadHeader($filename);
-            readfile($filepath);
+        $filepath = tempnam($GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache', 'csv');
+        try {
+            $ok = \TAS\Core\Utility::ExportCSV($query, $filepath, $header);
+            if ($ok) {
+                \TAS\Core\Web::DownloadHeader(basename((string) $filename));
+                readfile($filepath);
+            }
+        } finally { // also when the query throws
+            @unlink($filepath);
+        }
+        if ($ok) {
+            exit;
+        }
 
+        return false;
+    }
+
+    /**
+     * Rows of $query as an HTML table in $template, turned into a PDF by wkhtmltopdf and sent as a download. As with
+     * DownloadCSV the files only live in cache/ while it runs and $filename is only the download name. The page may
+     * read local files from the template's own folder (css, images) and nothing else on disk.
+     */
+    private static function DownloadReportPDF(string $query, $filename, $reporttitle, $param, $template)
+    {
+        $rs = $GLOBALS['db']->Execute($query);
+
+        $reportContent['ReportTitle'] = $reporttitle;
+        $reportContent['PageTitle'] = $reporttitle;
+        $reportContent['Content'] = '';
+        if (\TAS\Core\DB::Count($rs) > 0) {
+            $reportContent['Content'] .= '<table width="100%"><tr>';
+            foreach ($param['fields'] as $key => $val) {
+                $reportContent['Content'] .= '<td>' . $val['name'] . '</td>';
+            }
+            $reportContent['Content'] .= '</tr>';
+
+            while ($row = $GLOBALS['db']->Fetch($rs)) {
+                $additionalClass = '';
+                if (isset($param['rowcondition']) && is_array($param['rowcondition']) && $row[$param['rowcondition']['column']] == $param['rowcondition']['onvalue']) {
+                    $additionalClass = $param['rowcondition']['cssclass'];
+                }
+
+                $reportContent['Content'] .= '<tr class="' . HTML::Encode($additionalClass) . ' datarow">';
+                foreach ($param['fields'] as $key => $val) {
+                    $reportContent['Content'] .= '<td>' . HTML::Content($row[$key], !empty($val['html'])) . '</td>';
+                }
+                $reportContent['Content'] .= '</tr>';
+            }
+            $reportContent['Content'] .= '</table>';
+        }
+
+        $reportContent['MetaExtra'] = '';
+        $content = TemplateHandler::InsertTemplateContent($GLOBALS['AppConfig']['TemplatePath'] . DIRECTORY_SEPARATOR . $template, $reportContent);
+
+        $base = tempnam($GLOBALS['AppConfig']['PhysicalPath'] . DIRECTORY_SEPARATOR . 'cache', 'rpt');
+        $htmlfilepath = $base . '.html';
+        $pdfpath = $base . '.pdf';
+        $out = 1;
+        if (false !== file_put_contents($htmlfilepath, $content)) {
+            $cmd = ('localhost' == ($_SERVER['HTTP_HOST'] ?? '')) ? 'wkhtmltopdf' : 'xvfb-run wkhtmltopdf';
+            $assets = dirname($GLOBALS['AppConfig']['TemplatePath']); // theme/ when TemplatePath is theme/template
+            exec($cmd . ' --page-width 8.5in --page-height 11in --margin-left 0.5cm --margin-right 0 --margin-top 1.25cm --margin-bottom 0'
+                . ' --disable-local-file-access --allow ' . escapeshellarg($assets) . ' ' . escapeshellarg($htmlfilepath) . ' ' . escapeshellarg($pdfpath), $output, $out);
+        }
+        if (0 == $out) {
+            \TAS\Core\Web::DownloadHeader(basename((string) $filename));
+            readfile($pdfpath);
+        }
+        @unlink($htmlfilepath);
+        @unlink($pdfpath);
+        @unlink($base);
+        if (0 == $out) {
             exit;
         }
 
@@ -329,32 +268,13 @@ class Utility
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fields);
         }
-        $csvHeader = '';
-        $fieldindex = [];
-        foreach ($fields as $index => $field) {
-            if (is_object($field)) {
-                $fieldname = $field->name;
-            } else {
-                $fieldname = $field;
-            }
-            $fieldindex[] = $index;
-            $csvHeader .= ',"' . $fieldname . '" ';
-        }
-        $csvHeader = trim($csvHeader, ',');
-        $csvHeader .= "\n";
-
-        fwrite($fh, $csvHeader);
-        unset($csvHeader);
+        $fieldindex = array_keys($fields);
+        CSV::WriteRow($fh, array_map(fn ($field) => is_object($field) ? $field->name : $field, array_values($fields)));
         if ($GLOBALS['AppConfig']['DebugMode']) {
             print_r($fieldindex);
         }
         while ($row = $GLOBALS['db']->FetchArray($rs)) {
-            $dataline = '';
-            foreach ($fieldindex as $key => $val) {
-                $dataline .= ',"' . $row[$val] . '" ';
-            }
-            $dataline = trim($dataline, ',') . "\n";
-            fwrite($fh, $dataline);
+            CSV::WriteRow($fh, array_map(fn ($val) => $row[$val], $fieldindex)); // quoting and formula guard
         }
         fclose($fh);
 
@@ -377,31 +297,26 @@ class Utility
             }
         }
 
-        $included = false;
+        // class_exists($userInput) lands here: only a class name may become part of a path to require
+        if (!preg_match('/^[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*(\\\\[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)*$/', (string) $classname)) {
+            return;
+        }
+
         if (strpos($classname, '\\') > 0) {
             $t = explode('\\', $classname);
             $classname = $t[count($t) - 1];
         }
         foreach ($defaultpaths as $defaultpath) {
             if (file_exists($defaultpath . DIRECTORY_SEPARATOR . 'class.' . strtolower($classname) . '.php')) {
-                $included = true;
-
                 require_once $defaultpath . DIRECTORY_SEPARATOR . 'class.' . strtolower($classname) . '.php';
             } elseif (file_exists($defaultpath . DIRECTORY_SEPARATOR . $classname . '.php')) {
-                $included = true;
-
                 require_once $defaultpath . DIRECTORY_SEPARATOR . $classname . '.php';
             } elseif (file_exists($defaultpath . DIRECTORY_SEPARATOR . 'class.' . $classname . '.php')) {
-                $included = true;
-
                 require_once $defaultpath . DIRECTORY_SEPARATOR . 'class.' . $classname . '.php';
             }
         }
-        if (!$included) {
-            \TAS\Core\Log::AddEvent([
-                'message' => $classname . ' is not found. Fail to load required code.',
-            ], 'high');
-        }
+        // A miss is not logged any more: with several autoloaders it is normal (composer's finds the class next), and the
+        // DB row per miss ran for every library class on every request when this loader was registered first.
     }
 
     /**
@@ -452,7 +367,7 @@ class Utility
 
         $pagename = Web::AppendQueryString($pagename, $querystring);
 
-        $num = $GLOBALS['db']->ExecuteScalar($query);
+        $num = $GLOBALS['db']->ExecuteScalar($query, $param['params'] ?? null); // values for ? in $condition
         $bar = [];
         $pages = 1;
         if ($num > $pagesize) {
@@ -465,8 +380,8 @@ class Utility
                 // Has few Pages
                 $previous = $start - 1;
                 if ($previous > 0) {
-                    $bar[] = '<a href="' . \TAS\Core\Web::AppendQueryString($pagename, 'page=1') . '" class="ui-state-default ui-corner-all" ><span class="fa fa-angle-double-left"></span></a> ';
-                    $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=' . $previous) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-left\"></span></a> ";
+                    $bar[] = '<a href="' . HTML::Encode(Web::AppendQueryString($pagename, 'page=1')) . '" class="ui-state-default ui-corner-all" ><span class="fa fa-angle-double-left"></span></a> ';
+                    $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=' . $previous)) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-left\"></span></a> ";
                 }
                 $startl = $start - ($start % $nLinks) + 1;
                 $endl = $startl + $nLinks - 1;
@@ -474,7 +389,7 @@ class Utility
                 if ($start > ($nLinks - 1)) {
                     $nStart = 1;
                     $prev = $startl - $nLinks;
-                    $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=' . $prev) . "' class=\"ui-state-default ui-corner-all\" >{$prev}</a> <li>....</li> ";
+                    $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=' . $prev)) . "' class=\"ui-state-default ui-corner-all\" >{$prev}</a> <li>....</li> ";
                 } else {
                     $nStart = 0;
                 }
@@ -483,16 +398,16 @@ class Utility
                         $bar[] = '<a href="#" class="ui-state-default ui-corner-all active">' . $i . '</a>'; // no need to create a link to current page
                     } else {
                         if (1 == $i) {
-                            $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=1') . "' class=\"ui-state-default ui-corner-all\">{$i}</a>";
+                            $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=1')) . "' class=\"ui-state-default ui-corner-all\">{$i}</a>";
                         } else {
-                            $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=' . $i) . "' class=\"ui-state-default ui-corner-all\">{$i}</a>";
+                            $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=' . $i)) . "' class=\"ui-state-default ui-corner-all\">{$i}</a>";
                         }
                     }
                 }
                 $next = $start + 1;
                 if ($next <= $pages) {
-                    $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=' . $next) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-right\"></span></a> ";
-                    $bar[] = "<a href='" . \TAS\Core\Web::AppendQueryString($pagename, 'page=' . $pages) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-double-right\"></span></a>";
+                    $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=' . $next)) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-right\"></span></a> ";
+                    $bar[] = "<a href='" . HTML::Encode(Web::AppendQueryString($pagename, 'page=' . $pages)) . "' class=\"ui-state-default ui-corner-all\" ><span class=\"fa fa-angle-double-right\"></span></a>";
                 }
             }
         }
@@ -761,9 +676,12 @@ class Utility
         if (true == $GLOBALS['AppConfig']['UseSMTPAuth']) {
             $mail->IsSMTP();
             $mail->SMTPAuth = true; // enable SMTP authentication
-            $mail->SMTPSecure = ''; // sets the prefix to the servier
             $mail->Host = $GLOBALS['AppConfig']['SMTPServer']; // sets GMAIL as the SMTP server
             $mail->Port = $GLOBALS['AppConfig']['SMTPServerPort'] ?? 25; // set the SMTP port for the GMAIL server
+            // SMTP-TLS makes TLS a must, so a man in the middle can't strip STARTTLS and read the login; without it
+            // PHPMailer still upgrades when the server offers TLS (as before)
+            $mail->SMTPSecure = empty($GLOBALS['AppConfig']['SMTP-TLS']) ? ''
+                : (465 == (int) $mail->Port ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS);
             $mail->Username = $GLOBALS['AppConfig']['SMTPUsername']; // GMAIL username
             $mail->Password = $GLOBALS['AppConfig']['SMTPPassword'];
         }
@@ -773,7 +691,9 @@ class Utility
         }
 
         if ('' != $returnpath) {
-            $mail->AddReplyTo($returnpath, $returnpath);
+            // a bare address as before (its name is the address), or "Name <address>" from EmailOptions::GetReplyTo
+            $reply = PHPMailer::parseAddresses($returnpath)[0] ?? ['address' => $returnpath, 'name' => ''];
+            $mail->AddReplyTo($reply['address'], '' !== $reply['name'] ? $reply['name'] : $reply['address']);
         }
         if (null != $html_body && !empty($html_body)) {
             $mail->isHTML(true);
@@ -789,10 +709,9 @@ class Utility
             $mail->AddAttachment($attachment);
         }
         if (!$mail->Send()) {
-            \TAS\Core\Log::AddEvent([
+            \TAS\Core\Log::AddEvent([ // not the $mail object: it holds the SMTP password
                 'message' => 'IncFunction SendHTMLMail Failed !!!',
                 'Mail Error' => $mail->ErrorInfo,
-                'mail' => print_r($mail, true),
             ], 'debug');
             $mailstat = false;
         }
@@ -805,11 +724,8 @@ class Utility
      */
     public static function CreateGUID()
     {
-        $guid = '';
-        $namespace = date('Ymdhis');
-        $uid = uniqid('', true);
-        $data = $namespace;
-        $hash = strtoupper(hash('ripemd128', $uid . $guid . md5($data)));
+        // random, same format as before; the old one hashed the clock (uniqid + date), so it could be guessed
+        $hash = strtoupper(bin2hex(random_bytes(16)));
 
         return substr($hash, 0, 8) . '-' .
             substr($hash, 8, 4) . '-' .
@@ -840,27 +756,11 @@ class Utility
      */
     public static function PasswordValidation($password)
     {
-        $uppercase = preg_match('@[A-Z]@', $password);
-        $lowercase = preg_match('@[a-z]@', $password);
-        $number = preg_match('@[0-9]@', $password);
-        $specialChars = preg_match('@[^\w]@', $password);
-
-        if (strlen($password) < 8) {
-            return 'Password should be at least 8 characters in length.';
+        // one rule set, kept in DataValidate; this returns its message instead of throwing it
+        try {
+            return DataValidate::ValidatePassword((string) $password);
+        } catch (\Exception $e) {
+            return $e->getMessage();
         }
-        if (!$uppercase) {
-            return 'Password must include at least upper case letter.';
-        }
-        if (!$lowercase) {
-            return 'Password must include at least lower case letter.';
-        }
-        if (!$number) {
-            return 'Password must include at least one number.';
-        }
-        if (!$specialChars) {
-            return 'Password must include at least one special character.';
-        }
-
-        return true;
     }
 }

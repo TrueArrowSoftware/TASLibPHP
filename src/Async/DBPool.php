@@ -55,7 +55,7 @@ class DBPool
     public function __construct(
         string $server = 'localhost',
         string $user = 'root',
-        string $password = '',
+        #[\SensitiveParameter] string $password = '',
         string $dbName = 'demo',
         int $maxConnections = 5,
         string $charset = 'utf8mb4',
@@ -70,6 +70,14 @@ class DBPool
         $this->charset = $charset;
         $this->collation = $collation;
         $this->debug = $debug;
+    }
+
+    /**
+     * print_r/var_dump of the pool never show the password.
+     */
+    public function __debugInfo(): array
+    {
+        return array_merge(get_object_vars($this), ['password' => '********']);
     }
 
     /**
@@ -145,6 +153,13 @@ class DBPool
     {
         $id = spl_object_id($db);
         unset($this->inUse[$id]);
+
+        // Past maxConnections only through acquire()'s fallback: close that one, so the idle pool can't keep growing
+        if (empty($this->waitQueue) && count($this->available) + count($this->inUse) >= $this->maxConnections) {
+            $db->CloseDB();
+
+            return;
+        }
 
         // If a Fiber is waiting, make connection available and resume it
         if (!empty($this->waitQueue)) {

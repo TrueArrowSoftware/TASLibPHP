@@ -18,8 +18,14 @@ class TemplateHandler
     ];
 
     /**
-     * Iterate and replace keywords in given Content.
-     * It also replace AppConfig common variable.
+     * AppConfig entries with a name like this are never put into a template, whoever wrote the placeholder.
+     */
+    private const SECRET_KEY = '/pass|secret|token|private|credential/i';
+
+    /**
+     * Replace {keyword} and {keyword-subkey} (for an array/object value) in the content, then the AppConfig common variables.
+     * Keywords go in one pass, so a value that looks like {another} stays text (user data can't pull in other keywords).
+     * The AppConfig pass also covers {HomeURL} written inside a keyword value (CMS content), but never a secret entry.
      *
      * @param string $content
      * @param array $keywords
@@ -27,28 +33,28 @@ class TemplateHandler
      */
     public static function PrepareContent(string $content, array $keywords)
     {
-        if (is_array($keywords)) {
-            reset($keywords);
-            foreach ($keywords as $index => $value) {
-                if (!is_array($value) && !is_object($value)) {
-                    $content = str_replace('{'.$index.'}', $value ?? '', $content);
-                } else {
-                    foreach ($value as $io => $vo) {
-                        $content = str_replace('{'.$index.'-'.$io.'}', $vo ?? '', $content);
-                    }
-                }
-            }
-            reset($GLOBALS['AppConfig']);
-            foreach ($GLOBALS['AppConfig'] as $index => $value) {
-                if (!is_array($value) && !is_object($value)) {
-                    $content = str_replace('{'.$index.'}', $value ?? '', $content);
-                }
-            }
+        $text = fn ($v): string => (is_scalar($v) || $v instanceof \Stringable) ? (string) $v : '';
 
-            return $content;
+        $map = [];
+        foreach ($keywords as $index => $value) {
+            if (!is_array($value) && !is_object($value)) {
+                $map['{'.$index.'}'] = $text($value);
+            } else {
+                foreach ($value as $io => $vo) {
+                    $map['{'.$index.'-'.$io.'}'] = $text($vo);
+                }
+            }
+        }
+        $content = strtr($content, $map);
+
+        $config = [];
+        foreach ($GLOBALS['AppConfig'] as $index => $value) {
+            if (!is_array($value) && !is_object($value) && !preg_match(self::SECRET_KEY, (string) $index)) {
+                $config['{'.$index.'}'] = $text($value);
+            }
         }
 
-        return $content;
+        return strtr($content, $config);
     }
 
     /**

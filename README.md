@@ -6,7 +6,7 @@
 
 **TASLibPHP** (True Arrow Software Library for PHP) is a lightweight toolkit for building PHP web applications quickly, without the weight of a full framework. It gives you database access, data grids, validation, file handling, templating, email and async helpers under a single `TAS\Core` namespace.
 
-**Current version:** `1.2.85`
+**Current version:** `1.2.86`
 
 ---
 
@@ -22,7 +22,7 @@
   - [Grid Header Filters](#grid-header-filters)
   - [Parallel Queries](#parallel-queries)
 - [Configuration](#configuration)
-- [What's New in 1.2.85](#whats-new-in-1285)
+- [What's New in 1.2.86](#whats-new-in-1286)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
 - [Security](#security)
@@ -62,7 +62,7 @@ composer require truearrowsoftware/taslib
 To pin this release:
 
 ```bash
-composer require truearrowsoftware/taslib:1.2.85
+composer require truearrowsoftware/taslib:1.2.86
 ```
 
 ## Quick Start
@@ -197,7 +197,18 @@ Key settings in `configure.php` / `configure.local.php`:
 
 A reference database schema is available in [`database/db.sql`](database/db.sql).
 
-## What's New in 1.2.85
+## What's New in 1.2.86
+
+A security release. **Upgrade, and read the "Changed" list in the [changelog](CHANGELOG.md#1286---2026-10-31) first: a few behaviours are stricter.**
+
+- **Output encoding:** attributes, option text, textarea content and pager links are always encoded (`HTML::Encode`, `HTML::Url`). Set `Config::$EscapeOutput = true` to also encode grid cells, messages and labels, and mark a column, field or message `'html' => true` to keep it raw.
+- **SQL:** table and column names are quoted (`DB::QuoteIdentifier`), bulk writes bind their values, `DB::Delete` takes a numeric id, and every sort parameter (`ob`/`d`, `orderby`/`direction`) is checked against the columns the page offers. `Grid` has a new `params` query option for values bound to `?` in `whereconditions`.
+- **Uploads:** images are accepted by content (JPEG, PNG, GIF, WebP, SVG), SVG files are sanitized, and size limits apply to every upload. Documents use an extension allow-list. SVG support needs the new `enshrined/svg-sanitize` dependency, which Composer installs for you.
+- **Network and mail:** HTTP calls are limited to http/https, with `DirectConnection::$VerifySSL` and `$Timeout`. FTP can use TLS (`$UseSSL`), `SMTP-TLS` now forces TLS, and passwords no longer show in `var_dump` or logs.
+- **Redirects and sessions:** `Web::RedirectLocal` follows only same-site targets, and `Web::ResetSession` issues a new session id.
+- **Verification codes** from `DataFormat::GenerateVerificationCode` are now random: store and compare them, they cannot be recomputed.
+
+### 1.2.85
 
 - **Seek paging for grids:** set `'pagingmode' => 'seek'` in the `Grid` options (or in the `$param` of `UI::HTMLGridFromRecordSet`/`UI::HTMLGridForPublic`) to page with an anchor row (`KeysetPager`) instead of a deep `OFFSET`. Mark sort columns with `'seek' => 'sql expression'` (or `true`); non-seekable shapes or stale tokens fall back to offset paging, so every URL still returns the right page.
 - **Security:** grid sort column (`ob`) and direction (`d`) are now validated, closing an SQL injection through the sort URL parameters. Upgrade if you use `Grid` with request-driven sorting.

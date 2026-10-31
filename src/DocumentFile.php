@@ -25,8 +25,43 @@ class DocumentFile extends \TAS\Core\UserFile
         }
     }
 
+    /**
+     * Extensions (lowercase) a document may have. Add to it for more types, never add anything a web server runs or a browser renders (php, phtml, phar, html, svg ...).
+     *
+     * @var string[]
+     */
+    public static array $AllowedExtensions = ['pdf', 'txt', 'csv', 'rtf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp', 'zip', 'jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+    /**
+     * Content the file may not have, whatever its name says: pages, scripts and programs.
+     */
+    private const FORBIDDEN_MIME = '#^(text/(html|xml|javascript|x-php|x-shellscript)|application/(xhtml\+xml|xml|javascript|x-httpd-php|x-php|x-sh|x-dosexec|x-executable|x-msdownload)|image/svg\+xml)#';
+
+    /**
+     * Validate an entry of $_FILES: an allowed extension, content that is not a page, script or program, and within MaxFileSize.
+     * The type the client sent is ignored. The reason is left in Error.
+     *
+     * @param array $file
+     * @return bool
+     */
     public function Validate($file = '')
     {
+        if (!$this->CheckUploaded($file)) {
+            return false;
+        }
+        $ext = strtolower(IO::GetExtension((string) ($file['name'] ?? '')));
+        if (!in_array($ext, static::$AllowedExtensions, true)) {
+            $this->SetError('Files of this type are not accepted');
+
+            return false;
+        }
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+        if (false === $mime || preg_match(self::FORBIDDEN_MIME, $mime)) {
+            $this->SetError('The content of this file is not accepted');
+
+            return false;
+        }
+
         return true;
     }
 
@@ -51,8 +86,7 @@ class DocumentFile extends \TAS\Core\UserFile
             // Load file to given path
             // Before that find the location
             if ($this->FindPathForNew($GLOBALS['Tables']['document'])) {
-                $fileext = explode('.', $filedata['name']);
-                $fileext = strtolower($fileext[count($fileext) - 1]);
+                $fileext = strtolower(IO::GetExtension((string) ($filedata['name'] ?? ''))); // Validate only lets an allowed one through
                 if ($this->Validate($filedata)) {
                     // Create a Random file name
                     $filename = $this->getFileName('.' . $fileext);
@@ -137,9 +171,8 @@ class DocumentFile extends \TAS\Core\UserFile
     public function GetDocumentOnLinker($linkerid)
     {
         $document = [];
-        // echo "Select * from ".$GLOBALS['tables']['documents']." where linkertype='".$this->LinkerType."' and linkerid=$linkerid";
         $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] .
-            " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by adddate desc");
+            ' where linkertype = ? and linkerid = ? order by adddate desc', [$this->LinkerType, (int) $linkerid]);
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
             while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
                 $folder = $this->FindFolder($rowdocument['documentid']);
@@ -184,7 +217,7 @@ class DocumentFile extends \TAS\Core\UserFile
     public function GetDocument($docid)
     {
         $document = [];
-        $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['document'] . " where documentid='" . $docid . "' limit 1");
+        $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['document'] . ' where documentid = ? limit 1', [(int) $docid]);
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
             while ($rowdocument = $GLOBALS['db']->FetchArray($documentlist)) {
                 $folder = $this->FindFolder($rowdocument['documentid']);
@@ -240,7 +273,7 @@ class DocumentFile extends \TAS\Core\UserFile
     public function DeleteDocumentOnLinker($linkerid)
     {
         $document = [];
-        $documentlist = $GLOBALS['db']->Execute('Select documentid from ' . $GLOBALS['tables']['documents'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid}");
+        $documentlist = $GLOBALS['db']->Execute('Select documentid from ' . $GLOBALS['tables']['documents'] . ' where linkertype = ? and linkerid = ?', [$this->LinkerType, (int) $linkerid]);
         // Remove Physical File
         if ($GLOBALS['db']->RowCount($documentlist) > 0) {
             $docIds = [];
@@ -292,9 +325,9 @@ class DocumentFile extends \TAS\Core\UserFile
     public function SetFileCaption($documentid, $newCaption)
     {
         if (!empty($documentid) && $documentid > 0 && '' != $newCaption) {
-            $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] . " where documentid={$documentid}");
+            $documentlist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['tables']['documents'] . ' where documentid = ?', [(int) $documentid]);
             if ($GLOBALS['db']->RowCount($documentlist) > 0) {
-                $GLOBALS['db']->Execute('update ' . $GLOBALS['tables']['documents'] . " set documentcaption='" . $newCaption . "' where documentid={$documentid}");
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['tables']['documents'] . ' set documentcaption = ? where documentid = ?', [$newCaption, (int) $documentid]);
 
                 return true;
             }
@@ -361,7 +394,7 @@ class DocumentFile extends \TAS\Core\UserFile
     {
         $SQLQuery['basicquery'] = 'select * from ' . $GLOBALS['Tables']['document'];
         $filter = [];
-        $filter[] = " linkertype='" . $linkertype . "'";
+        $filter[] = " linkertype='" . $GLOBALS['db']->Escape($linkertype) . "'";
 
         if (is_array($filters) && count($filters) > 0) {
             $filter = array_merge($filter, $filters);

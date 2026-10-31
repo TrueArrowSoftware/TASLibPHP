@@ -50,7 +50,10 @@ class Entity
      */
     public static function GetError(): string
     {
-        return self::$Errors[count(self::$Errors) - 1];
+        // the message: returning the whole ['message', 'level'] entry was a TypeError on every call
+        $errors = self::$Errors ?? [];
+
+        return (string) ($errors[count($errors) - 1]['message'] ?? '');
     }
 
     /**
@@ -270,11 +273,29 @@ class Entity
     {
         $row = $GLOBALS['db']->Fetch($rs);
         foreach ($this as $key => $value) {
-            if (isset($row[strtolower($key)])) {
-                $this->{$key} = \mb_convert_encoding($row[strtolower($key)] ?? '', 'utf-8');
+            if (isset($row[strtolower($key)]) && !$this->IsInternalProperty($key)) {
+                $this->SetLoadedValue($key, $row[strtolower($key)]);
             }
         }
         $this->_isloaded = true;
+    }
+
+    /**
+     * Protected/private members starting with `_` (`_tablename`, `_primarykey`, `_isloaded`, ...) are object state,
+     * never loaded from input: posting `_tablename=...` must not change the table the entity queries.
+     */
+    private function IsInternalProperty(string $key): bool
+    {
+        return '_' === $key[0] && !(new \ReflectionProperty($this, $key))->isPublic();
+    }
+
+    private function SetLoadedValue(string $key, $value): void
+    {
+        try {
+            $this->{$key} = \mb_convert_encoding($value ?? '', 'utf-8');
+        } catch (\TypeError $e) {
+            // value of the wrong type for a typed property (e.g. `name[]=x` posted for a string): leave it unchanged
+        }
     }
 
 
@@ -349,8 +370,8 @@ class Entity
     public function LoadFromArray(array $data)
     {
         foreach ($this as $key => $value) {
-            if (array_key_exists(strtolower($key), $data)) {
-                $this->{$key} = \mb_convert_encoding($data[strtolower($key)] ?? '', 'utf-8');
+            if (array_key_exists(strtolower($key), $data) && !$this->IsInternalProperty($key)) {
+                $this->SetLoadedValue($key, $data[strtolower($key)]);
             }
         }
         $this->_isloaded = true;

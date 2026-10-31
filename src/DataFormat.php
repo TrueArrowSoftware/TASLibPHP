@@ -376,8 +376,7 @@ class DataFormat
         do {
             $string = '';
             for ($p = 0; $p < $length; ++$p) {
-                $x = (int) mt_rand(0, 54);
-                $string .= $characters[$x];
+                $string .= $characters[random_int(0, 54)]; // CSPRNG: mt_rand output can be predicted from earlier output
             }
         } while (!DataFormat::ValidatePassword($string));
 
@@ -385,18 +384,17 @@ class DataFormat
     }
 
     /**
-     * Generates the Verification Code from Username.
+     * A new random verification code, 32 hex characters (the length the old md5 code had).
+     * Store it (best hashed, with an expiry) and compare against the stored one: it can't be re-computed from the user,
+     * which is the point, md5($username << 2) could be computed by anyone for any user id.
      *
-     * @param string $username
-     *                         Expect a unique ID code to generate a Modified MD5 Hash
+     * @param string $username no longer used, kept so old calls still work
      *
-     * @return string A Modified MD4 Hash of $username as string
+     * @return string
      */
-    public static function GenerateVerificationCode($username)
+    public static function GenerateVerificationCode($username = '')
     {
-        $verificationCode = $username;
-
-        return md5($username << 2);
+        return bin2hex(random_bytes(16));
     }
 
     /**
@@ -453,6 +451,31 @@ class DataFormat
         } else {
             return (int) $_GET[$var];
         }
+    }
+
+    /**
+     * Sort column and direction for an "order by", taken from the URL, else the session, else the defaults.
+     * Only a column the page offers (see DataValidate::IsSortColumn) and asc/desc is taken, whatever the URL or
+     * an old session says. The session keys are "{$name}_{$columnParam}" and "{$name}_{$directionParam}".
+     *
+     * @param string $name       key of the page/grid in the session
+     * @param string $defaultColumn
+     * @param string $defaultDirection
+     * @param array  $fields     column definitions keyed by column
+     * @param array  $extra      'orderby' entries like 'name asc'
+     * @return array{0: string, 1: string} column, direction
+     */
+    public static function ReturnSortOrder(string $name, string $defaultColumn, string $defaultDirection, array $fields, array $extra = [], string $columnParam = 'orderby', string $directionParam = 'direction'): array
+    {
+        $fromSession = $_SESSION[$name.'_'.$columnParam] ?? null;
+        $directionFromSession = $_SESSION[$name.'_'.$directionParam] ?? null;
+
+        $column = DataValidate::IsSortColumn($_GET[$columnParam] ?? null, $defaultColumn, $fields, $extra) ? $_GET[$columnParam]
+            : (DataValidate::IsSortColumn($fromSession, $defaultColumn, $fields, $extra) ? $fromSession : $defaultColumn);
+        $direction = DataValidate::IsSortDirection($_GET[$directionParam] ?? null) ? $_GET[$directionParam]
+            : (DataValidate::IsSortDirection($directionFromSession) ? $directionFromSession : $defaultDirection);
+
+        return [$column, $direction];
     }
 
     /**
@@ -554,10 +577,10 @@ class DataFormat
     /**
      * Return create slug.
      *
-     * @param string $string
+     * @param string|null $string
      * @return string
      */
-    public static function CreateSlug(string $string)
+    public static function CreateSlug(?string $string)
     {
         if (null == $string || empty($string)) {
             return '';

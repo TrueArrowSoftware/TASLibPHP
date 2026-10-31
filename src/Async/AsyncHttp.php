@@ -28,7 +28,7 @@ class AsyncHttp
      *     - 'data' (string|array): POST data
      *     - 'headers' (array): Extra headers
      *     - 'timeout' (int): Per-request timeout in seconds (default 30)
-     *     - 'ssl_verify' (bool): Verify SSL (default false for BC)
+     *     - 'ssl_verify' (bool): Verify SSL (default DirectConnection::$VerifySSL, false for BC)
      * @param int $pollIntervalUs Poll interval in microseconds (default 10000 = 10ms)
      * @return array<string, string|false> Responses keyed by same labels. False on failure.
      */
@@ -133,13 +133,18 @@ class AsyncHttp
         $url = $config['url'] ?? '';
         $method = strtoupper($config['method'] ?? 'GET');
         $timeout = $config['timeout'] ?? 30;
-        $sslVerify = $config['ssl_verify'] ?? false;
+        $sslVerify = $config['ssl_verify'] ?? \TAS\Core\DirectConnection::$VerifySSL;
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, $sslVerify);
         curl_setopt($ch, CURLOPT_VERBOSE, false);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+        // http/https only, also after a redirect: no file:// reads, no gopher:// etc. to internal services
+        curl_setopt($ch, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, min(30, $timeout));
         curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 
         if ('POST' === $method) {

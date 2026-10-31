@@ -14,6 +14,10 @@ class FTP
     public $Username;
     public $Password;
     public $RemotePath;
+    /**
+     * Connect with FTPS (ftp_ssl_connect). Off by default as before; plain FTP sends the password in clear text.
+     */
+    public $UseSSL = false;
     private $isConnected;
     private $Connection;
 
@@ -26,7 +30,7 @@ class FTP
      * @param string $path
      * @param string|int $port
      */
-    public function __construct($server, $username, $password, $path = '/', $port = '21')
+    public function __construct($server, $username, #[\SensitiveParameter] $password, $path = '/', $port = '21')
     {
         $this->FTPServer = $server;
         $this->Username = $username;
@@ -44,6 +48,14 @@ class FTP
     }
 
     /**
+     * print_r/var_dump of this object (the log lines below do it) never show the password.
+     */
+    public function __debugInfo(): array
+    {
+        return array_merge(get_object_vars($this), ['Password' => '********']);
+    }
+
+    /**
      * FTP Class' own Error handler to Enable Capturing FTP warning.
      *
      * @param int $errno
@@ -52,9 +64,9 @@ class FTP
      * @param int $errline
      * @param array $errcontext
      */
-    public static function FTPErrorHandler($errno, $errstr, $errfile, $errline, $errcontext)
+    public static function FTPErrorHandler($errno, $errstr, $errfile, $errline, $errcontext = [])
     {
-        echo 'error:: '.$errno.'::'.$errstr.'::'.$errfile.'::'.print_r($errcontext, true);
+        // nothing is printed: $errcontext holds the caller's variables, the password among them
         switch ($errno) {
             case E_USER_ERROR:
             case E_USER_WARNING:
@@ -74,9 +86,13 @@ class FTP
                 return true;
             }
             //	set_error_handler("FTP::FTPErrorHandler");
-            $this->Connection = @ftp_connect($this->FTPServer, $this->FTPPort, 20) or die('Connection failed'); //REMARK: We set timeout as 20 second to ensure it fail sooner
+            $connect = $this->UseSSL ? 'ftp_ssl_connect' : 'ftp_connect';
+            $this->Connection = function_exists($connect) ? @$connect($this->FTPServer, (int) $this->FTPPort, 20) : false; //REMARK: We set timeout as 20 second to ensure it fail sooner
+            if (!$this->Connection) {
+                return false; // was die(), which ended the whole script
+            }
             if (ftp_login($this->Connection, $this->Username, $this->Password)) {
-                @ftp_chdir($this->Connection, $this->RemotePath);
+                @ftp_chdir($this->Connection, self::CleanPath($this->RemotePath));
                 $this->isConnected = true;
 
                 return true;
@@ -90,14 +106,22 @@ class FTP
     }
 
     /**
+     * A remote path goes into an FTP command line: a CR/LF in it would start a second command.
+     */
+    private static function CleanPath($path): string
+    {
+        return str_replace(["\r", "\n", "\0"], '', (string) $path);
+    }
+
+    /**
      * @return void
      */
     public function Disconnect()
     {
-        $this->isConnected = false;
         if ($this->isConnected) {
             @ftp_close($this->Connection);
         }
+        $this->isConnected = false;
     }
 
     /**
@@ -112,7 +136,7 @@ class FTP
             $this->Connect();
         }
         if ($this->isConnected) {
-            if (@ftp_put($this->Connection, $remotepath, $localpath, $mode)) {
+            if (@ftp_put($this->Connection, self::CleanPath($remotepath), $localpath, $mode)) {
                 return true;
             } else {
                 \TAS\Core\Log::AddEvent(json_encode(array("Unable to upload $localpath to remote server", print_r($this, true))), 'normal');
@@ -136,7 +160,7 @@ class FTP
             $this->Connect();
         }
         if ($this->isConnected) {
-            if (@ftp_delete($this->Connection, $remotepath)) {
+            if (@ftp_delete($this->Connection, self::CleanPath($remotepath))) {
                 return true;
             } else {
                 return false;
@@ -160,7 +184,7 @@ class FTP
             $this->Connect();
         }
         if ($this->isConnected) {
-            if (ftp_get($this->Connection, $localpath, $remotepath, $mode)) {
+            if (ftp_get($this->Connection, $localpath, self::CleanPath($remotepath), $mode)) {
                 return true;
             } else {
                 \TAS\Core\Log::AddEvent(json_encode(array("Unable to download $localpath from remote server [ $remotepath ]", print_r($this, true))), 'normal');
@@ -186,14 +210,14 @@ class FTP
         }
         if ($this->isConnected) {
             ftp_pasv($this->Connection, false);
-            $content = ftp_rawlist($this->Connection, ' -a '.($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
+            $content = ftp_rawlist($this->Connection, ' -a '.self::CleanPath($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
             if ($tryPassive) {
                 //try to do passive mode.
                 if (isset($GLOBALS['AppConfig']['Debug']) && $GLOBALS['AppConfig']['Debug']) {
                     echo 'FTP is in Passive mode';
                 }
                 ftp_pasv($this->Connection, true);
-                $content = ftp_rawlist($this->Connection, ' -a '.($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
+                $content = ftp_rawlist($this->Connection, ' -a '.self::CleanPath($remotedirectory == '' ? $this->RemotePath : $remotedirectory));
             }
 
             return $content;
@@ -234,7 +258,7 @@ class FTP
      * @param int   $mode  FTP transfer mode (FTP_BINARY or FTP_ASCII)
      * @return array<int, bool> Results keyed by file index. True = success, false = failure.
      */
-    public static function PutBatch(array $files, string $server, string $username, string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
+    public static function PutBatch(array $files, string $server, string $username, #[\SensitiveParameter] string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
     {
         if (empty($files)) {
             return [];
@@ -286,7 +310,7 @@ class FTP
      * @param int    $mode     FTP transfer mode
      * @return array<int, bool> Results keyed by file index
      */
-    public static function GetBatch(array $files, string $server, string $username, string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
+    public static function GetBatch(array $files, string $server, string $username, #[\SensitiveParameter] string $password, string $path = '/', string $port = '21', int $mode = FTP_BINARY): array
     {
         if (empty($files)) {
             return [];

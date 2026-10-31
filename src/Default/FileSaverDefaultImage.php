@@ -76,10 +76,12 @@ class FileSaverDefaultImage  implements \TAS\Core\Interface\IFileSaver
 
     public function Delete(string $path, string $filename): bool
     {
-        $_file = $path . DIRECTORY_SEPARATOR . $filename; 
-        if (file_exists($_file)) {
-            return @unlink($_file);
+        // only a file inside $path: $filename ("folder/file") comes from a DB row, so "../" must not reach other files
+        $base = realpath($path);
+        $_file = realpath($path . DIRECTORY_SEPARATOR . $filename);
+        if (false === $base || false === $_file || !str_starts_with($_file, $base . DIRECTORY_SEPARATOR) || !is_file($_file)) {
+            return false;
         }
-        return false;
+        return @unlink($_file);
     }
 }

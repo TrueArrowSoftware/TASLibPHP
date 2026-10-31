@@ -33,11 +33,14 @@ class AsyncQuery
      * @param array<string, string> $queries Associative array of label => SQL query
      * @param DBPool $pool Connection pool to use
      * @param int $pollIntervalUs Poll interval in microseconds (default 1000 = 1ms)
+     * @param float|null $timeout Seconds to wait for all queries, null for no limit (as before). When it runs out the
+     *                            connections of the unfinished queries are closed (the pool replaces them) and it throws.
+     *                            A single query runs as a plain Execute and is not covered.
      * @return array<string, \mysqli_result|bool> Results keyed by same labels
      *
-     * @throws \Exception If a query fails
+     * @throws \Exception If a query fails or the timeout runs out
      */
-    public static function runParallel(array $queries, DBPool $pool, int $pollIntervalUs = 1000): array
+    public static function runParallel(array $queries, DBPool $pool, int $pollIntervalUs = 1000, ?float $timeout = null): array
     {
         if (empty($queries)) {
             return [];
@@ -73,8 +76,17 @@ class AsyncQuery
 
             // Poll until all queries complete
             $remaining = array_keys($queries);
+            $deadline = (null === $timeout) ? null : microtime(true) + $timeout;
 
             while (!empty($remaining)) {
+                if (null !== $deadline && microtime(true) > $deadline) {
+                    foreach ($remaining as $key) {
+                        $connections[$key]->CloseDB(); // still busy with its query, unusable for the next caller
+                    }
+
+                    throw new \Exception('Async queries timed out: ' . implode(', ', $remaining));
+                }
+
                 // Build arrays for mysqli_poll (needs references)
                 $read = $error = $reject = [];
                 foreach ($remaining as $key) {

@@ -46,21 +46,113 @@ class ImageFile extends UserFile
     }
 
     /**
-     * Validate if the file is image file or application-octet-stream, all other type will fail.
+     * Extension each accepted image type is stored with. The type is read from the file itself, never from the client.
+     */
+    private const TYPES = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif', IMAGETYPE_WEBP => 'webp'];
+
+    /**
+     * Widest image accepted, as width x height. Decoding for thumbnails needs memory in proportion to it.
+     */
+    public static int $MaxPixels = 50000000;
+
+    /**
+     * Biggest SVG accepted, in bytes. It is read as XML and cleaned, so it gets a limit of its own.
+     */
+    public static int $MaxSvgSize = 2097152;
+
+    /**
+     * Validate an entry of $_FILES: it has to be a JPEG, PNG, GIF, WebP or SVG by its content (the name and type the client sent
+     * are ignored), within MaxFileSize and MaxPixels (MaxSvgSize for an SVG). The reason is left in Error.
+     * An SVG is only checked here, Upload() cleans it before it is stored.
      *
      * @param array $file
      * @return bool
      */
     public function Validate($file = '')
     {
-        if ('' == $file) {
+        if (!$this->CheckUploaded($file)) {
             return false;
         }
-        if (!empty($file['type']) && (!is_bool(strpos($file['type'], 'image')) || 'application/octet-stream' == $file['type'])) {
+        $ext = self::DetectExtension($file['tmp_name']);
+        if (null === $ext) {
+            $this->SetError('Only JPEG, PNG, GIF, WebP and SVG images are accepted');
+
+            return false;
+        }
+        if ('svg' === $ext) {
+            if (filesize($file['tmp_name']) > static::$MaxSvgSize) {
+                $this->SetError('SVG is too large');
+
+                return false;
+            }
+
             return true;
         }
+        [$width, $height] = getimagesize($file['tmp_name']);
+        if ($width * $height > static::$MaxPixels) {
+            $this->SetError('Image is too large');
 
-        return false;
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Extension to store the image at $path with, from its content. Null when it is not an accepted image.
+     */
+    public static function DetectExtension(string $path): ?string
+    {
+        if (!is_file($path)) {
+            return null;
+        }
+        $info = @getimagesize($path);
+        if (false !== $info) {
+            return self::TYPES[$info[2]] ?? null;
+        }
+
+        return self::IsSvg($path) ? 'svg' : null;
+    }
+
+    /**
+     * An XML file whose root is <svg> in the SVG namespace. Only reads up to the root, and never loads entities.
+     */
+    private static function IsSvg(string $path): bool
+    {
+        $reader = new \XMLReader();
+        if (!@$reader->open($path, null, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING)) {
+            return false;
+        }
+        $isSvg = false;
+        while (@$reader->read()) {
+            if (\XMLReader::ELEMENT === $reader->nodeType) {
+                $isSvg = 'svg' === $reader->localName && 'http://www.w3.org/2000/svg' === $reader->namespaceURI;
+
+                break;
+            }
+        }
+        $reader->close();
+
+        return $isSvg;
+    }
+
+    /**
+     * Rewrite the SVG at $path without anything active: scripts, on* handlers, javascript: links, foreignObject and
+     * references to other sites. A file that is not a clean SVG (or has entity tricks) is refused. The reason is left in Error.
+     */
+    private function CleanSvg(string $path): bool
+    {
+        $sanitizer = new \enshrined\svgSanitize\Sanitizer();
+        $sanitizer->removeRemoteReferences(true);
+        $clean = $sanitizer->sanitize((string) file_get_contents($path));
+
+        if (!is_string($clean) || '' === $clean || false === file_put_contents($path, $clean) || !self::IsSvg($path)) {
+            $this->SetError('The SVG could not be accepted');
+
+            return false;
+        }
+
+        return true;
     }
 
 
@@ -85,9 +177,8 @@ class ImageFile extends UserFile
                 continue;
             }
             if ($this->FindPathForNew()) {
-                $fileext = explode('.', $filedata['name']);
-                $fileext = $fileext[count($fileext) - 1];
-                if ($this->Validate($filedata)) {
+                $fileext = self::DetectExtension((string) ($filedata['tmp_name'] ?? ''));
+                if (null !== $fileext && $this->Validate($filedata) && ('svg' !== $fileext || $this->CleanSvg($filedata['tmp_name']))) {
                     $filenamewithoutExt = $this->getFileName('.');
                     $filename = $filenamewithoutExt . $fileext;
                     $destination = $this->FullPath . DIRECTORY_SEPARATOR . $filename;
@@ -151,14 +242,14 @@ class ImageFile extends UserFile
         $InsertData['tag'] = $filedata['tag'] ?? '';
         $InsertData['settings'] = (isset($filedata['settings']) ? json_encode($filedata['settings']) : '');
         $InsertData['folderid'] = (isset($filedata['folderid']) ? (int)$filedata['folderid'] : 0);
-        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid='" . $linkerid . "'");
+        $displayOrder = $GLOBALS['db']->ExecuteScalar('select max(displayorder)+1 from ' . $GLOBALS['Tables']['images'] . ' where linkertype = ? and linkerid = ?', [$this->LinkerType, $linkerid]);
         if ('' == $displayOrder) {
             $displayOrder = 1;
         }
         $InsertData['displayorder'] = $displayOrder;
 
         if (isset($filedata['recordid']) && $filedata['recordid'] > 0) {
-            if ($GLOBALS['db']->UpdateArray($GLOBALS['Tables']['images'], $InsertData, $filedata['recordid'], 'imageid')) {
+            if ($GLOBALS['db']->Update($GLOBALS['Tables']['images'], $InsertData, $filedata['recordid'], 'imageid')) {
                 $outID = $filedata['recordid'];
                 return true;
             }
@@ -175,6 +266,27 @@ class ImageFile extends UserFile
     }
 
     /**
+     * $orderby goes into "order by", so it has to be a list of columns (or table.column) with optional asc/desc, or rand().
+     *
+     * @throws \InvalidArgumentException
+     */
+    private static function OrderBy(string $orderby): string
+    {
+        foreach (explode(',', $orderby) as $term) {
+            if (!preg_match('/^\s*(?:rand\(\)|\w+(?:\.\w+)?(?:\s+(?:asc|desc))?)\s*$/i', $term)) {
+                throw new \InvalidArgumentException('Invalid order by: ' . $orderby);
+            }
+        }
+
+        return $orderby;
+    }
+
+    private function SaveThumbnails($imageid)
+    {
+        $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . ' set thumbnailfile = ? where imageid = ?', [json_encode($this->ThumbnailCollection), (int) $imageid]);
+    }
+
+    /**
      * Return images on given LinkerID, however it does use object's linkertype to determine the image, which should be set in LinkerType.
      *
      * @param int    $linkerid ID to which this record is associated
@@ -185,11 +297,7 @@ class ImageFile extends UserFile
     public function GetImageOnLinker(int $linkerid, bool $toponly = false, string $orderby = 'isdefault DESC, displayorder asc')
     {
         $images = [];
-        if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by {$orderby} limit 1");
-        } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid} order by {$orderby}");
-        }
+        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . ' where linkertype = ? and linkerid = ? order by ' . self::OrderBy($orderby) . ($toponly ? ' limit 1' : ''), [$this->LinkerType, $linkerid]);
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
@@ -212,7 +320,7 @@ class ImageFile extends UserFile
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
                     $this->FindFullPath($rowImage['imageid']);
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
+                    $this->SaveThumbnails($rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -253,11 +361,7 @@ class ImageFile extends UserFile
     public function GetImageLinkerType(bool $toponly = false, string $orderby = 'isdefault DESC, displayorder asc')
     {
         $images = [];
-        if ($toponly) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' order by {$orderby} limit 1");
-        } else {
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' order by {$orderby}");
-        }
+        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . ' where linkertype = ? order by ' . self::OrderBy($orderby) . ($toponly ? ' limit 1' : ''), [$this->LinkerType]);
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
@@ -281,7 +385,7 @@ class ImageFile extends UserFile
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
                     $this->FindFullPath($rowImage['imageid']);
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
+                    $this->SaveThumbnails($rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -307,7 +411,7 @@ class ImageFile extends UserFile
         if ((int) $imageid <= 0) {
             return null;
         }
-        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} order by {$orderby}");
+        $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . ' where imageid = ? order by ' . self::OrderBy($orderby), [(int) $imageid]);
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             while ($rowImage = $GLOBALS['db']->FetchArray($imagelist)) {
                 $folder = $this->FindFolder($rowImage['imageid']);
@@ -329,7 +433,7 @@ class ImageFile extends UserFile
 
                 if (!is_array($images[$rowImage['imageid']]['thumbnails']) || (count($images[$rowImage['imageid']]['thumbnails']) < 1 && count($this->ThumbnailSize) > 0)) {
                     $this->FileSaver->ProcessFile($rowImage['imageid']);
-                    $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
+                    $this->SaveThumbnails($rowImage['imageid']);
                     $images[$rowImage['imageid']]['thumbnails'] = $this->ThumbnailCollection;
                 }
             }
@@ -348,7 +452,7 @@ class ImageFile extends UserFile
      */
     public function DeleteImageOnLinker($linkerid)
     {
-        $imagelist = $GLOBALS['db']->Execute('Select imageid from ' . $GLOBALS['Tables']['images'] . " where linkertype='" . $this->LinkerType . "' and linkerid={$linkerid}");
+        $imagelist = $GLOBALS['db']->Execute('Select imageid from ' . $GLOBALS['Tables']['images'] . ' where linkertype = ? and linkerid = ?', [$this->LinkerType, (int) $linkerid]);
         if ($GLOBALS['db']->RowCount($imagelist) > 0) {
             $imageIds = [];
             foreach ($imagelist as $row) {
@@ -416,11 +520,11 @@ class ImageFile extends UserFile
     {
         if (is_numeric($imageId) && $imageId > 0 && is_numeric($linkerId) && $linkerId > 0) {
             // Unset all defaults
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageId}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . ' where imageid = ?', [(int) $imageId]);
 
             if ($GLOBALS['db']->RowCount($imagelist) > 0) {
-                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set isdefault= 0 where linkerid={$linkerId} and linkertype='" . $this->LinkerType . "'");
-                if ($GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set isdefault= 1 where linkerid={$linkerId} and linkertype='" . $this->LinkerType . "' and imageid={$imageId}")) {
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . ' set isdefault = 0 where linkerid = ? and linkertype = ?', [(int) $linkerId, $this->LinkerType]);
+                if ($GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . ' set isdefault = 1 where linkerid = ? and linkertype = ? and imageid = ?', [(int) $linkerId, $this->LinkerType, (int) $imageId])) {
                     return true;
                 }
                 $this->SetError('Invalid data to set default image ');
@@ -439,9 +543,9 @@ class ImageFile extends UserFile
     public function SetImageCaption($ImageId, $newCaption)
     {
         if (!empty($ImageId) && $ImageId > 0 && '' != $newCaption) {
-            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$ImageId}");
+            $imagelist = $GLOBALS['db']->Execute('Select * from ' . $GLOBALS['Tables']['images'] . ' where imageid = ?', [(int) $ImageId]);
             if ($GLOBALS['db']->RowCount($imagelist) > 0) {
-                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set imagecaption='" . $newCaption . "' where imageid={$ImageId}");
+                $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . ' set imagecaption = ? where imageid = ?', [$newCaption, (int) $ImageId]);
 
                 return true;
             }
@@ -467,11 +571,25 @@ class ImageFile extends UserFile
             }
         }
 
+        // A vector image scales by itself and GD can't read it: every thumbnail size is the image.
+        if ('svg' === strtolower((string) $ext)) {
+            foreach ($this->ThumbnailSize as $Size) {
+                $this->ThumbnailCollection['w' . $Size['width'] . '.h' . $Size['height']] = $filename . '.' . $ext;
+            }
+
+            return;
+        }
+
         // Decode the source image once and reuse across all thumbnail sizes.
         // This eliminates N redundant disk reads and GD decode operations.
         [$srcWidth, $srcHeight, $srcImageType] = \getimagesize($path);
         $sourceGd = null;
-        static::CreateImage($srcImageType, $path, $sourceGd);
+        if (!static::CreateImage($srcImageType, $path, $sourceGd)) {
+            // unreadable, or over MaxPixels; DoResize() would get false for its ?GdImage and throw a TypeError
+            $this->SetError('Unable to generate thumbnail: the image can not be read or is too large.');
+
+            return false;
+        }
 
         // Use Fibers for parallel thumbnail generation when multiple sizes exist
         if (count($this->ThumbnailSize) > 1 && FiberRunner::isSupported()) {
@@ -528,7 +646,7 @@ class ImageFile extends UserFile
 
         $rowImage = $GLOBALS['db']->ExecuteScalarRow('Select * from ' . $GLOBALS['Tables']['images'] . " where imageid={$imageid} limit 1");
         $this->FileSaver->ProcessFile((int)$rowImage['imageid']);
-        $GLOBALS['db']->Execute('update ' . $GLOBALS['Tables']['images'] . " set thumbnailfile='" . json_encode($this->ThumbnailCollection) . "' where imageid=" . $rowImage['imageid']);
+        $this->SaveThumbnails($rowImage['imageid']);
     }
 
     public static function DeleteThumbnails(int $imageid)
@@ -540,6 +658,9 @@ class ImageFile extends UserFile
             $thumbnail = json_decode($imagelist['thumbnailfile'], true);
             if (is_array($thumbnail)) {
                 foreach ($thumbnail as $key => $size) {
+                    if ($size === $imagelist['imagefile']) { // an SVG's thumbnail is the image itself
+                        continue;
+                    }
                     $image = $i->Path . "/{$folder}/" . $size;
                     if (\file_exists($image)) {
                         @unlink($image);
@@ -554,6 +675,13 @@ class ImageFile extends UserFile
         // $imageType is kept for backward compatibility but is no longer used internally.
         // imagecreatefromstring() auto-detects JPEG, PNG, GIF, WebP (and BMP/XBM) from
         // binary headers — the PHP 8+ GD recommended universal loader.
+        // Header size first: a small file can declare a huge canvas, and GD would allocate all of it (MaxPixels as on upload).
+        $info = @\getimagesize($path);
+        if (false === $info || $info[0] * $info[1] > static::$MaxPixels) {
+            $img = false;
+
+            return false;
+        }
         $data = @\file_get_contents($path);
         if ($data === false) {
             $img = false;
@@ -613,6 +741,19 @@ class ImageFile extends UserFile
      * @param [type] $noImage
      * @param [type] $resizeScript
      */
+    /**
+     * For resize.php: the image path GetResizedImageURL stored under $key (its ?path=), or null. Only those "img-" keys
+     * are read, so ?path=user can't hand another session value to the resizer as $_SESSION[$_GET['path']] does.
+     *
+     * @param mixed $key
+     */
+    public static function GetResizePath($key): ?string
+    {
+        $path = (is_string($key) && preg_match('/^img-[0-9a-f]{8}$/', $key)) ? ($_SESSION[$key] ?? null) : null;
+
+        return is_string($path) ? $path : null;
+    }
+
     public static function GetResizedImageURL($path, $currenturl, $desirewidth, $desireheight, $noImage, $resizeScript = '')
     {
         // Get Image size info
@@ -623,7 +764,11 @@ class ImageFile extends UserFile
         if (!\file_exists($path)) {
             return $noImage;
         }
-        [$width_orig, $height_orig, $image_type] = @\getimagesize($path);
+        $info = @\getimagesize($path);
+        if (false === $info) { // an SVG (any size is the same file), or a file GD can't size: leave it as it is
+            return $currenturl;
+        }
+        [$width_orig, $height_orig, $image_type] = $info;
 
         /**
          * * calculate the aspect ratio **.
@@ -832,7 +977,7 @@ class ImageFile extends UserFile
         $queryoptions['pagingquery'] = 'select count(*) from ' . $GLOBALS['Tables']['images'];
 
         $filter = [];
-        $filter[] = " linkertype='" . $linkertype . "'";
+        $filter[] = " linkertype='" . $GLOBALS['db']->Escape($linkertype) . "'";
 
         if (is_array($filters) && count($filters) > 0) {
             $filter = array_merge($filter, $filters);

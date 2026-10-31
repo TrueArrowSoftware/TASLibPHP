@@ -10,6 +10,12 @@ namespace TAS\Core;
 class Log
 {
     /**
+     * True while the log row is being inserted. A failed DB::Insert logs, so a failing log insert would call
+     * AddEvent -> Insert -> AddEvent ... forever; with this set, the nested event goes to the file instead.
+     */
+    private static bool $writing = false;
+
+    /**
      * @param string|array $message
      * @param string $level
      * @return true|void
@@ -33,10 +39,17 @@ class Log
             'details' => json_encode($message),
             'debugtrace' => '', // print_r(debug_backtrace(),2)
         );
-        if (!isset($GLOBALS['db'])) {
+        if (!isset($GLOBALS['db']) || self::$writing) {
             \TAS\Core\Log::cLog($data);
         } else {
-            $GLOBALS['db']->Insert($GLOBALS['Tables']['log'], $data);
+            self::$writing = true;
+            try {
+                $GLOBALS['db']->Insert($GLOBALS['Tables']['log'], $data);
+            } catch (\Throwable $e) { // a broken log table must not take the page down with it
+                \TAS\Core\Log::cLog($data);
+            } finally {
+                self::$writing = false;
+            }
         }
     }
 
@@ -46,10 +59,11 @@ class Log
      */
     public static function cLog($msg)
     {
-        $logfile = $GLOBALS['AppConfig']['PhysicalPath'].'/cache/log'.date('Ymd').'.log';
+        // AppConfig 'LogPath' puts the files outside the web root; cache/ (the default, as before) may be served
+        $logfile = ($GLOBALS['AppConfig']['LogPath'] ?? $GLOBALS['AppConfig']['PhysicalPath'].'/cache').'/log'.date('Ymd').'.log';
         if (!file_exists($logfile)) {
             if (!file_exists(dirname($logfile))) {
-                mkdir(dirname($logfile), 0777, true);
+                mkdir(dirname($logfile), 0750, true); // not 0777: other local users don't read or plant log files
             }
         }
         $fh = fopen($logfile, 'a+');

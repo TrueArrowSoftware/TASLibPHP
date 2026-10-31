@@ -18,7 +18,7 @@ class GridBootstrap implements IGridUI
     public function GetTableStart(string $id, string $CssClass, string $dataUrlPage)
     {
         return '<div class="table-responsive">
-            <table class="table table-striped '.$CssClass.'" data-url="'.$dataUrlPage.'" id="'.$id.'">';
+            <table class="table table-striped '.\TAS\Core\HTML::Encode($CssClass).'" data-url="'.\TAS\Core\HTML::Encode($dataUrlPage).'" id="'.\TAS\Core\HTML::Encode($id).'">';
     }
 
     public function GetAtTableHeadStart()

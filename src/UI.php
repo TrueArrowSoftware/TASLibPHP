@@ -58,7 +58,7 @@ class UI
             } else {
                 $select = (\TAS\Core\DataFormat::DoSecure($i) == $selectedvalue) ? true : false;
             }
-            $val .= '<option value="' . \TAS\Core\DataFormat::DoSecure($i) . '"' . ($select ? ' selected="selected"' : '') . '>' . $v . "</option>\r\n";
+            $val .= '<option value="' . \TAS\Core\DataFormat::DoSecure($i) . '"' . ($select ? ' selected="selected"' : '') . '>' . HTML::Encode($v) . "</option>\r\n";
         }
 
         return $val;
@@ -89,7 +89,7 @@ class UI
             } else {
                 $select = (\TAS\Core\DataFormat::DoSecure($v[$val]) == $selectValue) ? true : false;
             }
-            $html .= '<option value="' . \TAS\Core\DataFormat::DoSecure($v[$val]) . '"' . ($select ? ' selected="selected"' : '') . '>' . $v[$label] . "</option>\r\n";
+            $html .= '<option value="' . \TAS\Core\DataFormat::DoSecure($v[$val]) . '"' . ($select ? ' selected="selected"' : '') . '>' . HTML::Encode($v[$label]) . "</option>\r\n";
         }
 
         return $html;
@@ -126,18 +126,18 @@ class UI
                     $text = ucwords($row[$labelCol] ?? '');
                 }
                 if ((is_array($selectedvalue) && in_array($row[$indexCol], $selectedvalue)) || $row[$indexCol] == $selectedvalue) {
-                    $list .= '<option value="' . $row[$indexCol] . '" selected="selected">' . $text . "</option>\n";
+                    $list .= '<option value="' . HTML::Encode($row[$indexCol]) . '" selected="selected">' . HTML::Encode($text) . "</option>\n";
                     $SelectionDone = true;
                 } else {
-                    $list .= '<option value="' . $row[$indexCol] . '">' . $text . "</option>\n";
+                    $list .= '<option value="' . HTML::Encode($row[$indexCol]) . '">' . HTML::Encode($text) . "</option>\n";
                 }
             }
         }
         if ($showSelect) {
             if ($SelectionDone) {
-                $list = '<option value="">' . $SelectText . '</option>' . $list;
+                $list = '<option value="">' . HTML::Encode($SelectText) . '</option>' . $list;
             } else {
-                $list = '<option value="" selected="selected">' . $SelectText . '</option>' . $list;
+                $list = '<option value="" selected="selected">' . HTML::Encode($SelectText) . '</option>' . $list;
             }
         } else {
             $list = '' . $list;
@@ -172,7 +172,7 @@ class UI
                 } else {
                     $text = ucwords($row[$labelCol] ?? '');
                 }
-                $list .= '<option value="' . $text . '" />';
+                $list .= '<option value="' . HTML::Encode($text) . '" />';
             }
         }
 
@@ -193,7 +193,7 @@ class UI
     public static function NumericRangeToDropDown($start, $end, $step, $selectedvalue, $showSelect = true, $showSelectName = 'Select')
     {
         if ($showSelect) {
-            $list = '<option value="">' . $showSelectName . '</option>';
+            $list = '<option value="">' . HTML::Encode($showSelectName) . '</option>';
         } else {
             $list = '';
         }
@@ -262,11 +262,11 @@ class UI
             $list .= '<ul class="rslist">';
             foreach ($array as $i => $v) {
                 $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, [
-                    'index' => $i,
-                    'text' => $v,
+                    'index' => HTML::Content($i),
+                    'text' => HTML::Content($v),
                 ]);
                 $list .= '<li><label class="' . ('radio' == $type ? 'custom-radio' : ('checkbox' == $type ? 'custom-checkbox' : 'customlist')) . '">
-                          <input type="' . $type . '" class="form-control ' . (($isrequired) ? 'required' : '') . '" ' . (('radio' == $type) ? ' value="' . $i . '"' : ' value="on"') . (('radio' == $type) ? ' name="' . $name . '"' : ' name="' . $name . '[' . $i . ']"') . ' ' . (in_array($i, $selectedvalues) ? 'checked="checked"' : '') . '>
+                          <input type="' . HTML::Encode($type) . '" class="form-control ' . (($isrequired) ? 'required' : '') . '" ' . (('radio' == $type) ? ' value="' . HTML::Encode($i) . '"' : ' value="on"') . (('radio' == $type) ? ' name="' . HTML::Encode($name) . '"' : ' name="' . HTML::Encode($name . '[' . $i . ']') . '"') . ' ' . (in_array($i, $selectedvalues) ? 'checked="checked"' : '') . '>
                           <span class="' . ('radio' == $type ? 'checkmark' : ('checkbox' == $type ? 'checkmark-box' : 'customlist')) . '"></span><span class="text-label">' . $text . '</span></label></li>';
             }
             $list .= '</ul>';
@@ -304,9 +304,9 @@ class UI
             \TAS\Core\DB::Reset($rs);
             $list .= '<ul class="rslist">';
             foreach ($rs as $row) {
-                $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, $row);
+                $text = \TAS\Core\TemplateHandler::PrepareContent($labelformat, array_map([HTML::class, 'Content'], $row));
                 $list .= '<li><label class="' . ('radio' == $type ? 'custom-radio' : ('checkbox' == $type ? 'custom-checkbox' : 'customlist')) . '">
-                          <input type="' . $type . '" class="form-control ' . (($isrequired) ? 'required' : '') . '" ' . (('radio' == $type) ? ' value="' . $row[$indexCol] . '"' : ' value="on"') . (('radio' == $type) ? ' name="' . $name . '"' : ' name="' . $name . '[' . $row[$indexCol] . ']"') . ' ' . (in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '') . '>
+                          <input type="' . HTML::Encode($type) . '" class="form-control ' . (($isrequired) ? 'required' : '') . '" ' . (('radio' == $type) ? ' value="' . HTML::Encode($row[$indexCol]) . '"' : ' value="on"') . (('radio' == $type) ? ' name="' . HTML::Encode($name) . '"' : ' name="' . HTML::Encode($name . '[' . $row[$indexCol] . ']') . '"') . ' ' . (in_array($row[$indexCol], $selectedvalues) ? 'checked="checked"' : '') . '>
                           <span class="' . ('radio' == $type ? 'checkmark' : ('checkbox' == $type ? 'checkmark-box' : 'customlist')) . '"></span><span class="text-label">' . $text . '</span></label></li>';
             }
             $list .= '</ul>';
@@ -366,13 +366,13 @@ class UI
         $defaulticons = $grid->DefaultIcon();
         foreach ($defaulticons as $index => $icon) {
             if ('edit' == $index) {
-                if (false == $pages['edit'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', Config::$UserRoleID)) {
+                if (false == $pages['edit'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'edit', Config::GetUserRoleID())) {
                     unset($defaulticons[$index]);
                 } else {
                     $defaulticons[$index]['link'] = $pages['edit'];
                 }
             } elseif ('delete' == $index) {
-                if (false == $pages['delete'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', Config::$UserRoleID)) {
+                if (false == $pages['delete'] || !$GLOBALS['permission']->CheckOperationPermission($tagname, 'delete', Config::GetUserRoleID())) {
                     unset($defaulticons[$index]);
                 } else {
                     $defaulticons[$index]['link'] = $pages['delete'];
@@ -645,8 +645,8 @@ class UI
                 case 'file':
                     $HTML = \TAS\Core\HTML::InputFile($id, $id, $isrequired, 'file ' . ($field['css'] ?? 'form-control'), $field['additionalattr'] ?? '');
                     if (is_numeric($field['value']) && (int) $field['value'] > 0) {
-                        $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" ' . (isset($field['filesource']) ? 'data-source="' . $field['filesource'] . '"' : '') . ' data-imageid="' . $field['value'] . '">View File</a> /
-                        <a href="#" class="deleteimage" data-imageid="' . $field['value'] . '"' . (isset($field['filesource']) ? ' data-source="' . $field['filesource'] . '"' : '') . '>Delete</a></span>';
+                        $HTML .= '<span class="imagewrapper"><a class="showimage" href="#" ' . (isset($field['filesource']) ? 'data-source="' . HTML::Encode($field['filesource']) . '"' : '') . ' data-imageid="' . HTML::Encode($field['value']) . '">View File</a> /
+                        <a href="#" class="deleteimage" data-imageid="' . HTML::Encode($field['value']) . '"' . (isset($field['filesource']) ? ' data-source="' . HTML::Encode($field['filesource']) . '"' : '') . '>Delete</a></span>';
                     }
 
                     break;
@@ -1003,7 +1003,7 @@ class UI
                         if ((is_array($field['value']) && in_array($key, $field['value']))
                             || ($key == $field['value'])
                         ) {
-                            $HTML .= \TAS\Core\HTML::ReadOnly($option, $id,  $field['css'] ?? '');
+                            $HTML .= \TAS\Core\HTML::ReadOnly($option, $id, $field['css'] ?? '', !empty($field['html']));
                         }
                     }
 
@@ -1046,7 +1046,7 @@ class UI
                 case 'zipcode':
                 case 'url':
                 default:
-                    $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, $field['css'] ?? '');
+                    $HTML = \TAS\Core\HTML::ReadOnly($field['value'] ?? '', $id, $field['css'] ?? '', !empty($field['html']));
 
                     break;
             }
@@ -1144,9 +1144,9 @@ class UI
         reset($messages);
         foreach ($messages as $i => $value) {
             if ($value['level'] < 10) {
-                $returnString .= '<li class="alert alert-success mrgntop">' . $value['message'] . '</li>';
+                $returnString .= '<li class="alert alert-success mrgntop">' . HTML::Content($value['message'], !empty($value['html'])) . '</li>';
             } else {
-                $returnString .= '<li class="alert alert-danger mrgntop">' . $value['message'] . '</li>';
+                $returnString .= '<li class="alert alert-danger mrgntop">' . HTML::Content($value['message'], !empty($value['html'])) . '</li>';
             }
         }
         $returnString .= '</ul>';

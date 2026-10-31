@@ -13,7 +13,7 @@ use TAS\Core\UI\IGridUI;
 
 class Grid
 {
-    // Seek mode only: a page number from the URL is capped so skip arithmetic can't overflow into a float.
+    // A page number from the URL is capped so offset/skip arithmetic can't overflow into a float.
     private const MAX_PAGE = 1000000000;
 
     public $QueryOptions;
@@ -80,6 +80,8 @@ class Grid
             'noorderby' => false, // in case your query has it.
             'recordshowlimit' => 0,
             'tablename' => '',
+            // values for ? placeholders in whereconditions: bound by the driver, never part of the SQL text
+            'params' => [],
         ];
     }
 
@@ -113,23 +115,26 @@ class Grid
     {
         $listing = '';
         $startpage = ((isset($_GET['page']) && is_numeric($_GET['page'])) ? (int) $_GET['page'] : (int) $this->Options['currentpage']);
+        $startpage = min(max(1, $startpage), self::MAX_PAGE); // page=0 made a negative limit, page=1e18 an overflowing offset
         $pagesize = $this->Options['pagesize'] ?? $GLOBALS['AppConfig']['PageSize'];
 
         $start = ($startpage - 1) * $pagesize;
 
+        $params = array_values((array) ($this->QueryOptions['params'] ?? []));
         $this->QueryOptions['defaultorderby'] ??= '';
         $this->QueryOptions['defaultsortdirection'] ??= '';
 
         // ob and d go straight into the order by, so only accept a known column and asc/desc,
         // from the URL and from the session (which an older version may have filled with anything).
-        $sessionKey = $this->Options['gridid'] . $this->Options['tagname'];
-        $sessionOrder = $_SESSION[$sessionKey . '_ob'] ?? null;
-        $sessionDirection = $_SESSION[$sessionKey . '_d'] ?? null;
-
-        $orderby = $this->IsSortColumn($_GET['ob'] ?? null) ? $_GET['ob']
-            : ($this->IsSortColumn($sessionOrder) ? $sessionOrder : $this->QueryOptions['defaultorderby']);
-        $orderdirection = self::IsDirection($_GET['d'] ?? null) ? $_GET['d']
-            : (self::IsDirection($sessionDirection) ? $sessionDirection : $this->QueryOptions['defaultsortdirection']);
+        [$orderby, $orderdirection] = DataFormat::ReturnSortOrder(
+            $this->Options['gridid'] . $this->Options['tagname'],
+            (string) $this->QueryOptions['defaultorderby'],
+            (string) $this->QueryOptions['defaultsortdirection'],
+            $this->Options['fields'],
+            (array) ($this->QueryOptions['orderby'] ?? []),
+            'ob',
+            'd'
+        );
 
         $_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_d'] = $orderdirection;
         $_SESSION[$this->Options['gridid'] . $this->Options['tagname'] . '_ob'] = $orderby;
@@ -171,12 +176,12 @@ class Grid
         } elseif (null !== $seek) {
             $pagesize = max(1, (int) $pagesize);
             $startpage = min(max(1, $startpage), self::MAX_PAGE);
-            $hash = $seek->Hash($this->QueryOptions['whereconditions'] . '|' . $pagesize);
+            $hash = $seek->Hash($this->QueryOptions['whereconditions'] . '|' . $pagesize . ([] === $params ? '' : '|' . json_encode($params)));
             $cursor = $seek->Decode(is_string($_GET['cur'] ?? null) ? $_GET['cur'] : '', $hash);
 
             if (!empty($_GET['last'])) {
                 // Last page is read backwards from the end, which needs the total first.
-                $TotalRecordCount = (int) $GLOBALS['db']->ExecuteScalar($this->SeekCountQuery());
+                $TotalRecordCount = (int) $GLOBALS['db']->ExecuteScalar($this->SeekCountQuery(), $params);
                 $startpage = max(1, (int) ceil($TotalRecordCount / $pagesize));
             }
             $plan = $seek->Plan($startpage, $pagesize, $cursor, $TotalRecordCount);
@@ -217,8 +222,8 @@ class Grid
             echo $this->SeekDebugText($query, $countQuery, $plan, $cursor, $seekWhyNot);
         }
 
-        // Run data query and count query in parallel when a connection pool is available
-        if (isset($GLOBALS['dbpool']) && $GLOBALS['dbpool'] instanceof DBPool) {
+        // Run data query and count query in parallel when a connection pool is available (async queries can't bind params)
+        if (isset($GLOBALS['dbpool']) && $GLOBALS['dbpool'] instanceof DBPool && [] === $params) {
             $parallelQueries = ['data' => $query];
             if (null === $TotalRecordCount) {
                 $parallelQueries['count'] = $countQuery;
@@ -247,8 +252,8 @@ class Grid
                     ? $countResult->fetch_row()[0] : 0;
             }
         } else {
-            $rs = $GLOBALS['db']->Execute($query);
-            $TotalRecordCount ??= $GLOBALS['db']->ExecuteScalar($countQuery);
+            $rs = $GLOBALS['db']->Execute($query, $params);
+            $TotalRecordCount ??= $GLOBALS['db']->ExecuteScalar($countQuery, $params);
         }
 
         // Seek mode reads backwards for before/last, so the page is put back in display order here.
@@ -287,7 +292,7 @@ class Grid
 
         if ($this->Options['allowselection']) {
             $listing .= '<th style="width: 20px">
-                <input type="checkbox" name="select_' . $this->Options['tagname'] . '" id="select_' . $this->Options['tagname'] . '" class="checkall"></th>';
+                <input type="checkbox" name="select_' . HTML::Encode($this->Options['tagname']) . '" id="select_' . HTML::Encode($this->Options['tagname']) . '" class="checkall"></th>';
             ++$totalfield;
         }
 
@@ -301,7 +306,7 @@ class Grid
         foreach ($this->Options['fields'] as $field => $val) {
             $sorticon = '';
             if ($orderby == $field || (isset($val['sortstring']) && $orderby == $val['sortstring'])) {
-                $sorticon = '<a class="' . self::$UI->GetCssClassForSortingIcon() . '" href="' . $page . '&ob=' . $field . '">
+                $sorticon = '<a class="' . self::$UI->GetCssClassForSortingIcon() . '" href="' . HTML::Encode($page . '&ob=' . $field) . '">
                     <i class="fas ' . (('asc' == strtolower($orderdirection)) ? 'fa-sort-alpha-up' : 'fa-sort-alpha-down') . '"></i></a>';
             }
 
@@ -340,7 +345,7 @@ class Grid
             if (isset($this->Options['allowsorting']) && false === $this->Options['allowsorting']) {
                 $listing .= $Text;
             } else {
-                $listing .= '<a href="' . $page . '&ob=' . $field . '" title="Sort by ' . $Label . '">' . $Text . '</a>' . $sorticon . '</th>';
+                $listing .= '<a href="' . HTML::Encode($page . '&ob=' . $field) . '" title="Sort by ' . HTML::Encode($Label) . '">' . $Text . '</a>' . $sorticon . '</th>';
             }
             ++$totalfield;
         }
@@ -366,7 +371,7 @@ class Grid
                     $pquery . $this->QueryOptions['whereconditions'] . ($this->QueryOptions['pagingqueryend'] ?? ''),
                     $filter,
                     true,
-                    ['pagesize' => $pagesize]
+                    ['pagesize' => $pagesize, 'params' => $params]
                 );
             }
             $pageingrow = '<tr class="pagetr"><td colspan="' . $totalfield . '"><div class="pager">' . $pager . '</div></td></tr>';
@@ -389,8 +394,8 @@ class Grid
                 foreach ($this->Options['option'] as $icon) {
                     $link = Web::AppendQueryString($icon['link'], (isset($icon['paramname']) ? $icon['paramname'] . '=' : 'id=') . 'ROW_ID_TPL');
                     $link = str_replace('ROW_ID_TPL', '{_row_id_}', $link);
-                    $target = (isset($icon['target']) ? 'target="' . $icon['target'] . '"' : '');
-                    $optionTemplate .= '<li><a class="' . $icon['tagname'] . ' btn btn-icons btn-rounded btn-outline-fa-color" ' . $target . ' data-toggle="tooltip" title="' . $icon['tooltip'] . '"  href="' . $link . '"><i class="fas ' . $icon['iconclass'] . '"></i></a></li>';
+                    $target = (isset($icon['target']) ? 'target="' . HTML::Encode($icon['target']) . '"' : '');
+                    $optionTemplate .= '<li><a class="' . HTML::Encode($icon['tagname']) . ' btn btn-icons btn-rounded btn-outline-fa-color" ' . $target . ' data-toggle="tooltip" title="' . HTML::Encode($icon['tooltip']) . '"  href="' . HTML::Url($link) . '"><i class="fas ' . HTML::Encode($icon['iconclass']) . '"></i></a></li>';
                 }
             }
 
@@ -423,17 +428,17 @@ class Grid
                 $rowId = $row[$indexField] ?? '';
                 $option = '';
                 if ($optionTemplate !== '') {
-                    $option = str_replace('{_row_id_}', $rowId, $optionTemplate);
+                    $option = str_replace('{_row_id_}', rawurlencode((string) $rowId), $optionTemplate);
                 }
 
                 $additionalClass = '';
                 if ($hasRowConditionCallback) {
                     $additionalClass = call_user_func($this->Options['rowconditioncallback'], $row, $additionalClass);
                 }
-                $rowHtml .= "\n" . '<tr data-id="' . $rowId . '" id="row_' . $rowId . '"  class="griddatarow ' . (($alt) ? 'gridrow' : 'altgridrow') . ' ' . $additionalClass . '">';
+                $rowHtml .= "\n" . '<tr data-id="' . HTML::Encode($rowId) . '" id="row_' . HTML::Encode($rowId) . '"  class="griddatarow ' . (($alt) ? 'gridrow' : 'altgridrow') . ' ' . $additionalClass . '">';
 
                 if ($allowSelection) {
-                    $rowHtml .= '<td><input type="checkbox" name="select_' . $tagName . '[' . $rowId . ']" id="select_' . $tagName . '_' . $rowId . '" class="checkall_child"></td>';
+                    $rowHtml .= '<td><input type="checkbox" name="select_' . HTML::Encode($tagName . '[' . $rowId . ']') . '" id="select_' . HTML::Encode($tagName . '_' . $rowId) . '" class="checkall_child"></td>';
                 }
 
                 foreach ($fieldsCache as $field => $fc) {
@@ -444,8 +449,8 @@ class Grid
                     $rowHtml .= "\r\n \t";
 
                     if ($fc['hasLink']) {
-                        $linkColumn = str_replace('{1}', $row[$fc['linkfield']], $fc['link']);
-                        $rowHtml .= '<td class="' . $cssClass . '"><a href="' . $linkColumn . '">' . $fielddata . '</a></td>';
+                        $linkColumn = str_replace('{1}', (string) $row[$fc['linkfield']], $fc['link']);
+                        $rowHtml .= '<td class="' . $cssClass . '"><a href="' . HTML::Url($linkColumn) . '">' . $fielddata . '</a></td>';
                     } else {
                         $rowHtml .= '<td class="' . $cssClass . '">' . $fielddata . '</td>';
                     }
@@ -537,21 +542,21 @@ class Grid
             case 'globalarray':
                 if (array_key_exists($field, $row) && null != $row[$field]) {
                     if (isset($val['arrayname'])) {
-                        $fielddata = $GLOBALS[$val['arrayname']][$row[$field]] ?? "";
+                        $fielddata = HTML::Content($GLOBALS[$val['arrayname']][$row[$field]] ?? '', !empty($val['html']));
                     } else {
-                        $fielddata = $GLOBALS[$field][$row[$field]] ?? "";
+                        $fielddata = HTML::Content($GLOBALS[$field][$row[$field]] ?? '', !empty($val['html']));
                     }
                 }
 
                 break;
 
             case 'string':
-                $fielddata = $row[$field];
+                $fielddata = HTML::Content($row[$field], !empty($val['html']));
 
                 break;
 
             case 'longstring':
-                $fielddata = $row[$field];
+                $fielddata = HTML::Content($row[$field], !empty($val['html']));
 
                 break;
 
@@ -567,13 +572,13 @@ class Grid
                     }
                 } else {
                     if ('Yes' == $fielddata && isset($val['iconyes'])) {
-                        $fielddata = '<img src="' . $val['iconyes'] . '" class="gridimage ' . $field . '">';
+                        $fielddata = '<img src="' . HTML::Url($val['iconyes']) . '" class="gridimage ' . HTML::Encode($field) . '">';
                     }
                     if ('No' == $fielddata && isset($val['iconno'])) {
-                        $fielddata = '<img src="' . $val['iconno'] . '" class="gridimage ' . $field . '">';
+                        $fielddata = '<img src="' . HTML::Url($val['iconno']) . '" class="gridimage ' . HTML::Encode($field) . '">';
                     }
                 }
-                $fielddata = '<a href="' . $this->CorePage . '&id=' . $row[$this->QueryOptions['indexfield']] . '&type=' . $field . '" class="' . $field . ' gridinnerlink">' . $fielddata . '</a>';
+                $fielddata = '<a href="' . HTML::Encode($this->CorePage . '&id=' . rawurlencode((string) $row[$this->QueryOptions['indexfield']]) . '&type=' . $field) . '" class="' . HTML::Encode($field) . ' gridinnerlink">' . $fielddata . '</a>';
                 $cssClass = 'gridtable-onoff';
 
                 break;
@@ -581,11 +586,11 @@ class Grid
             case 'flag':
                 $fielddata = ((1 == $row[$field] || 'active' == strtolower($row[$field]) || true == $row[$field] || 'yes' == strtolower($row[$field])) ? 'Yes' : 'No');
                 if ('Yes' == $fielddata) {
-                    $fielddata = '<img src="' . ($val['icon'] ?? '{HomeURL}/theme/images/flag.png') . '" class="gridimage flag ' . $field . '">';
+                    $fielddata = '<img src="' . HTML::Url($val['icon'] ?? '{HomeURL}/theme/images/flag.png') . '" class="gridimage flag ' . HTML::Encode($field) . '">';
                 } else {
                     $fielddata = '';
                 }
-                $fielddata = '<a href="' . $this->CorePage . '&id=' . $row[$this->QueryOptions['indexfield']] . '&type=' . $field . '" class="' . $field . ' gridinnerlink">' . $fielddata . '</a>';
+                $fielddata = '<a href="' . HTML::Encode($this->CorePage . '&id=' . rawurlencode((string) $row[$this->QueryOptions['indexfield']]) . '&type=' . $field) . '" class="' . HTML::Encode($field) . ' gridinnerlink">' . $fielddata . '</a>';
                 $cssClass = 'gridtable-flag';
 
                 break;
@@ -594,7 +599,7 @@ class Grid
                 if ('' != $row[$field]) {
                     $fielddata = DataFormat::FormatPhone($row[$field], $val['PhoneLength'] ?? 10);
                 } else {
-                    $fielddata = $row[$field];
+                    $fielddata = HTML::Content($row[$field], !empty($val['html']));
                 }
 
                 break;
@@ -655,52 +660,24 @@ class Grid
                 break;
 
             case 'image':
-                $fielddata = '<img src="' . ($val['prefixUrl'] ?? '') . $row[$field] . '" class="thumbnailsize">';
+                $fielddata = '<img src="' . HTML::Url(($val['prefixUrl'] ?? '') . $row[$field]) . '" class="thumbnailsize">';
 
                 break;
 
             case 'color':
-                $fielddata = '<div class="colordiv" style="background:' . $row[$field] . ';"></div>';
+                // a colour only (#fff, red, rgb(1,2,3)): anything else could add CSS or end the attribute
+                $color = preg_match('/^[#\w(),.%\s]*$/', (string) $row[$field]) ? (string) $row[$field] : '';
+                $fielddata = '<div class="colordiv" style="background:' . HTML::Encode($color) . ';"></div>';
 
                 break;
 
             default:
-                $fielddata = $row[$field];
+                $fielddata = HTML::Content($row[$field] ?? '', !empty($val['html']));
 
                 break;
         }
 
         return ['fielddata' => $fielddata, 'cssClass' => $cssClass];
-    }
-
-    private static function IsDirection($d): bool
-    {
-        return is_string($d) && in_array(strtolower($d), ['asc', 'desc'], true);
-    }
-
-    /**
-     * ob is only a sort column when the grid itself offers it, anything else would be SQL from the URL.
-     */
-    private function IsSortColumn($ob): bool
-    {
-        if (!is_string($ob) || '' === $ob) {
-            return false;
-        }
-        if ($ob === ($this->QueryOptions['defaultorderby'] ?? '')) {
-            return true;
-        }
-        foreach ($this->Options['fields'] as $field => $val) {
-            if ((string) $field === $ob || (is_array($val) && ($val['sortstring'] ?? null) === $ob)) {
-                return true;
-            }
-        }
-        foreach ((array) ($this->QueryOptions['orderby'] ?? []) as $extra) {
-            if (preg_split('/\s+/', trim((string) $extra))[0] === $ob) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

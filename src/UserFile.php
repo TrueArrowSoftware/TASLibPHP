@@ -5,6 +5,12 @@ namespace TAS\Core;
 class UserFile
 {
     public static $MAX_FILE_PER_FOLDER = 2000;
+
+    /**
+     * Biggest upload accepted, in bytes. PHP's own upload_max_filesize still applies first.
+     */
+    public static int $MaxFileSize = 26214400;
+
     public $Path = '';
     public $FullPath = '';
     public $BaseUrl = '';
@@ -22,7 +28,8 @@ class UserFile
         if (isset($GLOBALS['AppConfig']['UploadURL'])) {
             $this->BaseUrl = $GLOBALS['AppConfig']['UploadURL'];
         } else {
-            $this->BaseUrl = str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['REQUEST_URI']).'/upload/';
+            // the path of the request only: its query string is the client's text and ended up in image URLs
+            $this->BaseUrl = str_replace($_SERVER['SCRIPT_NAME'] ?? '', '', (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH)).'/upload/';
         }
         $GLOBALS['db'] = $GLOBALS['db'] ?? null;
     }
@@ -36,7 +43,7 @@ class UserFile
      */
     public function GetFileName($ext)
     {
-        return $this->FileType.uniqid().$ext;
+        return $this->FileType.bin2hex(random_bytes(10)).$ext;
     }
 
     /**
@@ -86,6 +93,34 @@ class UserFile
     }
 
     /**
+     * The first checks for an upload entry of $_FILES: there is a file, PHP took it without error, and it is not over MaxFileSize.
+     * The reason is left in Error.
+     *
+     * @param mixed $file
+     * @return bool
+     */
+    protected function CheckUploaded($file)
+    {
+        if (!is_array($file) || !is_string($file['tmp_name'] ?? null) || !is_file($file['tmp_name'])) {
+            $this->SetError('No uploaded file');
+
+            return false;
+        }
+        if (UPLOAD_ERR_OK !== (int) ($file['error'] ?? UPLOAD_ERR_OK)) {
+            $this->SetError('Upload failed with error '.(int) $file['error']);
+
+            return false;
+        }
+        if (filesize($file['tmp_name']) > static::$MaxFileSize) {
+            $this->SetError('File is too large');
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @deprecated deprecated since version 1.0.24
      * @return mixed
      */
@@ -119,9 +154,7 @@ class UserFile
                 return false;
             }
         } else {
-            if (mkdir($this->FullPath, 0777, true)) {
-                @chmod($this->FullPath, 0777);
-
+            if (mkdir($this->FullPath, 0755, true)) {
                 return true;
             } else {
                 $this->SetError('Fail to create storage folder');

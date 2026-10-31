@@ -24,6 +24,7 @@
         "ext-curl": "*",
         "ext-json": "*",
         "phpmailer/phpmailer": "~6.1",
+        "enshrined/svg-sanitize": "^0.22 || ^1.0",
         "ext-filter": "*"
     },
     "require-dev": {

@@ -99,7 +99,7 @@ class DB
      * @param string $password
      * @param string $DBname
      */
-    public function __construct($server = 'localhost', $user = 'root', $password = '', $DBname = 'demo')
+    public function __construct($server = 'localhost', $user = 'root', #[\SensitiveParameter] $password = '', $DBname = 'demo')
     {
         $this->Server = $server;
         $this->User = $user;
@@ -107,6 +107,14 @@ class DB
         $this->DBName = $DBname;
         $this->MySqlObject = null;
         $this->MysqlVersion = 5;
+    }
+
+    /**
+     * print_r/var_dump of the connection (or of anything holding it) never show the password.
+     */
+    public function __debugInfo(): array
+    {
+        return array_merge(get_object_vars($this), ['Password' => '********']);
     }
 
     /**
@@ -168,6 +176,22 @@ class DB
     public function Escape($str)
     {
         return $this->MySqlObject->real_escape_string($str);
+    }
+
+    /**
+     * Quote a table or column name for SQL, "table" or "db.table". Whatever a part contains stays part of the name,
+     * so a name that came from outside can't end the identifier. Values still go in as placeholders, not here.
+     *
+     * @throws \InvalidArgumentException for an empty name or part, or a NUL byte
+     */
+    public static function QuoteIdentifier(string $name): string
+    {
+        $parts = explode('.', $name);
+        if (in_array('', $parts, true) || str_contains($name, "\0")) {
+            throw new \InvalidArgumentException('Invalid SQL identifier');
+        }
+
+        return '`' . implode('`.`', str_replace('`', '``', $parts)) . '`';
     }
 
     public function ClearStoredResults()
@@ -241,10 +265,14 @@ class DB
                 $stmt->execute();
                 $result = $stmt->get_result();
 
-                if (false === $result && $stmt->errno) {
-                    $this->SetError("<br />Error in Query {$query} is " . $stmt->error);
-                    return false;
+                if (false === $result) {
+                    if ($stmt->errno) {
+                        $this->SetError("<br />Error in Query {$query} is " . $stmt->error);
+                        return false;
+                    }
+                    $result = true; // INSERT/UPDATE/DELETE have no result set, same as query() gives
                 }
+                $stmt->close();
             } else {
                 // Original direct query execution
                 $result = $this->MySqlObject->query($query, MYSQLI_STORE_RESULT);
@@ -455,7 +483,7 @@ class DB
 
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
 
-        $query = "INSERT INTO `{$tablename}` (" . implode(',', $keys) . ') VALUES (' . str_repeat('?,', count($keys) - 1) . '?)';
+        $query = 'INSERT INTO ' . self::QuoteIdentifier($tablename) . ' (' . implode(',', array_map([self::class, 'QuoteIdentifier'], $keys)) . ') VALUES (' . str_repeat('?,', count($keys) - 1) . '?)';
         if ($this->Debug) {
             echo "\n<br>Insert Query is : " . $query;
         }
@@ -530,7 +558,7 @@ class DB
         $columnlist = [];
         foreach (array_keys($values) as $k) {
             $refs[] = &$values[$k];
-            $columnlist[] = $k . '=?';
+            $columnlist[] = self::QuoteIdentifier($k) . '=?';
         }
 
         $datatype = empty($datatype) ? static::GetDataString($tablename, $values) : $datatype;
@@ -539,9 +567,9 @@ class DB
         foreach ($editcondition as $k => $v) {
             $refs[] = &$editcondition[$k];
             $datatype .= is_numeric($v) ? 'i' : 's';
-            $wherecondition[] = " `{$k}` = ?";
+            $wherecondition[] = ' ' . self::QuoteIdentifier($k) . ' = ?';
         }
-        $query = "Update `{$tablename}` set " . implode(', ', $columnlist) . ' where ' . implode(' and ', $wherecondition);
+        $query = 'Update ' . self::QuoteIdentifier($tablename) . ' set ' . implode(', ', $columnlist) . ' where ' . implode(' and ', $wherecondition);
 
         if ($this->Debug) {
             echo "\n<br>Update Query is : " . $query . "\r\n<br \\>" . print_r($refs, true);
@@ -598,7 +626,7 @@ class DB
                     return false;
                 }
 
-                $query = "INSERT INTO {$table} (" . implode(',', $keys) . ') VALUES (' . str_repeat('?,', count($keys) - 1) . '?)
+                $query = 'INSERT INTO ' . self::QuoteIdentifier($table) . ' (' . implode(',', array_map([self::class, 'QuoteIdentifier'], $keys)) . ') VALUES (' . str_repeat('?,', count($keys) - 1) . '?)
 				            ON DUPLICATE KEY UPDATE ';
 
                 $refs = [];
@@ -607,7 +635,7 @@ class DB
                 $datatype .= $datatype;
                 $refs[] = &$datatype;
                 foreach ($values as $key => $value) {
-                    $queryAddon[] = "{$key}=?";
+                    $queryAddon[] = self::QuoteIdentifier($key) . '=?';
                     $refs[] = &$values[$key];
                     $ref2[] = &$values[$key];
                 }
@@ -648,23 +676,16 @@ class DB
     {
         if ('' != $tablename) {
             if (is_array($values)) {
-                $query = "REPLACE into {$tablename} set ";
-                $valuecount = count($values);
-                $ctr = 1;
-                foreach ($values as $index => $value) {
-                    $query .= " {$index} = '" . $this->MySqlObject->real_escape_string($value) . "'";
-                    if ($valuecount > $ctr) {
-                        $query .= ', ';
-                    }
-                    ++$ctr;
+                $sets = [];
+                foreach (array_keys($values) as $index) {
+                    $sets[] = self::QuoteIdentifier($index) . ' = ?';
                 }
-                // echo $query; //die;
+                $query = 'REPLACE into ' . self::QuoteIdentifier($tablename) . ' set ' . implode(', ', $sets);
                 if ($this->Debug) {
                     echo "\n<br>REPLACE Query is : " . $query;
                 }
-                // echo $query;die;
                 $this->CleanError();
-                $output = $this->Execute($query);
+                $output = $this->Execute($query, array_values($values));
                 $output = (true === $output) ? true : false;
                 if (!$output) {
                     $this->SetError('Error in Query :' . $query . ' with error  ' . $this->MySqlObject->error);
@@ -678,13 +699,12 @@ class DB
     }
 
     /**
-     * @incomplete
-     * Insert in Bulk Query.
-     * This do not validate data. It expect you to send all column in same order.
+     * Insert in Bulk Query. Values go in as placeholders, so any value is stored as is.
+     * The columns are the keys of the first row, the other rows are matched to them by key (a missing key is NULL).
      *
      * @param string $tablename name of the table to insert into
      * @param array  $values Array of data in array( array("columnname1"=> "data", "column2"=>"Data" ) )
-     * @param bool   $failonError set to true if you want to break Query if error encount or continue ignoring error row. default is false, and not in use as of now.
+     * @param bool   $failonError not in use as of now.
      * @return bool
      */
     public function InsertBulk($tablename, $values, $failonError = false)
@@ -696,23 +716,49 @@ class DB
             return false;
         }
 
-        // @todo: We can fetch column from DB To compare here.
-        // $cName = DB::GetColumnsName($tablename);
-        $rows = [];
-        foreach ($values as $rowid => $rowdata) {
-            if (true) { // @todo: how to validate the data here and column counts.
-                $cName = array_keys($rowdata);
-                $rows[] = "('" . implode("','", $rowdata) . "')";
-            } else {
-                $this->SetError('InsertBulk:: Some data is not valid; ' . print_r($rowdata, true));
-                if ($failonError) {
-                    return false;
+        return $this->BulkWrite('INSERT', $tablename, $values);
+    }
+
+    /**
+     * Multi-row INSERT or REPLACE on placeholders. The columns are the keys of the first row.
+     * Rows are sent in groups that stay under MySQL's 65535 placeholders per statement.
+     * ponytail: the groups are separate statements, wrap the call in a transaction when it must be all or nothing.
+     *
+     * @param string $command 'INSERT' or 'REPLACE'
+     * @param string $tablename
+     * @param array<int, array<string, mixed>> $rows
+     * @return bool
+     */
+    private function BulkWrite(string $command, $tablename, array $rows): bool
+    {
+        $rows = array_values($rows);
+        if (0 == count($rows) || !is_array($rows[0]) || 0 == count($rows[0])) {
+            $this->SetError('No rows to write');
+
+            return false;
+        }
+
+        $columns = array_keys($rows[0]);
+        $head = $command . ' INTO ' . self::QuoteIdentifier($tablename) . ' (' . implode(',', array_map([self::class, 'QuoteIdentifier'], $columns)) . ') VALUES ';
+        $oneRow = '(' . implode(',', array_fill(0, count($columns), '?')) . ')';
+
+        foreach (array_chunk($rows, max(1, intdiv(60000, count($columns)))) as $chunk) {
+            $params = [];
+            foreach ($chunk as $row) {
+                foreach ($columns as $column) {
+                    $params[] = $row[$column] ?? null;
                 }
             }
+            $query = $head . implode(',', array_fill(0, count($chunk), $oneRow));
+            if ($this->Debug) {
+                echo "\n<br>{$command} Query is : " . $query;
+            }
+            if (!$this->Execute($query, $params)) {
+                return false;
+            }
         }
-        $query = 'Insert into ' . $tablename . ' (`' . implode('`,`', $cName) . '`) VALUES ' . implode(',', $rows);
 
-        return $this->Execute($query);
+        return true;
     }
 
     /**
@@ -726,34 +772,31 @@ class DB
     {
         $this->CleanError();
         if (is_array($values)) {
-            $columnsList = [];
-            $QueryParts = [];
-            $Columns = '';
-            $query = '';
-
             if (isset($values['data']) && is_array($values['data'])) {
-                foreach ($values['data'] as $row) {
-                    if (is_array($row)) {
-                        $row = array_merge($row, $values['common']);
-                        $QueryParts[] = "('" . implode("','", $row) . "')";
-                    }
-                }
-                if ('' == $Columns && count($values['data']) > 0) {
-                    $rowColumn = array_merge(array_keys($values['data'][0]), array_keys($values['common']));
-                    $Columns = '(' . implode(',', $rowColumn) . ')';
-                }
-                $query = "insert into {$tablename}" . $Columns . ' values ' . implode(',', $QueryParts);
-                $this->Execute($query);
-            }
-
-            if ($this->Debug) {
-                echo "\n<br>Insert Query is : " . $query;
+                return $this->BulkWrite('INSERT', $tablename, $this->MergeCommon($values));
             }
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Every row of $values['data'] with the $values['common'] columns added.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function MergeCommon(array $values): array
+    {
+        $rows = [];
+        foreach ($values['data'] as $row) {
+            if (is_array($row)) {
+                $rows[] = array_merge($row, $values['common'] ?? []);
+            }
+        }
+
+        return $rows;
     }
 
     /**
@@ -767,27 +810,8 @@ class DB
     {
         $this->CleanError();
         if (is_array($values)) {
-            $columnsList = [];
-            $QueryParts = [];
-            $Columns = '';
-            $query = '';
             if (isset($values['data']) && is_array($values['data'])) {
-                foreach ($values['data'] as $row) {
-                    if (is_array($row)) {
-                        $row = array_merge($row, $values['common']);
-                        $QueryParts[] = "('" . implode("','", $row) . "')";
-                    }
-                }
-                if ('' == $Columns && count($values['data']) > 0) {
-                    $rowColumn = array_merge(array_keys($values['data'][0]), array_keys($values['common']));
-                    $Columns = '(' . implode(',', $rowColumn) . ')';
-                }
-                $query = "REPLACE into {$tablename} " . $Columns . ' values ' . implode(',', $QueryParts);
-                $this->Execute($query);
-            }
-
-            if ($this->Debug) {
-                echo "\n<br>Replace Query is : " . $query;
+                return $this->BulkWrite('REPLACE', $tablename, $this->MergeCommon($values));
             }
 
             return true;
@@ -798,6 +822,7 @@ class DB
 
     /**
      * Returns the database Record set with given condition.
+     * $orderby and $where are SQL as is, never pass request data in them.
      *
      * @param string $table
      * @param string $orderby
@@ -835,7 +860,7 @@ class DB
         }
         $id = (int) $id;
 
-        return $this->Execute('Delete from ' . $table . " Where {$idfield} = {$id}");
+        return $this->Execute('Delete from ' . self::QuoteIdentifier($table) . ' Where ' . self::QuoteIdentifier($idfield) . " = {$id}");
     }
 
     /**
@@ -863,7 +888,7 @@ class DB
         if (isset($GLOBALS['Tables'][$table])) { // We can get either the DB base Table name or our Table Array index.
             $table = $GLOBALS['Tables'][$table];
         }
-        $f = $GLOBALS['db']->Execute('SHOW Full Columns from ' . $table);
+        $f = $GLOBALS['db']->Execute('SHOW Full Columns from ' . self::QuoteIdentifier($table));
         if (null == $f) {
             throw new \Exception('Table ' . $table . ' not found');
         }
@@ -943,7 +968,7 @@ class DB
         if ($GLOBALS['db']->MysqlVersion >= 8) {
             $GLOBALS['db']->Execute('SET information_schema_stats_expiry = 0; ');
         }
-        $result = $GLOBALS['db']->ExecuteScalarRow("show table status where Name = '" . $tablename . "'");
+        $result = $GLOBALS['db']->ExecuteScalarRow("show table status where Name = '" . $GLOBALS['db']->Escape($tablename) . "'");
 
         return $result['Auto_increment'];
     }

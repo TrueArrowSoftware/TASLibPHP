@@ -10,6 +10,40 @@ namespace TAS\Core;
 class HTML
 {
     /**
+     * Encode a value for HTML text or an attribute. Entities already in it are kept, so a value escaped before
+     * (e.g. stored through DataFormat::DoSecure) is not escaped twice.
+     *
+     * @param mixed $value
+     */
+    public static function Encode($value): string
+    {
+        return htmlspecialchars((string) ($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, null, false);
+    }
+
+    /**
+     * Content that may carry intended HTML: encoded only when Config::$EscapeOutput is on and $html is false.
+     *
+     * @param mixed $value
+     */
+    public static function Content($value, bool $html = false): string
+    {
+        return (Config::$EscapeOutput && !$html) ? self::Encode($value) : (string) ($value ?? '');
+    }
+
+    /**
+     * A URL for href/src: encoded, and '#' for a javascript:, vbscript: or data: URL.
+     *
+     * @param mixed $url
+     */
+    public static function Url($url): string
+    {
+        // the browser decodes entities and drops control characters/whitespace before it reads the scheme
+        $plain = preg_replace('/[\x00-\x20]+/', '', html_entity_decode((string) ($url ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        return preg_match('/^(javascript|vbscript|data):/i', $plain) ? '#' : self::Encode($url);
+    }
+
+    /**
      * Create Input box.
      *
      * @param string $id
@@ -24,8 +58,8 @@ class HTML
      */
     public static function InputBox($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
     {
-        return '<input type="text" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
-            '" size="' . $size . '" maxlength="' . $maxlength . '" value="' . $value . '" ' . $additionaattr . ' />';
+        return '<input type="text" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
+            '" size="' . self::Encode($size) . '" maxlength="' . self::Encode($maxlength) . '" value="' . self::Encode($value) . '" ' . $additionaattr . ' />';
     }
 
     /**
@@ -39,8 +73,8 @@ class HTML
      */
     public static function InputColour($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $additionaattr = '')
     {
-        return '<input type="text" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
-            '" value="' . $value . '" ' . $additionaattr . ' />';
+        return '<input type="text" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
+            '" value="' . self::Encode($value) . '" ' . $additionaattr . ' />';
     }
 
     /**
@@ -106,8 +140,8 @@ class HTML
      */
     public static function InputEmail($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
     {
-        return '<input type="email" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
-            '" size="' . $size . '" maxlength="' . $maxlength . '" value="' . $value . '" ' . $additionaattr . ' />';
+        return '<input type="email" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
+            '" size="' . self::Encode($size) . '" maxlength="' . self::Encode($maxlength) . '" value="' . self::Encode($value) . '" ' . $additionaattr . ' />';
     }
 
     /**
@@ -123,8 +157,8 @@ class HTML
      */
     public static function InputPassword($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $size = 30, $maxlength = 50, $additionaattr = '')
     {
-        return '<input type="password" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
-            '" size="' . $size . '" maxlength="' . $maxlength . '" value="' . $value . '" ' . $additionaattr . ' />';
+        return '<input type="password" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
+            '" size="' . self::Encode($size) . '" maxlength="' . self::Encode($maxlength) . '" value="' . self::Encode($value) . '" ' . $additionaattr . ' />';
     }
 
     /**
@@ -138,7 +172,7 @@ class HTML
      */
     public static function InputCheckBox($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $additionaattr = '')
     {
-        return ' <label class="custom-checkbox"><input type="checkbox" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '"class="' . $css . ($isrequired ? ' required' : '') .
+        return ' <label class="custom-checkbox"><input type="checkbox" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '"class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
             '" ' . ((1 == $value || true == $value) ? 'checked="checked" ' : '') . $additionaattr . ' />
                           <span class="checkmark-box"></span>';
     }
@@ -156,7 +190,7 @@ class HTML
     {
         return '
          <label class="custom-radio">
-            <input type="radio" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
+            <input type="radio" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
             '" ' . ((1 == $value || true == $value) ? 'checked="checked" ' : '') . $additionaattr . ' />
            <span class="checkmark"></span>';
     }
@@ -174,8 +208,8 @@ class HTML
      */
     public static function InputSelect($id, $options = '', $name = '', $isrequired = false, $css = 'form-control', $multiple = false, $size = 5, $additionaattr = '')
     {
-        return '<select id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') . '" ' .
-            ($multiple ? 'multiple="multiple" size="' . $size . '"' : '') . ' ' . $additionaattr . ' >' . $options . '</select>';
+        return '<select id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) . '" ' .
+            ($multiple ? 'multiple="multiple" size="' . self::Encode($size) . '"' : '') . ' ' . $additionaattr . ' >' . $options . '</select>';
     }
 
     /**
@@ -191,8 +225,8 @@ class HTML
      */
     public static function InputText($id, $value = '', $name = '', $isrequired = false, $css = 'form-control', $rows = 30, $cols = 50, $additionaattr = '')
     {
-        return '<textarea id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
-            '" rows="' . $rows . '" cols="' . $cols . '" ' . $additionaattr . ' >' . $value . '</textarea>';
+        return '<textarea id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
+            '" rows="' . self::Encode($rows) . '" cols="' . self::Encode($cols) . '" ' . $additionaattr . ' >' . self::Encode($value) . '</textarea>';
     }
 
     /**
@@ -205,7 +239,7 @@ class HTML
      */
     public static function InputFile($id, $name = '', $isrequired = false, $css = 'form-control', $additionaattr = '')
     {
-        return '<input id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" class="' . $css . ($isrequired ? ' required' : '') .
+        return '<input id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" class="' . self::Encode($css . ($isrequired ? ' required' : '')) .
             '" type="file" ' . $additionaattr . ' />';
     }
 
@@ -218,7 +252,7 @@ class HTML
      */
     public static function InputHidden($id, $value = '', $name = '', $additionaattr = '')
     {
-        return '<input type="hidden" id="' . $id . '" name="' . ('' == $name ? $id : $name) . '" ' . $additionaattr . ' value="' . $value . '" />';
+        return '<input type="hidden" id="' . self::Encode($id) . '" name="' . self::Encode('' == $name ? $id : $name) . '" ' . $additionaattr . ' value="' . self::Encode($value) . '" />';
     }
 
     /**
@@ -238,7 +272,7 @@ class HTML
      */
     public static function Label($label, $for = '', $isrequired = false)
     {
-        return '<label class="formlabel ' . ($isrequired ? ' requiredfield' : '') . '" for="' . $for . '">' . $label . '</label>';
+        return '<label class="formlabel ' . ($isrequired ? ' requiredfield' : '') . '" for="' . self::Encode($for) . '">' . $label . '</label>';
     }
 
     /**
@@ -249,18 +283,19 @@ class HTML
      */
     public static function FormField($label, $wrapper, $tag = '')
     {
-        return '<div class="formfield ' . $tag . '">' . $label . $wrapper . '<div class="clear"></div></div>';
+        return '<div class="formfield ' . self::Encode($tag) . '">' . $label . $wrapper . '<div class="clear"></div></div>';
     }
 
     /**
      * @param string $value
      * @param string $id
      * @param string $css
+     * @param bool $html value is intended HTML, never escaped (see Config::$EscapeOutput)
      * @return string
      */
-    public static function ReadOnly($value, $id, $css)
+    public static function ReadOnly($value, $id, $css, bool $html = false)
     {
-        return '<div class="formreadonlyinput form-control ' . $css . '" id="' . $id . '">' . $value . '&nbsp;</div>';
+        return '<div class="formreadonlyinput form-control ' . self::Encode($css) . '" id="' . self::Encode($id) . '">' . self::Content($value, $html) . '&nbsp;</div>';
     }
 
     /**

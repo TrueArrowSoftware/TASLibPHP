@@ -2,7 +2,7 @@
 
 **TASLibPHP** is a lightweight PHP library for building web applications quickly, without the weight of a full framework. Everything lives under one namespace, `TAS\Core`.
 
-Current version: **1.2.85** | Requires: **PHP >= 8.2** | License: [MIT](../LICENSE)
+Current version: **1.2.86** | Requires: **PHP >= 8.2** | License: [MIT](../LICENSE)
 
 | Page | What is in it |
 |---|---|
@@ -26,9 +26,11 @@ Current version: **1.2.85** | Requires: **PHP >= 8.2** | License: [MIT](../LICEN
    - [Grid header filters](#grid-header-filters)
    - [Seek paging](#seek-paging)
    - [Parallel work (Async)](#parallel-work-async)
+   - [Output escaping](#output-escaping)
    - [Files and images](#files-and-images)
    - [Email](#email)
    - [Templates](#templates)
+   - [Redirects and downloads](#redirects-and-downloads)
    - [Logging, cron locks and permissions](#logging-cron-locks-and-permissions)
 6. [Security notes](#security-notes)
 7. [Running the tests](#running-the-tests)
@@ -59,7 +61,7 @@ Requirements:
 - PHP 8.2 or higher
 - Extensions: `curl`, `json`, `filter`, `mysqli` (with `mysqlnd` for the async query classes)
 - MySQL or MariaDB
-- [PHPMailer](https://github.com/PHPMailer/PHPMailer) ~6.1 (installed by Composer)
+- [PHPMailer](https://github.com/PHPMailer/PHPMailer) ~6.1 and [enshrined/svg-sanitize](https://github.com/darylldoyle/svg-sanitizer) (both installed by Composer; the second cleans uploaded SVG images)
 
 ## Setup
 
@@ -133,6 +135,10 @@ Define only the keys for the classes you use.
 | `TemplatePath` | `TemplateHandler`, `Utility::DoEmail` | Folder with `.tpl` files (`mail.tpl` for emails) |
 | `SiteName`, `SenderEmail` | `Utility::DoEmail` | Default sender name and address |
 | `UseSMTPAuth`, `SMTPServer`, `SMTPServerPort`, `SMTPUsername`, `SMTPPassword` | `Utility::SendHTMLMail` | SMTP login. If `UseSMTPAuth` is not `true`, PHP `mail()` is used. |
+| `SMTP-TLS` | `Utility::SendHTMLMail` | `true` requires TLS (STARTTLS, or SMTPS on port 465), so the login cannot be read by a man in the middle. Without it TLS is used only if the server offers it. |
+| `AllowedHosts` | `Web::IsLocalUrl`, `Web::RedirectLocal` | Extra host names a request-supplied redirect may go to (array). The request's own host, `Domain` and the host of `HomeURL`, `SecureURL`, `NonSecureURL` and `AdminURL` are always allowed. |
+| `Domain` | `Web::IsLocalUrl` | Your site's domain |
+| `LogPath` | `Log::cLog` | Folder for the file log. Default is `cache/` under `PhysicalPath`, which may be served by the web server: set this to a folder outside the web root. |
 | `NoImage_Listing` | `UI` | Placeholder image URL |
 
 Every scalar `AppConfig` value is also available as a `{Key}` placeholder in [templates](#templates).
@@ -147,6 +153,8 @@ Static settings you can change at runtime:
 | `Config::$DateTimeFormatDB` | `Y-m-d H:i:s` | Database date-time format |
 | `Config::$DisplayDateFormat` | `m/d/Y` | Date format shown to users (used by `Grid` `date` columns) |
 | `Config::$DisplayDateTimeFormat` | `m/d/Y H:i:s` | Date-time format shown to users |
+| `Config::$EscapeOutput` | `false` | `true` encodes grid cells, messages, labels and PDF report cells, see [Output escaping](#output-escaping) |
+| `Config::GetUserRoleID()` | | Role id of the signed-in user, read when called (`$UserRoleID` is only filled once, when the class loads). A value you assign to `$UserRoleID` wins. |
 | `Config::$FileSaverImage`, `Config::$FileSaverDocument` | local-disk savers | Swap in your own `IFileSaver` to store files elsewhere (S3, Azure Blob, ...) |
 | `Config::set($key, $value)`, `Config::get($key)` | | Your own settings; `get` returns `null` for an unknown key |
 
@@ -182,7 +190,9 @@ Things to know:
 - `Execute` returns `false` on failure. `LastError()` and `LastErrors()` return what went wrong.
 - `Insert`, `Update`, `Update2` and `InsertUpdate` bind the values from the array, and work out the column types from the table unless you pass a `$datatype` string.
 - `Update2($table, $values, ['col' => $value, ...])` updates the rows matching all the given column conditions (joined with `AND`), instead of one id field. It returns `false` if the conditions array is empty.
-- `InsertBulk` does not validate. Give it every column, in the same order, for each row.
+- `InsertBulk`, `InsertMultiArray` and `ReplaceMultiArrayByID` bind their values and write the rows in chunks. Every row needs the same columns as the first row. They return `false` when there are no rows.
+- Table and column names are quoted for you (`DB::QuoteIdentifier`). Pass bare names such as `orders` or `shop.orders`, not names that already contain backticks or an alias. `Delete` accepts only a numeric id and returns `false` for anything else.
+- `DBRecordSet($table, $orderby, $where)` takes SQL text for `$orderby` and `$where`. Only pass text you wrote, never request data.
 - Set `$db->Debug = true` to print each insert or update query.
 - `DB::Count($rs)`, `DB::Reset($rs)`, `DB::GetColumns($table)` and `DB::GetTableInformation($table)` are static.
 
@@ -299,6 +309,7 @@ echo (new Grid($options, $query))->Render();
 |---|---|
 | `basicquery` | The `SELECT ... FROM ...` part, without `WHERE`/`ORDER BY`/`LIMIT` |
 | `whereconditions` | The `WHERE ...` part, appended after `basicquery` |
+| `params` | Values for the `?` placeholders in `whereconditions`, bound by the driver. Use this, not string concatenation, for anything that comes from a request. With `params` set the grid does not use the parallel `DBPool` path. |
 | `defaultorderby`, `defaultsortdirection` | Sort used when the URL has none (`asc` or `desc`) |
 | `orderby` | Extra tie-break sorts, like `['name asc']` |
 | `noorderby` | `true` when your query already has its own `ORDER BY` |
@@ -320,8 +331,11 @@ echo (new Grid($options, $query))->Render();
 | `number-decimal` | `number` columns: show two decimals |
 | `postsymbol` | `currency` columns: put this after the number instead of the `Currency` prefix |
 | `sortstring` | Sort by this SQL expression instead of the column name |
+| `html` | Keep this column's text raw when `Config::$EscapeOutput` is on, see [Output escaping](#output-escaping) |
 | `filter` | A [filter object](#grid-header-filters) for this column |
 | `seek` | SQL expression for [seek paging](#seek-paging) |
+
+Sorting is safe to expose: the `ob` (column) and `d` (`asc`/`desc`) request parameters, and any value kept in the session, are used only if they name a column the grid offers (a key or `sortstring` of `fields`, the default column, or an `orderby` entry). Anything else falls back to the default sort.
 
 Rendering goes through `Grid::$UI`, a `UI\IGridUI`. It defaults to `UI\GridBootstrap`; assign your own implementation to change the markup.
 
@@ -396,9 +410,36 @@ $res = AsyncHttp::runParallel([
 $out = FiberRunner::run([fn() => 1 + 1, fn() => 'done']);
 ```
 
-Each request config takes `url`, `method` (`GET` or `POST`), `data`, `headers`, `timeout` (seconds, default 30) and `ssl_verify` (default `false`, set it to `true` for production calls). When `$GLOBALS['dbpool']` is a `DBPool`, `Grid` runs its data query, count query and query-based `SelectFilter` sources in parallel. Without a pool everything runs normally, one query after another.
+Each request config takes `url`, `method` (`GET` or `POST`), `data`, `headers`, `timeout` (seconds, default 30) and `ssl_verify` (defaults to `DirectConnection::$VerifySSL`, which is `false`). Set `DirectConnection::$VerifySSL = true` once in your configuration to check certificates for every request. Only `http` and `https` URLs are followed, also after a redirect, and connecting is limited to 30 seconds. `DirectConnection::$Timeout` limits a whole `DirectConnection` request (0 means no limit).
+
+`AsyncQuery::runParallel($queries, $pool, 1000, 30.0)` takes a timeout in seconds as its fourth argument: when it runs out, the unfinished connections are closed and an exception is thrown. When `$GLOBALS['dbpool']` is a `DBPool`, `Grid` runs its data query, count query and query-based `SelectFilter` sources in parallel. Without a pool everything runs normally, one query after another.
 
 `FiberRunner::runSettled($tasks)` keeps going when a task throws and returns `['results' => ..., 'errors' => ...]`. `FTP::PutBatch` and `FTP::GetBatch` upload and download many files in parallel. `CSV::ExportCSVAsync` exports large queries in parallel chunks.
+
+### Output escaping
+
+The library builds HTML from your data, so it encodes what it can without changing how existing pages look.
+
+**Always encoded:** attribute values (`id`, `name`, `value`, `class`), `<option>` text, textarea content, pager links and grid row ids. `HTML::Encode()` is the function used, and you can call it yourself:
+
+```php
+use TAS\Core\HTML;
+
+HTML::Encode('<b>"Tom" & Jerry</b>');    // &lt;b&gt;&quot;Tom&quot; &amp; Jerry&lt;/b&gt;
+HTML::Encode('AT&amp;T');                // AT&amp;T  (an entity already in the text is kept, not escaped twice)
+HTML::Url('javascript:alert(1)');        // #         (javascript:, vbscript: and data: URLs are replaced)
+HTML::Url('/orders.php?a=1&b=2');        // /orders.php?a=1&amp;b=2
+```
+
+**Encoded only when you opt in:** content that may carry HTML you intended, namely grid `string`, `longstring` and `globalarray` cells, `HTML::ReadOnly` values, `UI::UIMessageDisplay` messages, check/radio list labels and PDF report cells. It is off by default so existing pages look the same. Turn it on to close stored XSS there:
+
+```php
+TAS\Core\Config::$EscapeOutput = true;
+```
+
+Then mark the places that really hold HTML with `'html' => true`: a grid column (`$options['fields']['Notes']['html'] = true`), a form field passed to `UI::GetFormHTML`/`GetReadOnlyHTML`, or a message passed to `UIMessageDisplay`. `HTML::Content($value, $html = false)` is the helper that applies the rule.
+
+Links in a grid (`link` columns, row icons, `image` and `onoff` icons) always go through `HTML::Url`, so a `javascript:`, `vbscript:` or `data:` target is shown as `#`. This includes `data:image/...` image sources.
 
 ### Files and images
 
@@ -415,13 +456,24 @@ $images = TAS\Core\ImageFile::GetLinkerImage($productId, 'product');
 
 Needs `AppConfig` `UploadPath`, `UploadURL`, `HomeURL`, `cache`, the `Tables` entries `images`/`document`, and the table definitions in [`database/db.sql`](../database/db.sql).
 
+What is accepted (the name and type the browser sends are ignored; the file's content decides):
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `UserFile::$MaxFileSize` | 25 MB | Largest upload of any kind. PHP's `upload_max_filesize` still applies first. |
+| `ImageFile::$MaxPixels` | 50,000,000 | Largest image (width x height); bigger ones are refused before they are decoded |
+| `ImageFile::$MaxSvgSize` | 2 MB | Largest SVG |
+| `DocumentFile::$AllowedExtensions` | pdf, txt, csv, rtf, doc(x), xls(x), ppt(x), odt, ods, odp, zip, jpg, jpeg, png, gif, webp | Documents with another extension are refused. Do not add types a server runs or a browser renders (`php`, `phtml`, `html`, `svg`, ...). |
+
+Images must be JPEG, PNG, GIF, WebP or SVG. An SVG is cleaned by `enshrined/svg-sanitize` before it is stored (scripts, `on*` handlers, `javascript:` links, `foreignObject` and remote references are removed), and a file that cannot be cleaned is refused. Documents containing a page, script or program are refused. After a failed `Upload`, `Error` holds the reason.
+
 Where the bytes go is decided by an `Interface\IFileSaver`. The default saver moves files into `UploadPath`; to use cloud storage, implement the interface and assign it before use:
 
 ```php
 TAS\Core\Config::$FileSaverImage = new MyS3ImageSaver();
 ```
 
-`CSV::ExportCSV($sql, $path, $fields)` writes a query to a CSV file and `CSV::CreateCSV(...)` streams it as a download. The `CSV` class lives in `src/CSVHandler.php`, so Composer's PSR-4 autoloader cannot find it: `require_once` that file before using it (or call the same-named `Utility::ExportCSV`/`Utility::CreateCSV`).
+`CSV::ExportCSV($sql, $path, $fields)` writes a query to a CSV file at `$path`, and `CSV::CreateCSV($SQLQuery, $filename, $tagname, $param)` streams a grid-style query as a download. In `CreateCSV` (and `Utility::CreateCSV`, `GenerateCSV`, `CreateReportPDF`, `GenerateReportPDF`) the `$filename` is only the name the browser receives; the real file is a temporary one that is deleted afterwards. In CSV cells, text that starts with `=`, `+`, `-` or `@` and is not a number gets a leading `'`, so a spreadsheet shows it instead of running it as a formula.
 
 ### Email
 
@@ -431,7 +483,7 @@ use TAS\Core\Utility;
 Utility::SendHTMLMail('to@example.com', 'Subject', '<p>Hello</p>', 'Hello', 'noreply@example.com', 'My Site');
 ```
 
-- It sends through SMTP when `AppConfig['UseSMTPAuth']` is `true`, otherwise through PHP `mail()`.
+- It sends through SMTP when `AppConfig['UseSMTPAuth']` is `true`, otherwise through PHP `mail()`. Set `AppConfig['SMTP-TLS'] = true` to require TLS (SMTPS on port 465, STARTTLS otherwise).
 - **With `DeveloperMode` on, every message goes to `AppConfig['DeveloperEmail']`** instead of the real recipient. Turn it off on production.
 - `Utility::DoEmail($emailId, $keywords, $to, ...)` loads a stored template from the `emailcms` table, fills `{keyword}` placeholders and sends it. `$to` can hold several addresses separated by `,` or `;`. Reply-to and cc come from an `Options\EmailOptions` object.
 
@@ -445,6 +497,22 @@ echo TAS\Core\TemplateHandler::PrepareContent('Hi {name}, welcome to {SiteName}'
 ```
 
 An array value is expanded as `{key-subkey}`. `GenerateNavigationMenu` builds a menu filtered by permission, and `GenerateNavigationMenuWithoutPermission` builds one for everyone.
+
+Two safeguards: keywords are replaced in a single pass, so a value that looks like another keyword (`{another}`) stays text (an `AppConfig` placeholder such as `{HomeURL}` inside a value is still filled, which CMS content relies on), and `AppConfig` entries whose name contains `pass`, `secret`, `token`, `private` or `credential` (any case) are never placed in a template. A placeholder such as `{ForgotPasswordURL}` is therefore left as it is; pass that value in `$keywords` instead.
+
+### Redirects and downloads
+
+```php
+use TAS\Core\Web;
+
+Web::RedirectLocal($_GET['return'] ?? '', 'index.php');   // follows only same-site targets
+Web::IsLocalUrl('https://evil.example/');                  // false
+Web::IsLocalUrl('/admin/list.php?page=2');                 // true
+```
+
+- Use `RedirectLocal` whenever the target comes from the request (`?return=...`, a form field). It follows a relative path, or an http(s) URL on this request's host, your `Domain`, the hosts of your `*URL` settings or an `AllowedHosts` entry. Anything else, including `//host`, `/\host` and `javascript:`, goes to the fallback. `Web::Redirect` still goes anywhere, for URLs your code builds.
+- `Web::DownloadHeader($name)` quotes the file name safely and sends `X-Content-Type-Options: nosniff` and `Cache-Control: private, no-store`.
+- `Web::ResetSession()` destroys the session and issues a new session id.
 
 ### Logging, cron locks and permissions
 
@@ -464,11 +532,15 @@ if (TAS\Core\Cron::CreateScriptLock('nightly')) {      // false if another run h
 
 ## Security notes
 
-- Use the values-array form of `Execute`, `ExecuteScalar`, `ExecuteScalarRow` and `ExecuteAll` for anything that comes from a request.
-- Do not pass request data into `basicquery`, `whereconditions` or `orderby` of a grid unchanged. The grid itself validates the `ob` and `d` sort parameters (since 1.2.85), but the query text you give it is yours to protect.
-- Set `ssl_verify` to `true` in `AsyncHttp` requests to production services.
-- Keep `DeveloperMode` and `DebugMode` off in production: they print queries and reroute email.
-- Report vulnerabilities as described in [SECURITY.md](../SECURITY.md).
+What the library does for you since 1.2.86: it quotes table and column names, binds the values of every `Insert`/`Update`/bulk call, validates every sort parameter, encodes attributes and options, checks upload content, and limits redirects and outgoing requests to safe targets. What stays yours:
+
+- **Query text.** Use the values-array form of `Execute`, `ExecuteScalar`, `ExecuteScalarRow` and `ExecuteAll` for anything that comes from a request, and the grid's `params` option for the `?` placeholders in `whereconditions`. Never put request data into `basicquery`, `whereconditions`, `orderby` or the `$where`/`$orderby` of `DBRecordSet`.
+- **Turn on `Config::$EscapeOutput`** unless every grid cell, message and label you show is trusted HTML (see [Output escaping](#output-escaping)).
+- **Network.** Set `DirectConnection::$VerifySSL = true` and `SMTP-TLS` to `true` in production, and `FTP::$UseSSL` where the server supports FTPS.
+- **Redirects.** Use `Web::RedirectLocal` for any redirect target taken from a request.
+- **Verification codes.** `GenerateVerificationCode` returns a random value: store it hashed with an expiry and compare against what you stored.
+- **Debug settings.** Keep `DeveloperMode` and `DebugMode` off in production: they print queries and reroute email. Point `AppConfig['LogPath']` outside the web root.
+- Report vulnerabilities as described in [SECURITY.md](../SECURITY.md), and read the **Security** heading of each release in the [changelog](../CHANGELOG.md).
 
 ## Running the tests
 

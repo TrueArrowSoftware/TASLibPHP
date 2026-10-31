@@ -49,6 +49,7 @@ class DataValidate
      * @param string $url
      * @return bool
      * @Note: True for  http://example.com OR http://www.example.com OR https://example.com OR https://www.example.com OR https://example
+     * Only http and https: javascript://example.com/%0Aalert(1) is a "valid" URL to filter_var, and runs when shown as a link.
      */
     public static function ValidateURL($url)
     {
@@ -59,7 +60,7 @@ class DataValidate
             return false;
         }
 
-        return true;
+        return in_array(strtolower((string) parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
     }
 
     /**
@@ -81,13 +82,15 @@ class DataValidate
 
     /**
      * Verifies if provided input is validate date or not.
-     * @param string $date
+     * False for anything that isn't one, an empty value or an array (date[]=x) included: it used to throw for those,
+     * so a form value could end the request (Entity::InputValidate does not catch).
+     * @param mixed $date
      * @return bool
      */
-    public static function IsDate(string $date)
+    public static function IsDate($date)
     {
-        if (empty($date) || null == $date || !self::ContainDigits($date)) {
-            throw new \InvalidArgumentException('Invalid argument, date must be any parsable date. preferrably in system time format.');
+        if (!is_string($date) || '' === trim($date) || !self::ContainDigits($date)) {
+            return false;
         }
 
         try {
@@ -108,6 +111,50 @@ class DataValidate
     {
         for ($i = 0; $i < strlen($str); ++$i) {
             if (ctype_digit($str[$i])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * asc or desc, in any case. Anything else must never reach an "order by".
+     *
+     * @param mixed $direction
+     * @return bool
+     */
+    public static function IsSortDirection($direction)
+    {
+        return is_string($direction) && in_array(strtolower($direction), ['asc', 'desc'], true);
+    }
+
+    /**
+     * True when $column is a sort column the page itself offers, anything else would be SQL from the URL.
+     * The offered ones are the default column, a key or 'sortstring' of $fields, and the first word of an $extra
+     * entry like 'name asc'.
+     *
+     * @param mixed $column
+     * @param string $default
+     * @param array $fields column definitions keyed by column
+     * @param array $extra
+     * @return bool
+     */
+    public static function IsSortColumn($column, $default, array $fields, array $extra = [])
+    {
+        if (!is_string($column) || '' === $column) {
+            return false;
+        }
+        if ($column === $default) {
+            return true;
+        }
+        foreach ($fields as $field => $definition) {
+            if ((string) $field === $column || (is_array($definition) && ($definition['sortstring'] ?? null) === $column)) {
+                return true;
+            }
+        }
+        foreach ($extra as $entry) {
+            if (preg_split('/\s+/', trim((string) $entry))[0] === $column) {
                 return true;
             }
         }

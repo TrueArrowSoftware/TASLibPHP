@@ -26,11 +26,16 @@ class Permission
      * @param string $module
      * @param string $operation
      * @param int|string $userlevel
-     * @return bool|mixed
+     * @return bool
      */
     public function CheckOperationPermission($module, $operation, $userlevel)
     {
-        return $this->permissions[strtolower($userlevel)][strtolower($module)][strtolower($operation)] ?? false;
+        $granted = $this->permissions[strtolower($userlevel)][strtolower($module)][strtolower($operation)] ?? false;
+
+        // Only a "yes" grants: true/1 or what a checkbox posts ('1', 'on'). Any other truthy value used to grant too,
+        // so a stored "false"/"off"/"0 " or a misplaced array opened the operation.
+        return true === $granted || 1 === $granted
+            || (is_string($granted) && in_array(strtolower(trim($granted)), ['1', 'on', 'yes', 'true'], true));
     }
 
     /**
